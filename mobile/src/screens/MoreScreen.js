@@ -10,6 +10,7 @@ const MENU_ITEMS = [
 ];
 
 const ADMIN_ITEMS = [
+  { key: 'BulkImport', label: 'Bulk Add Designs', icon: '⚡', desc: 'Upload many photos — AI fills the details' },
   { key: 'Admin',    label: 'Admin Panel',     icon: '⚙️', desc: 'Users, activity log, templates' },
 ];
 

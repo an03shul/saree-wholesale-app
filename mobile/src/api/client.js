@@ -118,6 +118,12 @@ export const identifyApi = {
   identify: (formData) => api.post('/api/identify', formData, { timeout: 60000 }),
 };
 
+export const importApi = {
+  // formData with multiple 'photos' files → returns { drafts: [...] }
+  analyze: (formData) => api.post('/api/import/analyze', formData, { timeout: 180000 }),
+  save: (item_id, designs) => api.post('/api/import/save', { item_id, designs }),
+};
+
 export const getCatalogUrl = (brandId) => `${BASE_URL}/catalog/${brandId}`;
 export const getPdfUrl = (brandId, params = {}) => {
   const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();

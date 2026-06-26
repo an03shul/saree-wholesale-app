@@ -59,6 +59,7 @@ app.use('/api/send',    require('./routes/send'));
 app.use('/api/tally',   require('./routes/tally'));
 app.use('/api/pdf',     require('./routes/pdf'));
 app.use('/api/identify',require('./routes/identify'));
+app.use('/api/import',  require('./routes/import'));
 app.use('/api/admin',   require('./routes/admin'));
 app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));

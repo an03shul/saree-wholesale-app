@@ -18,6 +18,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
 import MoreScreen from './src/screens/MoreScreen';
+import BulkImportScreen from './src/screens/BulkImportScreen';
 import { authApi, setAuthToken, loadStoredToken } from './src/api/client';
 
 const Tab = createBottomTabNavigator();
@@ -56,6 +57,7 @@ function MoreStack({ user, onLogout }) {
       <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Scan QR' }} />
       <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: 'Contacts' }} />
       <Stack.Screen name="Identify" component={IdentifyScreen} options={{ title: 'Identify Piece' }} />
+      <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: 'Bulk Add Designs' }} />
       <Stack.Screen name="Admin" options={{ headerShown: false }}>
         {() => <AdminScreen user={user} onLogout={onLogout} />}
       </Stack.Screen>
