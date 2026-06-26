@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Secrets & environment — NEVER commit real .env files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# TLS certificates & private keys (sensitive)
+*.pem
+*.key
+
+# Database files (this is your DATA — back it up separately, don't commit it)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Uploaded design photos (data, large — store in object storage in production)
+backend/uploads/
+
+# Expo / build output
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Logs & OS junk
+*.log
+.DS_Store
+
+# Local editor / Claude config
+.claude/

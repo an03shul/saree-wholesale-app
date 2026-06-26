@@ -1,0 +1,126 @@
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config';
+
+const BASE_URL = API_BASE_URL;
+
+const api = axios.create({ baseURL: BASE_URL, timeout: 10000 });
+
+// Set token directly on the axios instance — no async interceptor
+export async function loadStoredToken() {
+  try {
+    const token = await AsyncStorage.getItem('auth_token');
+    if (token) setAuthToken(token);
+  } catch {}
+}
+
+export function setAuthToken(token) {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+}
+
+export const authApi = {
+  login: (username, pin) => api.post('/api/auth/login', { username, pin }),
+  logout: () => api.post('/api/auth/logout'),
+  me: () => api.get('/api/auth/me'),
+  changePin: (current_pin, new_pin) => api.post('/api/auth/change-pin', { current_pin, new_pin }),
+};
+
+export const adminApi = {
+  getUsers: () => api.get('/api/admin/users'),
+  addUser: (data) => api.post('/api/admin/users', data),
+  deleteUser: (id) => api.delete(`/api/admin/users/${id}`),
+  resetPin: (id, new_pin) => api.post(`/api/admin/users/${id}/reset-pin`, { new_pin }),
+  getActivity: (limit = 50) => api.get('/api/admin/activity', { params: { limit } }),
+};
+
+export const fabricsApi = {
+  getAll: () => api.get('/api/fabrics'),
+  create: (name) => api.post('/api/fabrics', { name }),
+};
+
+export const workCategoriesApi = {
+  getAll: () => api.get('/api/work-categories'),
+  create: (name) => api.post('/api/work-categories', { name }),
+};
+
+export const brandsApi = {
+  getAll: () => api.get('/api/brands'),
+  getOne: (id) => api.get(`/api/brands/${id}`),
+  create: (data) => api.post('/api/brands', data),
+  update: (id, data) => api.put(`/api/brands/${id}`, data),
+  delete: (id, pin) => api.delete(`/api/brands/${id}`, { data: { pin } }),
+};
+
+export const itemsApi = {
+  getAll: (brand_id) => api.get('/api/items', { params: brand_id ? { brand_id } : {} }),
+  getOne: (id) => api.get(`/api/items/${id}`),
+  create: (data) => api.post('/api/items', data),
+  update: (id, data) => api.put(`/api/items/${id}`, data),
+  delete: (id) => api.delete(`/api/items/${id}`),
+  toggleStock: (id) => api.patch(`/api/items/${id}/stock`),
+};
+
+export const designsApi = {
+  getForItem: (itemId) => api.get(`/api/designs/item/${itemId}`),
+  search: (q) => api.get('/api/designs/search', { params: { q } }),
+  getOne: (id) => api.get(`/api/designs/${id}`),
+  create: (itemId, formData) => api.post(`/api/designs/item/${itemId}`, formData, { timeout: 30000 }),
+  update: (id, formData) => api.put(`/api/designs/${id}`, formData, { timeout: 30000 }),
+  delete: (id) => api.delete(`/api/designs/${id}`),
+  toggleStock: (id) => api.patch(`/api/designs/${id}/stock`),
+};
+
+export const itemsApi_stock = {
+  toggleStock: (id) => api.patch(`/api/items/${id}/stock`),
+};
+
+export const ordersApi = {
+  getAll: () => api.get('/api/orders'),
+  create: (data) => api.post('/api/orders', data),
+  updateStatus: (id, status) => api.patch(`/api/orders/${id}/status`, { status }),
+  delete: (id) => api.delete(`/api/orders/${id}`),
+};
+
+export const contactsApi = {
+  getAll: () => api.get('/api/contacts'),
+  create: (data) => api.post('/api/contacts', data),
+  delete: (id) => api.delete(`/api/contacts/${id}`),
+};
+
+export const sendApi = {
+  preview: (itemId) => api.get(`/api/send/preview/${itemId}`),
+  send: (item_id, recipient) => api.post('/api/send', { item_id, recipient }),
+  sendSelected: (design_ids, recipient) => api.post('/api/send/selected', { design_ids, recipient }),
+  filterBrand: (brandId, params) => api.get(`/api/send/filter/${brandId}`, { params }),
+};
+
+export const statsApi = {
+  get: () => api.get('/api/stats'),
+};
+
+export const settingsApi = {
+  getAll: () => api.get('/api/settings'),
+  set: (key, value) => api.put(`/api/settings/${key}`, { value }),
+};
+
+export const tallyApi = {
+  getCustomers: () => api.get('/api/tally/customers'),
+  getStatus: () => api.get('/api/tally/status'),
+  // Returns an EventSource for real-time stock streaming
+  stockStream: (itemId) => new EventSource(`${BASE_URL}/api/tally/stock-stream?item_id=${itemId}&token=${api.defaults.headers.common['Authorization']?.replace('Bearer ', '')}`),
+};
+
+export const identifyApi = {
+  identify: (formData) => api.post('/api/identify', formData, { timeout: 60000 }),
+};
+
+export const getCatalogUrl = (brandId) => `${BASE_URL}/catalog/${brandId}`;
+export const getPdfUrl = (brandId, params = {}) => {
+  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return `${BASE_URL}/api/pdf/${brandId}${q ? `?${q}` : ''}`;
+};
+export const getImageUrl = (photoPath) => `${BASE_URL}/uploads/${photoPath}`;

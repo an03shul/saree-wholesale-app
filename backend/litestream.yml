@@ -1,0 +1,20 @@
+# Litestream continuously replicates the SQLite database to Cloudflare R2.
+# Values are read from environment variables (set on Railway), so no secrets
+# live in this file. See .env.example for the required variables.
+#
+# On startup, the Dockerfile restores the DB from R2 if the local copy is
+# missing (e.g. a fresh volume), then runs the app under `litestream replicate`.
+
+dbs:
+  - path: ${DB_PATH}
+    replicas:
+      - type: s3
+        url: ${LITESTREAM_REPLICA_URL}
+        endpoint: ${LITESTREAM_ENDPOINT}
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        # R2 requires path-style addressing
+        force-path-style: true
+        # Keep 30 days of point-in-time snapshots
+        retention: 720h
+        snapshot-interval: 1h
