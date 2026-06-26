@@ -9,14 +9,28 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
-// CORS allowlist. In production set CORS_ORIGINS to a comma-separated list of
-// allowed origins (e.g. "https://app.gopiramsaree.app"). If unset, allow all
-// (fine for local LAN dev, not for production).
-const corsOrigins = process.env.CORS_ORIGINS
+// CORS. CORS_ORIGINS is an optional comma-separated list of extra allowed
+// origins. On top of that list we always allow:
+//   • the gopiramsarees.in domain and its subdomains (the production app)
+//   • the Cloudflare Pages project (gopiram-app.pages.dev + preview deploys)
+//   • all origins when no list is configured (local LAN dev)
+const corsAllowlist = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
-  : true;
+  : null;
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // non-browser clients / same-origin
+  let host;
+  try { host = new URL(origin).hostname; } catch { return false; }
+  if (corsAllowlist && corsAllowlist.includes(origin)) return true;
+  if (host === 'gopiramsarees.in' || host.endsWith('.gopiramsarees.in')) return true;
+  if (host === 'gopiram-app.pages.dev' || host.endsWith('.gopiram-app.pages.dev')) return true;
+  if (!corsAllowlist) return true; // dev: no list → allow all
+  return false;
+}
+
 app.use(cors({
-  origin: corsOrigins,
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
