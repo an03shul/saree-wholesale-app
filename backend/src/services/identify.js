@@ -1,51 +1,45 @@
-const fs = require('fs');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 const db = require('../db/database');
+const storage = require('./storage');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const { UPLOADS_DIR } = require('../config/paths');
-
-function encodeImage(filePath) {
-  const buffer = fs.readFileSync(filePath);
-  return buffer.toString('base64');
-}
 
 function mimeType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
+  const ext = path.extname(filePath || '').toLowerCase();
   if (ext === '.png') return 'image/png';
   if (ext === '.webp') return 'image/webp';
   if (ext === '.gif') return 'image/gif';
   return 'image/jpeg';
 }
 
-async function identifyDesign(mysteryPhotoPath) {
-  // Load all designs that have photos
+async function identifyDesign(mysteryBuffer, mysteryMime = 'image/jpeg') {
+  // Load all designs that have photos (cap at 25 for the comparison)
   const designs = db.prepare(`
     SELECT d.*, i.name AS item_name, b.name AS brand_name
     FROM designs d
     JOIN items i ON i.id = d.item_id
     JOIN brands b ON b.id = i.brand_id
     WHERE d.photo_path IS NOT NULL
+    LIMIT 25
   `).all();
 
-  const withPhoto = designs.filter(d => {
-    const full = path.join(UPLOADS_DIR, d.photo_path);
-    return fs.existsSync(full);
-  });
+  // Fetch catalog photo bytes from storage
+  const withPhoto = [];
+  for (const d of designs) {
+    const buf = await storage.getFile(d.photo_path);
+    if (buf) withPhoto.push({ ...d, _buf: buf });
+  }
 
   if (withPhoto.length === 0) {
     return { matches: [], message: 'No catalog photos found to compare against. Please add photos to your designs first.' };
   }
 
-  // Build content array: mystery photo first, then catalog photos (max 25)
-  const catalogSubset = withPhoto.slice(0, 25);
-
-  const mysteryBase64 = encodeImage(mysteryPhotoPath);
-  const mysteryMime = mimeType(mysteryPhotoPath);
+  const catalogSubset = withPhoto;
+  const mysteryBase64 = mysteryBuffer.toString('base64');
 
   const catalogParts = catalogSubset.map((d, i) => {
-    const base64 = encodeImage(path.join(UPLOADS_DIR, d.photo_path));
+    const base64 = d._buf.toString('base64');
     const mime = mimeType(d.photo_path);
     return [
       {

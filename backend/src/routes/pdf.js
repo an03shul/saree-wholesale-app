@@ -4,8 +4,7 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const db = require('../db/database');
-const { UPLOADS_DIR } = require('../config/paths');
-const { getWatermarkedPath } = require('../services/watermark');
+const { getWatermarkedBuffer } = require('../services/watermark');
 // GET /api/pdf/:brandId?fabric=Georgette&maxRate=1000&inStockOnly=true
 // Uses app in_stock flag only — Tally stock is never shown externally
 router.get('/:brandId', async (req, res) => {
@@ -25,10 +24,10 @@ router.get('/:brandId', async (req, res) => {
     return { ...item, designs };
   }).filter(i => i.designs.length > 0);
 
-  // Resolve watermarked, web-sized photos (baked "Powered by Nayvert AI")
+  // Fetch watermarked, web-sized photo bytes (baked "Powered by Nayvert AI")
   for (const item of itemsWithDesigns) {
     for (const d of item.designs) {
-      d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
+      d.wm_buffer = d.photo_path ? await getWatermarkedBuffer(d.photo_path) : null;
     }
   }
 
@@ -49,7 +48,6 @@ router.get('/:brandId', async (req, res) => {
 
   doc.moveDown(3);
 
-  const uploadsDir = UPLOADS_DIR;
   const colWidth = (doc.page.width - 60) / 3;
   const rowHeight = 200;
 
@@ -66,11 +64,10 @@ router.get('/:brandId', async (req, res) => {
       const x = 30 + col * colWidth;
       const y = rowStartY;
 
-      // Photo (watermarked, web-sized copy)
-      const photoPath = (d.wm_photo || d.photo_path) ? path.join(uploadsDir, d.wm_photo || d.photo_path) : null;
-      if (photoPath && fs.existsSync(photoPath)) {
+      // Photo (watermarked, web-sized copy) — embed from buffer
+      if (d.wm_buffer) {
         try {
-          doc.image(photoPath, x, y, { width: colWidth - 8, height: 130, cover: [colWidth - 8, 130] });
+          doc.image(d.wm_buffer, x, y, { width: colWidth - 8, height: 130, cover: [colWidth - 8, 130] });
         } catch { drawNoPhoto(doc, x, y, colWidth - 8, 130); }
       } else {
         drawNoPhoto(doc, x, y, colWidth - 8, 130);

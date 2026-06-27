@@ -38,16 +38,31 @@ app.use(cors({
 app.options('*', cors()); // handle preflight for all routes
 app.use(express.json({ limit: '15mb' })); // generous limit for large Tally stock syncs
 app.use((req, res, next) => { console.log(`${req.method} ${req.path} auth:${!!req.headers.authorization}`); next(); });
-const { UPLOADS_DIR } = require('./config/paths');
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Serve images from storage (R2 in prod, disk in dev). Handles originals and the
+// cached wm/ and thumb/ derivatives. e.g. /uploads/x.jpg, /uploads/wm/x.jpg
+const storage = require('./services/storage');
+const { getThumbBuffer } = require('./services/thumbnail');
+app.get('/uploads/*', async (req, res) => {
+  try {
+    const key = req.params[0]; // e.g. "x.jpg" or "wm/x.jpg"
+    const buf = await storage.getFile(key);
+    if (!buf) return res.status(404).end();
+    res.set('Content-Type', storage.contentTypeFor(key));
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(buf);
+  } catch {
+    res.status(404).end();
+  }
+});
 
 // Small resized thumbnails for fast in-app display (generated + cached on demand)
-const { getThumbPath } = require('./services/thumbnail');
 app.get('/thumb/:name', async (req, res) => {
   try {
-    const rel = await getThumbPath(req.params.name);
-    if (!rel) return res.status(404).end();
-    res.sendFile(path.join(UPLOADS_DIR, rel));
+    const buf = await getThumbBuffer(req.params.name);
+    if (!buf) return res.status(404).end();
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(buf);
   } catch {
     res.status(404).end();
   }

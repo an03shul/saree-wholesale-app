@@ -22,18 +22,20 @@ function pickDesignNumber(text) {
 // OCR a batch of photos with a single shared worker (much faster than one per
 // image). Returns draft rows; only the design number is auto-filled — fabric,
 // colours and work type are left for the user to batch-set or type.
-async function extractDesignsFromPhotos(photoPaths) {
+// Accepts an array of { filename, buffer }. OCRs the buffer directly (works
+// regardless of where the file is stored).
+async function extractDesignsFromPhotos(photos) {
   const worker = await createWorker('eng');
   const drafts = [];
   try {
-    for (const p of photoPaths) {
+    for (const p of photos) {
       let design_number = null;
       try {
-        const { data: { text } } = await worker.recognize(path.join(UPLOADS_DIR, p));
+        const { data: { text } } = await worker.recognize(p.buffer);
         design_number = pickDesignNumber(text);
       } catch { /* unreadable image → leave blank */ }
       drafts.push({
-        photo_path: p,
+        photo_path: p.filename,
         design_number,
         colors: null,
         fabric_type: null,

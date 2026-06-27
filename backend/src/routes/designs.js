@@ -3,22 +3,18 @@ const router = express.Router();
 const { requireAdmin } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const db = require('../db/database');
-const { UPLOADS_DIR } = require('../config/paths');
+const storage = require('../services/storage');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = UPLOADS_DIR;
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  }
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
+
+// Save an uploaded file to storage and return its generated filename (photo_path)
+async function saveUpload(file) {
+  if (!file) return null;
+  const filename = storage.generateKey(file.originalname);
+  await storage.putFile(filename, file.buffer);
+  return filename;
+}
 
 router.get('/item/:itemId', (req, res) => {
   const designs = db.prepare('SELECT * FROM designs WHERE item_id = ? ORDER BY CAST(design_number AS INTEGER), design_number').all(req.params.itemId);
@@ -58,7 +54,7 @@ router.post('/item/:itemId', (req, res, next) => {
   const ct = req.headers['content-type'] || '';
   if (ct.includes('multipart/form-data')) return upload.single('photo')(req, res, next);
   next();
-}, (req, res) => {
+}, async (req, res) => {
   const { design_number, rate, colors, fabric_type, pcs_per_set, tally_item_name, work_category } = req.body;
   if (!design_number || !rate || !pcs_per_set) {
     return res.status(400).json({ error: 'design_number, rate, pcs_per_set are required' });
@@ -70,7 +66,7 @@ router.post('/item/:itemId', (req, res, next) => {
     return res.status(409).json({ error: `Design ${design_number} already exists for this item` });
   }
   try {
-    const photo_path = req.file ? req.file.filename : null;
+    const photo_path = await saveUpload(req.file);
     const result = db.prepare(
       'INSERT INTO designs (item_id, design_number, photo_path, rate, colors, fabric_type, pcs_per_set, tally_item_name, work_category) VALUES (?,?,?,?,?,?,?,?,?)'
     ).run(req.params.itemId, design_number, photo_path, parseFloat(rate), colors || null, fabric_type || null, parseInt(pcs_per_set), tally_item_name || null, work_category || null);
@@ -84,11 +80,11 @@ router.post('/item/:itemId', (req, res, next) => {
   }
 });
 
-router.put('/:id', upload.single('photo'), (req, res) => {
+router.put('/:id', upload.single('photo'), async (req, res) => {
   const { design_number, rate, colors, fabric_type, pcs_per_set, tally_item_name, work_category } = req.body;
   const existing = db.prepare('SELECT * FROM designs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Design not found' });
-  const photo_path = req.file ? req.file.filename : existing.photo_path;
+  const photo_path = req.file ? await saveUpload(req.file) : existing.photo_path;
   db.prepare(
     'UPDATE designs SET design_number=?, photo_path=?, rate=?, colors=?, fabric_type=?, pcs_per_set=?, tally_item_name=?, work_category=? WHERE id=?'
   ).run(design_number || existing.design_number, photo_path, parseFloat(rate) || existing.rate, colors || existing.colors, fabric_type || existing.fabric_type, parseInt(pcs_per_set) || existing.pcs_per_set, tally_item_name || existing.tally_item_name, work_category !== undefined ? (work_category || null) : existing.work_category, req.params.id);
@@ -103,11 +99,13 @@ router.patch('/:id/stock', requireAdmin, (req, res) => {
   res.json({ in_stock: newVal });
 });
 
-router.delete('/:id', requireAdmin, (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   const design = db.prepare('SELECT * FROM designs WHERE id = ?').get(req.params.id);
   if (design?.photo_path) {
-    const filePath = path.join(UPLOADS_DIR, design.photo_path);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    const fn = design.photo_path;
+    await storage.deleteFile(fn);
+    await storage.deleteFile(`wm/${fn}`);
+    await storage.deleteFile(`thumb/${fn}`);
   }
   db.prepare('DELETE FROM designs WHERE id = ?').run(req.params.id);
   res.json({ success: true });

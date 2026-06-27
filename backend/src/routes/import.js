@@ -1,37 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const db = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
-const { UPLOADS_DIR } = require('../config/paths');
+const storage = require('../services/storage');
 const { extractDesignsFromPhotos } = require('../services/bulkImport');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 15 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 // POST /api/import/analyze — upload up to 20 photos, AI-extract draft fields for each.
 // Photos are stored immediately so they can be attached on save without re-upload.
 router.post('/analyze', requireAdmin, upload.array('photos', 20), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
 
+  // Save each photo to storage; keep the buffer for OCR
+  const photos = [];
+  for (const f of req.files) {
+    const filename = storage.generateKey(f.originalname);
+    await storage.putFile(filename, f.buffer);
+    photos.push({ filename, buffer: f.buffer });
+  }
+
   try {
-    const drafts = await extractDesignsFromPhotos(req.files.map(f => f.filename));
+    const drafts = await extractDesignsFromPhotos(photos);
     res.json({ drafts });
   } catch (e) {
-    // OCR engine failed entirely — still return the photos so they can be filled in manually
-    const drafts = req.files.map(f => ({
-      photo_path: f.filename,
+    // OCR failed entirely — still return the photos so they can be filled in manually
+    const drafts = photos.map(p => ({
+      photo_path: p.filename,
       design_number: null, colors: null, fabric_type: null,
       work_category: null, confidence: 'low',
     }));

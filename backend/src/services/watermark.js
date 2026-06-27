@@ -1,11 +1,11 @@
-const fs = require('fs');
 const path = require('path');
 const { Jimp, loadFont, measureText } = require('jimp');
 const fonts = require('jimp/fonts');
-const { UPLOADS_DIR } = require('../config/paths');
+const storage = require('./storage');
 
+// Bakes "Powered by Nayvert AI" into the bottom-right of a web-sized copy of a
+// photo, for customer-facing sharing (catalog, PDF, WhatsApp). Cached in storage.
 const WM_TEXT = 'Powered by Nayvert AI';
-const WM_DIR = path.join(UPLOADS_DIR, 'wm');
 const MAX_WIDTH = 1080;
 
 let fontWhite = null;
@@ -16,17 +16,14 @@ async function getFonts() {
   return { fontWhite, fontBlack };
 }
 
-// Serialize generation so we never hold many large images in memory at once.
 let queue = Promise.resolve();
 const inFlight = new Map();
 
-async function generate(photoPath, outPath) {
-  const src = path.join(UPLOADS_DIR, photoPath);
-  if (!fs.existsSync(src)) throw new Error('source missing');
-  if (!fs.existsSync(WM_DIR)) fs.mkdirSync(WM_DIR, { recursive: true });
-
+async function generate(filename) {
+  const orig = await storage.getFile(filename);
+  if (!orig) throw new Error('source missing');
   const { fontWhite: white, fontBlack: black } = await getFonts();
-  const img = await Jimp.read(src);
+  const img = await Jimp.read(orig);
   if (img.width > MAX_WIDTH) img.resize({ w: MAX_WIDTH });
 
   const tw = measureText(white, WM_TEXT);
@@ -35,36 +32,43 @@ async function generate(photoPath, outPath) {
   const y = Math.max(0, img.height - lineH - pad);
   img.print({ font: black, x: x + 2, y: y + 2, text: WM_TEXT }); // shadow
   img.print({ font: white, x, y, text: WM_TEXT });
-  // Compress as JPEG (~q72) — keeps quality good for customers but cuts the file
-  // from ~1.5MB to ~150KB, saving a lot of disk at 2000+ designs.
-  const ext = path.extname(outPath).toLowerCase();
-  if (ext === '.png') {
-    await img.write(outPath);
-  } else {
-    const buf = await img.getBuffer('image/jpeg', { quality: 72 });
-    fs.writeFileSync(outPath, buf);
-  }
+
+  const ext = path.extname(filename).toLowerCase();
+  const buf = ext === '.png'
+    ? await img.getBuffer('image/png')
+    : await img.getBuffer('image/jpeg', { quality: 72 });
+  await storage.putFile(`wm/${filename}`, buf);
+  return buf;
 }
 
-// Returns the relative path (under UPLOADS_DIR) of a watermarked, web-sized copy
-// of the given photo. Generated once and cached. On any failure, falls back to
-// the original photo path so sharing never breaks.
+// Ensures a watermarked copy exists in storage and returns its relative key
+// (e.g. "wm/x.jpg") for building a URL. Falls back to the original on error.
 function getWatermarkedPath(photoPath) {
   if (!photoPath) return Promise.resolve(photoPath);
-  const rel = path.join('wm', photoPath);
-  const out = path.join(UPLOADS_DIR, rel);
-  if (fs.existsSync(out)) return Promise.resolve(rel);
-  if (inFlight.has(rel)) return inFlight.get(rel);
+  const filename = path.basename(photoPath);
+  const wmKey = `wm/${filename}`;
 
-  const p = queue
-    .then(() => generate(photoPath, out))
-    .then(() => rel)
-    .catch(() => photoPath)
-    .finally(() => inFlight.delete(rel));
-  // keep the chain going regardless of this item's outcome
+  const run = async () => {
+    if (await storage.exists(wmKey)) return wmKey;
+    try { await generate(filename); return wmKey; }
+    catch { return filename; } // fall back to original
+  };
+
+  if (inFlight.has(wmKey)) return inFlight.get(wmKey);
+  const p = queue.then(run).finally(() => inFlight.delete(wmKey));
   queue = p.catch(() => {});
-  inFlight.set(rel, p);
+  inFlight.set(wmKey, p);
   return p;
 }
 
-module.exports = { getWatermarkedPath };
+// Returns the watermarked image bytes (for embedding in the PDF).
+async function getWatermarkedBuffer(photoPath) {
+  if (!photoPath) return null;
+  const filename = path.basename(photoPath);
+  const cached = await storage.getFile(`wm/${filename}`);
+  if (cached) return cached;
+  try { return await generate(filename); }
+  catch { return await storage.getFile(filename); }
+}
+
+module.exports = { getWatermarkedPath, getWatermarkedBuffer };
