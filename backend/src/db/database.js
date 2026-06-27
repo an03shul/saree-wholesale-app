@@ -110,6 +110,17 @@ try {
   `);
 } catch {}
 
+// Tally customers (Sundry Debtors) cache — also populated by the sync agent.
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tally_customers (
+      name TEXT PRIMARY KEY,
+      phone TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch {}
+
 // Settings table
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (

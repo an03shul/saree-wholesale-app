@@ -3,11 +3,13 @@ const router = express.Router();
 const db = require('../db/database');
 const { getCustomers, getStockBalance, detectMode } = require('../services/tally');
 
-// GET /api/tally/customers — fetch Sundry Debtors from Tally
-router.get('/customers', async (req, res) => {
-  const { customers, error } = await getCustomers();
-  if (error) return res.status(503).json({ error });
-  res.json(customers);
+// GET /api/tally/customers — Sundry Debtors synced from the shop PC by the agent
+router.get('/customers', (req, res) => {
+  const rows = db.prepare('SELECT name, phone FROM tally_customers ORDER BY name').all();
+  if (!rows.length) {
+    return res.status(503).json({ error: 'No customers synced yet. Make sure the sync agent is running on the shop PC.' });
+  }
+  res.json(rows.map(r => ({ name: r.name, phone: r.phone || '', raw_phone: r.phone || '' })));
 });
 
 // GET /api/tally/status — when the sync agent last pushed stock from the shop PC

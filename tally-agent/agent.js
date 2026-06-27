@@ -44,6 +44,44 @@ const STOCK_QUERY = `
   </BODY>
 </ENVELOPE>`;
 
+// TDL collection request: all ledgers with their group + phone fields.
+// We filter to Sundry Debtors (customers) in code.
+const LEDGER_QUERY = `
+<ENVELOPE>
+  <HEADER>
+    <VERSION>1</VERSION>
+    <TALLYREQUEST>Export</TALLYREQUEST>
+    <TYPE>Collection</TYPE>
+    <ID>AllLedgers</ID>
+  </HEADER>
+  <BODY>
+    <DESC>
+      <STATICVARIABLES>
+        <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+      </STATICVARIABLES>
+      <TDL>
+        <TDLMESSAGE>
+          <COLLECTION NAME="AllLedgers" ISMODIFY="No">
+            <TYPE>Ledger</TYPE>
+            <NATIVEMETHOD>Name</NATIVEMETHOD>
+            <NATIVEMETHOD>Parent</NATIVEMETHOD>
+            <NATIVEMETHOD>LedgerMobile</NATIVEMETHOD>
+            <NATIVEMETHOD>LedgerPhone</NATIVEMETHOD>
+          </COLLECTION>
+        </TDLMESSAGE>
+      </TDL>
+    </DESC>
+  </BODY>
+</ENVELOPE>`;
+
+function normalizePhone(raw) {
+  if (!raw) return '';
+  let phone = String(raw).replace(/[\s\-().+]/g, '');
+  if (phone.startsWith('0')) phone = '91' + phone.slice(1);
+  else if (phone.length === 10) phone = '91' + phone;
+  return phone;
+}
+
 function parseQty(closingBalance) {
   // e.g. "5 Nos", "12.00 Pcs", "-3 Nos", "1,200 Mtr"
   const n = parseFloat(String(closingBalance || '').replace(/,/g, '').replace(/[^0-9.\-]/g, ''));
@@ -64,6 +102,28 @@ async function readTallyStock() {
     .filter(x => x.name);
 }
 
+async function readTallyCustomers() {
+  try {
+    const res = await axios.post(TALLY_URL, LEDGER_QUERY, {
+      headers: { 'Content-Type': 'text/xml' },
+      timeout: 20000,
+    });
+    const parsed = await xml2js.parseStringPromise(res.data, { explicitArray: false, mergeAttrs: true });
+    let ledgers = parsed?.ENVELOPE?.BODY?.DATA?.COLLECTION?.LEDGER;
+    if (!ledgers) return [];
+    if (!Array.isArray(ledgers)) ledgers = [ledgers];
+    return ledgers
+      .filter(l => /debtor/i.test(String(l.PARENT || '')))
+      .map(l => ({
+        name: String(l.NAME || '').trim(),
+        phone: normalizePhone(l.LEDGERMOBILE || l.LEDGERPHONE || ''),
+      }))
+      .filter(c => c.name);
+  } catch {
+    return []; // customers are best-effort; never block the stock sync
+  }
+}
+
 async function syncOnce() {
   const ts = new Date().toLocaleTimeString();
   try {
@@ -72,11 +132,12 @@ async function syncOnce() {
       console.log(`[${ts}] No stock items read from Tally — is a company loaded?`);
       return;
     }
-    const res = await axios.post(`${CLOUD_URL}/api/tally-sync`, { items }, {
+    const customers = await readTallyCustomers();
+    const res = await axios.post(`${CLOUD_URL}/api/tally-sync`, { items, customers }, {
       headers: { 'X-Sync-Token': SYNC_TOKEN, 'Content-Type': 'application/json' },
-      timeout: 30000,
+      timeout: 60000,
     });
-    console.log(`[${ts}] Synced ${res.data.received} stock items to the cloud.`);
+    console.log(`[${ts}] Synced ${res.data.received} stock items and ${res.data.customers || 0} customers to the cloud.`);
   } catch (e) {
     let msg;
     if (e.code === 'ECONNREFUSED' && e.address) {

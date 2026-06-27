@@ -52,12 +52,38 @@ router.post('/', express.json({ limit: '5mb' }), (req, res) => {
       throw txErr;
     }
 
+    // Optional: customers (Sundry Debtors) pushed in the same sync
+    let customersReceived = 0;
+    const customers = req.body.customers;
+    if (Array.isArray(customers) && customers.length) {
+      db.exec(`CREATE TABLE IF NOT EXISTS tally_customers (
+        name TEXT PRIMARY KEY, phone TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+      const upsertCust = db.prepare(`
+        INSERT INTO tally_customers (name, phone, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(name) DO UPDATE SET phone = excluded.phone, updated_at = CURRENT_TIMESTAMP
+      `);
+      db.exec('BEGIN');
+      try {
+        for (const c of customers) {
+          const name = c && c.name != null ? String(c.name).trim() : '';
+          if (!name) continue;
+          upsertCust.run(name, c.phone ? String(c.phone).trim() : null);
+          customersReceived++;
+        }
+        db.exec('COMMIT');
+      } catch (cErr) {
+        try { db.exec('ROLLBACK'); } catch {}
+      }
+    }
+
     db.prepare(`
       INSERT INTO settings (key, value) VALUES ('tally_last_sync', ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `).run(new Date().toISOString());
 
-    res.json({ ok: true, received, skipped });
+    res.json({ ok: true, received, skipped, customers: customersReceived });
   } catch (e) {
     console.error('tally-sync error:', e.message);
     res.status(500).json({ error: 'sync failed: ' + e.message });
