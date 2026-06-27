@@ -79,6 +79,23 @@ app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/stats',    require('./routes/stats'));
 
+// Global error handler — any error passed to next(err) or thrown in a handler
+// returns a clean 500 instead of hanging the request.
+app.use((err, req, res, next) => {
+  console.error('Unhandled route error:', req.method, req.path, '-', err.message);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Something went wrong. Please try again.' });
+});
+
+// Last-resort process guards — log and stay alive instead of crashing the whole
+// server because of one bad request or a flaky external call (Tally, WhatsApp).
+process.on('unhandledRejection', (reason) => {
+  console.error('UnhandledRejection:', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('UncaughtException:', err?.message || err);
+});
+
 const PORT = process.env.PORT || 3000;
 
 // In production (cloud hosts like Railway/Render), TLS is terminated by the

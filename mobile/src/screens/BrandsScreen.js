@@ -128,7 +128,7 @@ export default function BrandsScreen({ navigation }) {
           >
             <View style={styles.cardAccent} />
             <View style={styles.initialCircle}>
-              <Text style={styles.initialText}>{brand.name[0].toUpperCase()}</Text>
+              <Text style={styles.initialText}>{String(brand.name || '?').charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.brandName}>{brand.name}</Text>

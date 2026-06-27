@@ -15,6 +15,7 @@ export default function ContactsScreen({ navigation }) {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [tallyPickerVisible, setTallyPickerVisible] = useState(false);
   const [tallyContacts, setTallyContacts] = useState([]);
+  const [phonePicker, setPhonePicker] = useState(null); // { contact, phones } for multi-number pick
   const [tallySearch, setTallySearch] = useState('');
   const [loadingTally, setLoadingTally] = useState(false);
   const [selected, setSelected] = useState({});
@@ -48,19 +49,16 @@ export default function ContactsScreen({ navigation }) {
   };
 
   const selectPhoneContact = (contact) => {
-    const phones = contact.phoneNumbers;
+    const phones = contact?.phoneNumbers || [];
+    if (phones.length === 0) {
+      Alert.alert('No phone number', `${contact?.name || 'This contact'} has no phone number.`);
+      return;
+    }
     if (phones.length === 1) {
       prefillFromContact(contact, phones[0].number);
     } else {
-      // Multiple numbers — let user pick
-      Alert.alert(
-        contact.name,
-        'Select a phone number',
-        phones.map(p => ({
-          text: `${p.label ? p.label + ': ' : ''}${p.number}`,
-          onPress: () => prefillFromContact(contact, p.number),
-        })).concat([{ text: 'Cancel', style: 'cancel' }])
-      );
+      // Multiple numbers — show a web-safe modal (Alert can't list >2 options on web)
+      setPhonePicker({ contact, phones });
     }
   };
 
@@ -142,7 +140,7 @@ export default function ContactsScreen({ navigation }) {
         renderItem={({ item: c }) => (
           <View style={styles.card}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{c.name[0].toUpperCase()}</Text>
+              <Text style={styles.avatarText}>{String(c.name || '?').charAt(0).toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{c.name}</Text>
@@ -171,6 +169,24 @@ export default function ContactsScreen({ navigation }) {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Phone number picker (when a device contact has multiple numbers) */}
+      <Modal visible={!!phonePicker} transparent animationType="fade">
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPhonePicker(null)}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>{phonePicker?.contact?.name || 'Select number'}</Text>
+            {(phonePicker?.phones || []).map((p, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.phoneOption}
+                onPress={() => { const ctx = phonePicker; setPhonePicker(null); prefillFromContact(ctx.contact, p.number); }}
+              >
+                <Text style={styles.phoneOptionText}>{p.label ? `${p.label}: ` : ''}{p.number}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Manual add modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
@@ -238,7 +254,7 @@ export default function ContactsScreen({ navigation }) {
                         onPress={() => toggleSelect(c)}
                       >
                         <View style={[styles.avatar, isSelected && { backgroundColor: '#1a6b3c' }]}>
-                          <Text style={styles.avatarText}>{isSelected ? '✓' : c.name[0].toUpperCase()}</Text>
+                          <Text style={styles.avatarText}>{isSelected ? '✓' : String(c.name || '?').charAt(0).toUpperCase()}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.name}>{c.name}</Text>
@@ -326,6 +342,8 @@ const styles = StyleSheet.create({
   fab: { backgroundColor: '#c0392b', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#c0392b', shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 },
   fabText: { color: '#fff', fontSize: 30, lineHeight: 34 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  phoneOption: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  phoneOptionText: { fontSize: 15, fontWeight: '600', color: '#2c1810' },
   modal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
   modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 16, color: '#2c1810' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 16 },

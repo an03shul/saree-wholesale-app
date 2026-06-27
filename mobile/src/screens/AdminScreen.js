@@ -168,7 +168,7 @@ export default function AdminScreen({ user, onLogout }) {
             <View style={styles.logCard}>
               <View style={styles.logRow}>
                 <View style={[styles.avatar, { backgroundColor: l.username === 'admin' ? '#c0392b' : '#2c1810' }]}>
-                  <Text style={styles.avatarText}>{l.username[0].toUpperCase()}</Text>
+                  <Text style={styles.avatarText}>{String(l.username || '?').charAt(0).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -200,7 +200,7 @@ export default function AdminScreen({ user, onLogout }) {
             renderItem={({ item: u }) => (
               <View style={styles.userCard}>
                 <View style={[styles.avatar, { backgroundColor: u.role === 'admin' ? '#c0392b' : '#2c1810' }]}>
-                  <Text style={styles.avatarText}>{u.username[0].toUpperCase()}</Text>
+                  <Text style={styles.avatarText}>{String(u.username || '?').charAt(0).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.userName}>{u.username}</Text>

@@ -22,10 +22,14 @@ router.post('/', async (req, res) => {
   const toSend = designs.filter(d => d.stock === null || d.stock > 0);
   if (toSend.length === 0) return res.json({ sent: 0, message: 'All designs are out of stock' });
 
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  await sendDesignUpdates(toSend.map(d => ({ ...d, item_name: item.name })), recipient, baseUrl);
-
-  res.json({ sent: toSend.length, skipped: designs.length - toSend.length });
+  try {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    await sendDesignUpdates(toSend.map(d => ({ ...d, item_name: item.name })), recipient, baseUrl);
+    res.json({ sent: toSend.length, skipped: designs.length - toSend.length });
+  } catch (e) {
+    console.error('WhatsApp send failed:', e.response?.data || e.message);
+    res.status(502).json({ error: 'Could not send via WhatsApp. Check the WhatsApp setup and try again.' });
+  }
 });
 
 // Send specific selected designs to a recipient
@@ -37,10 +41,14 @@ router.post('/selected', async (req, res) => {
   let designs = db.prepare(`SELECT d.*, i.name as item_name FROM designs d JOIN items i ON i.id = d.item_id WHERE d.id IN (${placeholders}) AND d.in_stock = 1 AND i.in_stock = 1`).all(...design_ids);
   if (!designs.length) return res.status(404).json({ error: 'No designs found or all are out of stock' });
 
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  await sendDesignUpdates(designs, recipient, baseUrl);
-
-  res.json({ sent: designs.length });
+  try {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    await sendDesignUpdates(designs, recipient, baseUrl);
+    res.json({ sent: designs.length });
+  } catch (e) {
+    console.error('WhatsApp send failed:', e.response?.data || e.message);
+    res.status(502).json({ error: 'Could not send via WhatsApp. Check the WhatsApp setup and try again.' });
+  }
 });
 
 // Filtered preview across a whole brand (all items) — by price range, work category, fabric type

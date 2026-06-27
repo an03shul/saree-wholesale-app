@@ -308,7 +308,7 @@ export default function SendScreen() {
                       >
                         <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
                           <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
-                            {c.name[0].toUpperCase()}
+                            {String(c.name || '?').charAt(0).toUpperCase()}
                           </Text>
                         </View>
                         <View style={{ flex: 1 }}>
@@ -414,7 +414,7 @@ export default function SendScreen() {
               >
                 <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
                   <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
-                    {c.name[0].toUpperCase()}
+                    {String(c.name || '?').charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
