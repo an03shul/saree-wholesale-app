@@ -35,7 +35,15 @@ async function generate(photoPath, outPath) {
   const y = Math.max(0, img.height - lineH - pad);
   img.print({ font: black, x: x + 2, y: y + 2, text: WM_TEXT }); // shadow
   img.print({ font: white, x, y, text: WM_TEXT });
-  await img.write(outPath);
+  // Compress as JPEG (~q72) — keeps quality good for customers but cuts the file
+  // from ~1.5MB to ~150KB, saving a lot of disk at 2000+ designs.
+  const ext = path.extname(outPath).toLowerCase();
+  if (ext === '.png') {
+    await img.write(outPath);
+  } else {
+    const buf = await img.getBuffer('image/jpeg', { quality: 72 });
+    fs.writeFileSync(outPath, buf);
+  }
 }
 
 // Returns the relative path (under UPLOADS_DIR) of a watermarked, web-sized copy
