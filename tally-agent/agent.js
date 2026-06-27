@@ -110,16 +110,27 @@ async function readTallyCustomers() {
     });
     const parsed = await xml2js.parseStringPromise(res.data, { explicitArray: false, mergeAttrs: true });
     let ledgers = parsed?.ENVELOPE?.BODY?.DATA?.COLLECTION?.LEDGER;
-    if (!ledgers) return [];
+    if (!ledgers) {
+      console.log('   (ledger query returned no ledgers — raw start:', String(res.data).slice(0, 200).replace(/\s+/g, ' '), ')');
+      return [];
+    }
     if (!Array.isArray(ledgers)) ledgers = [ledgers];
-    return ledgers
-      .filter(l => /debtor/i.test(String(l.PARENT || '')))
+
+    const debtors = ledgers.filter(l => /debtor/i.test(String(l.PARENT || '')));
+    console.log(`   Ledgers read: ${ledgers.length} total, ${debtors.length} under a "debtor" group.`);
+    if (debtors.length === 0 && ledgers.length > 0) {
+      const groups = [...new Set(ledgers.map(l => String(l.PARENT || '').trim()).filter(Boolean))].slice(0, 20);
+      console.log('   Group names seen in Tally:', groups.join(' | '));
+      console.log('   → Tell us which of these holds your customers; we will match it.');
+    }
+    return debtors
       .map(l => ({
         name: String(l.NAME || '').trim(),
         phone: normalizePhone(l.LEDGERMOBILE || l.LEDGERPHONE || ''),
       }))
       .filter(c => c.name);
-  } catch {
+  } catch (e) {
+    console.log('   Customer read error:', e.message);
     return []; // customers are best-effort; never block the stock sync
   }
 }

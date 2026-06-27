@@ -9,6 +9,7 @@ import QRCode from 'react-qr-code';
 import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, setAuthToken } from '../api/client';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
+import { compressImage } from '../utils/image';
 
 export default function DesignsScreen({ route, navigation }) {
   const { item, brand } = route.params;
@@ -126,18 +127,35 @@ export default function DesignsScreen({ route, navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Open the Add modal, pre-filling shared details from the most recent design
+  // of this item (rate, fabric, pcs, work, Tally name) so only the design number
+  // and photo need to be entered each time.
+  const openAddModal = () => {
+    const last = designs[designs.length - 1];
+    setForm({
+      design_number: '',
+      rate: last ? String(last.rate ?? '') : '',
+      fabric_type: last?.fabric_type || '',
+      pcs_per_set: last ? String(last.pcs_per_set ?? '') : '',
+      tally_item_name: last?.tally_item_name || '',
+      work_category: last?.work_category || '',
+    });
+    setPhoto(null);
+    setModalVisible(true);
+  };
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return Alert.alert('Permission needed', 'Allow photo access');
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-    if (!result.canceled) setPhoto(result.assets[0]);
+    if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return Alert.alert('Permission needed', 'Allow camera access');
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (!result.canceled) setPhoto(result.assets[0]);
+    if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
   };
 
   const saveDesign = async () => {
@@ -163,7 +181,8 @@ export default function DesignsScreen({ route, navigation }) {
       }
       await designsApi.create(item.id, payload);
       setModalVisible(false);
-      setForm({ design_number: '', rate: '', fabric_type: '', pcs_per_set: '', tally_item_name: '', work_category: '' });
+      // Keep the shared details, clear only the per-design fields for the next add
+      setForm(f => ({ ...f, design_number: '' }));
       setPhoto(null);
       load();
       Alert.alert('Saved', 'Design added successfully');
@@ -416,7 +435,7 @@ export default function DesignsScreen({ route, navigation }) {
       />
 
       {isAdmin && !selectMode && (
-        <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity style={styles.fab} onPress={openAddModal}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
@@ -538,7 +557,7 @@ export default function DesignsScreen({ route, navigation }) {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') return;
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-            if (!result.canceled) setEditPhoto(result.assets[0]);
+            if (!result.canceled) setEditPhoto(await compressImage(result.assets[0]));
           }}>
             {editPhoto
               ? <Image source={{ uri: editPhoto.uri }} style={styles.photoPreview} />

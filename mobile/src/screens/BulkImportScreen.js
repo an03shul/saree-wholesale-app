@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { brandsApi, itemsApi, importApi, getImageUrl, setAuthToken } from '../api/client';
 import { colors, shadow } from '../constants/theme';
+import { compressImage } from '../utils/image';
 
 export default function BulkImportScreen({ navigation }) {
   const [step, setStep] = useState('pick'); // 'pick' | 'review'
@@ -41,7 +42,10 @@ export default function BulkImportScreen({ navigation }) {
       quality: 0.7,
       selectionLimit: 20,
     });
-    if (!result.canceled) setPhotos(result.assets || []);
+    if (!result.canceled) {
+      const compressed = await Promise.all((result.assets || []).map(compressImage));
+      setPhotos(compressed);
+    }
   };
 
   const analyze = async () => {
