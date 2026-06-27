@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Image,
@@ -85,9 +85,12 @@ export default function BulkImportScreen({ navigation }) {
     setDrafts(prev => prev.map(d => ({ ...d, [field]: value })));
   };
 
+  const savingRef = useRef(false);
   const save = async () => {
+    if (savingRef.current) return; // guard against rapid double-taps creating duplicates
     const ready = drafts.filter(d => d.design_number && d.rate !== '' && d.rate != null);
     if (!ready.length) return Alert.alert('Nothing ready', 'Each design needs a design number and a rate.');
+    savingRef.current = true;
     setSaving(true);
     try {
       const { data } = await importApi.save(item.id, drafts);
@@ -101,6 +104,7 @@ export default function BulkImportScreen({ navigation }) {
       Alert.alert('Error', e.response?.data?.error || 'Could not save');
     } finally {
       setSaving(false);
+      savingRef.current = false;
     }
   };
 

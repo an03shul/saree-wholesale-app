@@ -10,6 +10,10 @@ const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../gopiram.db');
 
 const db = new DatabaseSync(DB_PATH);
 
+// Enforce foreign keys so ON DELETE CASCADE works (e.g. deleting an item removes
+// its designs). SQLite has this OFF by default. Must be set per connection.
+try { db.exec('PRAGMA foreign_keys = ON'); } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS brands (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

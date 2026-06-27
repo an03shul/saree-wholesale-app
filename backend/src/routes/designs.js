@@ -63,6 +63,12 @@ router.post('/item/:itemId', (req, res, next) => {
   if (!design_number || !rate || !pcs_per_set) {
     return res.status(400).json({ error: 'design_number, rate, pcs_per_set are required' });
   }
+  // Reject duplicate design number within the same item
+  const dup = db.prepare('SELECT 1 FROM designs WHERE item_id = ? AND design_number = ? LIMIT 1')
+    .get(req.params.itemId, String(design_number).trim());
+  if (dup) {
+    return res.status(409).json({ error: `Design ${design_number} already exists for this item` });
+  }
   try {
     const photo_path = req.file ? req.file.filename : null;
     const result = db.prepare(

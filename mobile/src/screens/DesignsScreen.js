@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet, Alert, ActivityIndicator, Modal, Image, ScrollView, Platform, RefreshControl, Switch
@@ -41,6 +41,7 @@ export default function DesignsScreen({ route, navigation }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [contacts, setContacts] = useState([]);
   const [shareModal, setShareModal] = useState(false);
+  const [cardMenu, setCardMenu] = useState(null); // design whose Edit/Delete menu is open
   const [singleShareDesign, setSingleShareDesign] = useState(null);
   const [sending, setSending] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -158,7 +159,9 @@ export default function DesignsScreen({ route, navigation }) {
     if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
   };
 
+  const savingRef = useRef(false);
   const saveDesign = async () => {
+    if (savingRef.current) return; // guard against rapid double-taps creating duplicates
     if (!form.design_number || !form.rate || !form.pcs_per_set) {
       Alert.alert('Required', 'Design number, rate and pcs/set are required');
       return;
@@ -166,6 +169,7 @@ export default function DesignsScreen({ route, navigation }) {
     const token = await AsyncStorage.getItem('auth_token');
     if (!token) { Alert.alert('Session expired', 'Please log out and log in again.'); return; }
     setAuthToken(token);
+    savingRef.current = true;
     setSaving(true);
     try {
       let payload;
@@ -190,6 +194,7 @@ export default function DesignsScreen({ route, navigation }) {
       Alert.alert('Error', e.response?.data?.error || e.message || 'Unknown error');
     } finally {
       setSaving(false);
+      savingRef.current = false;
     }
   };
 
@@ -209,9 +214,13 @@ export default function DesignsScreen({ route, navigation }) {
   };
 
   const deleteDesign = (d) => {
+    setCardMenu(null);
     Alert.alert('Delete', `Delete design ${d.design_number}?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await designsApi.delete(d.id); load(); } }
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try { await designsApi.delete(d.id); load(); }
+        catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
+      } }
     ]);
   };
 
@@ -297,11 +306,7 @@ export default function DesignsScreen({ route, navigation }) {
 
   const onCardLongPress = (d) => {
     if (!isAdmin || selectMode) return;
-    Alert.alert(`Design ${d.design_number}`, 'What would you like to do?', [
-      { text: 'Edit', onPress: () => openEdit(d) },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteDesign(d) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setCardMenu(d); // open a web-safe modal menu (Alert can't show 3 buttons on web)
   };
 
   const toggleDesignStock = async (d) => {
@@ -454,6 +459,24 @@ export default function DesignsScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Design action menu (admin) — web-safe replacement for the 3-button Alert */}
+      <Modal visible={!!cardMenu} transparent animationType="fade">
+        <TouchableOpacity style={styles.fabricOverlay} activeOpacity={1} onPress={() => setCardMenu(null)}>
+          <View style={[styles.fabricSheet, { paddingBottom: 28 }]}>
+            <Text style={styles.fabricTitle}>Design {cardMenu?.design_number}</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { const d = cardMenu; setCardMenu(null); openEdit(d); }}>
+              <Text style={styles.menuItemText}>✏️  Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => deleteDesign(cardMenu)}>
+              <Text style={[styles.menuItemText, { color: colors.danger }]}>🗑  Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => setCardMenu(null)}>
+              <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Contact Picker for Share */}
       <Modal visible={shareModal} transparent animationType="slide">
@@ -921,6 +944,8 @@ const styles = StyleSheet.create({
   shareBtn: { backgroundColor: colors.whatsapp, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 12 },
   shareBtnDisabled: { backgroundColor: '#ccc', opacity: 0.6 },
   shareBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  menuItem: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  menuItemText: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   contactRow: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   contactName: { fontWeight: '700', color: colors.textPrimary, fontSize: 16 },
   contactPhone: { color: colors.textSecondary, fontSize: 13, marginTop: 3 },

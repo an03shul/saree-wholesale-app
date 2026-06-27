@@ -53,12 +53,22 @@ router.post('/save', requireAdmin, express.json(), (req, res) => {
     'INSERT INTO designs (item_id, design_number, photo_path, rate, colors, fabric_type, pcs_per_set, work_category) VALUES (?,?,?,?,?,?,?,?)'
   );
 
+  const existsStmt = db.prepare('SELECT 1 FROM designs WHERE item_id = ? AND design_number = ? LIMIT 1');
+  const seenInBatch = new Set();
+
   const results = { saved: 0, skipped: [] };
   for (const d of designs) {
     if (!d.design_number || d.rate == null || d.rate === '') {
       results.skipped.push({ photo_path: d.photo_path, reason: 'missing design number or rate' });
       continue;
     }
+    const num = String(d.design_number).trim();
+    // Skip duplicates — already in this item, or repeated within this batch
+    if (seenInBatch.has(num) || existsStmt.get(item_id, num)) {
+      results.skipped.push({ photo_path: d.photo_path, reason: 'duplicate design number' });
+      continue;
+    }
+    seenInBatch.add(num);
     try {
       insert.run(
         item_id,
