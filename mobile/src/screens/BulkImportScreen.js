@@ -66,8 +66,8 @@ export default function BulkImportScreen({ navigation }) {
       setDrafts(withDefaults);
       setStep('review');
     } catch (e) {
-      const msg = e.response?.data?.error || e.message || 'Analysis failed';
-      Alert.alert('Error', msg.includes('credit') ? 'AI is out of credits — add credit to the Anthropic account to use Bulk Add.' : msg);
+      const msg = e.response?.data?.error || e.message || 'Could not read photos';
+      Alert.alert('Error', msg);
     } finally {
       setAnalyzing(false);
     }
@@ -107,8 +107,8 @@ export default function BulkImportScreen({ navigation }) {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>⚡ How it works</Text>
           <Text style={styles.infoText}>
-            Pick a brand & item, upload up to 20 photos, and AI reads the design number and guesses
-            fabric, colours, and work type for each. Then you just add rates and save.
+            Pick a brand & item, upload up to 20 photos, and it reads the design number off each
+            tag automatically. Then add rates (and fabric/work if you like) and save them all at once.
           </Text>
         </View>
 
@@ -152,8 +152,8 @@ export default function BulkImportScreen({ navigation }) {
 
         <TouchableOpacity style={[styles.primaryBtn, (analyzing || !item || !photos.length) && styles.btnDisabled]} onPress={analyze} disabled={analyzing || !item || !photos.length}>
           {analyzing
-            ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator color="#fff" /><Text style={styles.primaryBtnText}>Analyzing {photos.length} photos…</Text></View>
-            : <Text style={styles.primaryBtnText}>⚡ Analyze with AI</Text>}
+            ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator color="#fff" /><Text style={styles.primaryBtnText}>Reading {photos.length} photos…</Text></View>
+            : <Text style={styles.primaryBtnText}>⚡ Read Design Numbers</Text>}
         </TouchableOpacity>
       </ScrollView>
     );
@@ -188,8 +188,8 @@ export default function BulkImportScreen({ navigation }) {
               <TextInput style={[styles.dInput, { flex: 1 }]} placeholder="Work" placeholderTextColor={colors.textSecondary} value={d.work_category || ''} onChangeText={v => updateDraft(idx, 'work_category', v)} />
             </View>
             <TextInput style={styles.dInput} placeholder="Colours" placeholderTextColor={colors.textSecondary} value={d.colors || ''} onChangeText={v => updateDraft(idx, 'colors', v)} />
-            {d.confidence === 'low' && !d.design_number && (
-              <Text style={styles.warnText}>⚠ AI couldn't read a number — type it in</Text>
+            {!d.design_number && (
+              <Text style={styles.warnText}>⚠ Couldn't read a number — type it in</Text>
             )}
           </View>
         </View>

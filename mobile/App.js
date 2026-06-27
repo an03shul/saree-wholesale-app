@@ -68,24 +68,37 @@ function MoreStack({ user, onLogout }) {
 function MainApp({ user, onLogout }) {
   const icons = { Catalog: '🧵', Orders: '📋', Send: '📤', More: '☰' };
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>,
-          tabBarActiveTintColor: '#8B1A2B',
-          tabBarInactiveTintColor: '#B0A0A5',
-          tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#EDE7E2' },
-          headerShown: false,
-        })}
-      >
-        <Tab.Screen name="Catalog" component={CatalogStack} />
-        <Tab.Screen name="Orders" component={OrdersScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Orders & Inquiries' }} />
-        <Tab.Screen name="Send" component={SendScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Send Updates' }} />
-        <Tab.Screen name="More">
-          {() => <MoreStack user={user} onLogout={onLogout} />}
-        </Tab.Screen>
-      </Tab.Navigator>
-    </NavigationContainer>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>,
+            tabBarActiveTintColor: '#8B1A2B',
+            tabBarInactiveTintColor: '#B0A0A5',
+            tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#EDE7E2' },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen name="Catalog" component={CatalogStack} />
+          <Tab.Screen name="Orders" component={OrdersScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Orders & Inquiries' }} />
+          <Tab.Screen name="Send" component={SendScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Send Updates' }} />
+          <Tab.Screen name="More">
+            {() => <MoreStack user={user} onLogout={onLogout} />}
+          </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+      <BrandFooter />
+    </View>
+  );
+}
+
+function BrandFooter() {
+  return (
+    <View style={{ backgroundColor: '#8B1A2B', paddingVertical: 4, alignItems: 'center' }}>
+      <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600', letterSpacing: 0.5 }}>
+        Powered by Nayvert AI
+      </Text>
+    </View>
   );
 }
 
@@ -120,7 +133,12 @@ export default function App() {
     );
   }
 
-  if (!user) return <LoginScreen onLogin={handleLogin} />;
+  if (!user) return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}><LoginScreen onLogin={handleLogin} /></View>
+      <BrandFooter />
+    </View>
+  );
   return (
     <UserContext.Provider value={user}>
       <MainApp user={user} onLogout={handleLogout} />

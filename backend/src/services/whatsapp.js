@@ -1,5 +1,6 @@
 const axios = require('axios');
 const db = require('../db/database');
+const { getWatermarkedPath } = require('./watermark');
 
 const BASE_URL = 'https://graph.facebook.com/v19.0';
 
@@ -20,7 +21,8 @@ async function sendImage(to, imageUrl, caption) {
 async function sendDesignUpdates(designs, recipient, baseUrl) {
   for (const design of designs) {
     if (!design.photo_path) continue;
-    const imageUrl = `${baseUrl}/uploads/${design.photo_path}`;
+    const wmPath = await getWatermarkedPath(design.photo_path);
+    const imageUrl = `${baseUrl}/uploads/${wmPath}`;
     const caption = buildCaption(design);
     await sendImage(recipient, imageUrl, caption);
     // small delay to avoid rate limiting

@@ -6,7 +6,7 @@ const fs = require('fs');
 const db = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 const { UPLOADS_DIR } = require('../config/paths');
-const { extractDesignFromPhoto } = require('../services/bulkImport');
+const { extractDesignsFromPhotos } = require('../services/bulkImport');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -25,25 +25,18 @@ const upload = multer({ storage, limits: { fileSize: 15 * 1024 * 1024 } });
 router.post('/analyze', requireAdmin, upload.array('photos', 20), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
 
-  const fabrics = db.prepare('SELECT name FROM fabric_types ORDER BY name').all().map(f => f.name);
-  const workCategories = db.prepare('SELECT name FROM work_categories ORDER BY name').all().map(w => w.name);
-
-  const drafts = [];
-  for (const file of req.files) {
-    try {
-      const draft = await extractDesignFromPhoto(file.filename, { fabrics, workCategories });
-      drafts.push(draft);
-    } catch (e) {
-      // Still include the photo so the user can fill it in manually
-      drafts.push({
-        photo_path: file.filename,
-        design_number: null, colors: null, fabric_type: null,
-        work_category: null, confidence: 'low', error: 'AI analysis failed',
-      });
-    }
+  try {
+    const drafts = await extractDesignsFromPhotos(req.files.map(f => f.filename));
+    res.json({ drafts });
+  } catch (e) {
+    // OCR engine failed entirely — still return the photos so they can be filled in manually
+    const drafts = req.files.map(f => ({
+      photo_path: f.filename,
+      design_number: null, colors: null, fabric_type: null,
+      work_category: null, confidence: 'low',
+    }));
+    res.json({ drafts });
   }
-
-  res.json({ drafts });
 });
 
 // POST /api/import/save — bulk-create designs under an item from confirmed drafts.

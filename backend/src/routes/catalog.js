@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const { getWatermarkedPath } = require('../services/watermark');
 // Public catalog page for customers — uses app in_stock flag only, never Tally stock
-router.get('/:brandId', (req, res) => {
+router.get('/:brandId', async (req, res) => {
   const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
   if (!brand) return res.status(404).send('Brand not found');
 
@@ -27,6 +28,13 @@ router.get('/:brandId', (req, res) => {
     db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
   )];
 
+  // Resolve watermarked, web-sized photo for each design (cached after first build)
+  for (const item of itemsWithDesigns) {
+    for (const d of item.designs) {
+      d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
+    }
+  }
+
   res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, baseUrl, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
 });
 
@@ -36,7 +44,7 @@ function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filter
       const msg = encodeURIComponent(`Hi, I'd like to order:\n*${item.name}* - Design ${d.design_number}\nRate: ₹${d.rate} | ${d.pcs_per_set} pcs/set${d.fabric_type ? `\nFabric: ${d.fabric_type}` : ''}${d.colors ? `\nColors: ${d.colors}` : ''}`);
       const waLink = shopPhone ? `https://wa.me/${shopPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
       const photoHtml = d.photo_path
-        ? `<img src="${baseUrl}/uploads/${d.photo_path}" alt="Design ${d.design_number}" loading="lazy"/>`
+        ? `<img src="${baseUrl}/uploads/${d.wm_photo || d.photo_path}" alt="Design ${d.design_number}" loading="lazy"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
         <div class="card">

@@ -1,76 +1,50 @@
-const fs = require('fs');
 const path = require('path');
-const Anthropic = require('@anthropic-ai/sdk');
+const { createWorker } = require('tesseract.js');
 const { UPLOADS_DIR } = require('../config/paths');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-function encodeImage(filePath) {
-  return fs.readFileSync(filePath).toString('base64');
+// Pick the most likely design number out of OCR text. Saree tags usually carry
+// a 3–6 digit code (sometimes with a letter prefix like D-1024). We grab digit
+// runs and prefer the longest; the user corrects anything wrong in review.
+function pickDesignNumber(text) {
+  if (!text) return null;
+  // Prefer codes like "1024", "D-1024", "DN1024"
+  const codeMatches = text.match(/\b[A-Z]{0,3}-?\d{3,6}\b/gi) || [];
+  const digitMatches = text.match(/\d{3,6}/g) || [];
+  const candidates = [...codeMatches, ...digitMatches]
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (!candidates.length) return null;
+  // Prefer the longest candidate (more specific), ties keep first seen
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates[0];
 }
 
-function mimeType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.png') return 'image/png';
-  if (ext === '.webp') return 'image/webp';
-  if (ext === '.gif') return 'image/gif';
-  return 'image/jpeg';
-}
-
-// Analyze a single saree photo and extract whatever catalog fields are visible.
-// knownFabrics / knownWorkCategories steer the model toward the shop's existing
-// taxonomy for consistency. Returns a draft object (fields may be null).
-async function extractDesignFromPhoto(photoPath, { fabrics = [], workCategories = [] } = {}) {
-  const full = path.join(UPLOADS_DIR, photoPath);
-  const base64 = encodeImage(full);
-  const mime = mimeType(full);
-
-  const prompt = `You are helping digitize a saree wholesaler's catalog. Look at this ONE saree photo and extract what you can SEE.
-
-Return ONLY a JSON object (no other text), with these keys:
-{
-  "design_number": "the design/style number if it is visibly printed/written on a tag, label, sticker, or the fabric — otherwise null",
-  "colors": "the main visible colours, comma-separated (e.g. 'Red, Gold') — or null",
-  "fabric_type": "your best single guess of the fabric, preferring one of this list if it fits: [${fabrics.join(', ')}] — otherwise your own short term, or null",
-  "work_category": "the type of work/embellishment, preferring one of this list if it fits: [${workCategories.join(', ')}] — otherwise your own short term, or null",
-  "confidence": "high | medium | low — how clearly you could read a design number"
-}
-
-Rules:
-- Only put a design_number if you can actually read digits/code in the image. Do NOT invent one.
-- Be concise. No explanations outside the JSON.`;
-
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 400,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mime, data: base64 } },
-          { type: 'text', text: prompt },
-        ],
-      },
-    ],
-  });
-
-  const textBlock = response.content.find(b => b.type === 'text');
-  let parsed = {};
-  if (textBlock) {
-    try {
-      const m = textBlock.text.match(/\{[\s\S]*\}/);
-      if (m) parsed = JSON.parse(m[0]);
-    } catch { /* leave parsed empty */ }
+// OCR a batch of photos with a single shared worker (much faster than one per
+// image). Returns draft rows; only the design number is auto-filled — fabric,
+// colours and work type are left for the user to batch-set or type.
+async function extractDesignsFromPhotos(photoPaths) {
+  const worker = await createWorker('eng');
+  const drafts = [];
+  try {
+    for (const p of photoPaths) {
+      let design_number = null;
+      try {
+        const { data: { text } } = await worker.recognize(path.join(UPLOADS_DIR, p));
+        design_number = pickDesignNumber(text);
+      } catch { /* unreadable image → leave blank */ }
+      drafts.push({
+        photo_path: p,
+        design_number,
+        colors: null,
+        fabric_type: null,
+        work_category: null,
+        confidence: design_number ? 'medium' : 'low',
+      });
+    }
+  } finally {
+    await worker.terminate();
   }
-
-  return {
-    photo_path: photoPath,
-    design_number: parsed.design_number || null,
-    colors: parsed.colors || null,
-    fabric_type: parsed.fabric_type || null,
-    work_category: parsed.work_category || null,
-    confidence: parsed.confidence || 'low',
-  };
+  return drafts;
 }
 
-module.exports = { extractDesignFromPhoto };
+module.exports = { extractDesignsFromPhotos, pickDesignNumber };

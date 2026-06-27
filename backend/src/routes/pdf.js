@@ -5,9 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../db/database');
 const { UPLOADS_DIR } = require('../config/paths');
+const { getWatermarkedPath } = require('../services/watermark');
 // GET /api/pdf/:brandId?fabric=Georgette&maxRate=1000&inStockOnly=true
 // Uses app in_stock flag only — Tally stock is never shown externally
-router.get('/:brandId', (req, res) => {
+router.get('/:brandId', async (req, res) => {
   const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
   if (!brand) return res.status(404).json({ error: 'Brand not found' });
 
@@ -23,6 +24,13 @@ router.get('/:brandId', (req, res) => {
     if (inStockOnly === 'true') designs = designs.filter(d => d.in_stock !== 0);
     return { ...item, designs };
   }).filter(i => i.designs.length > 0);
+
+  // Resolve watermarked, web-sized photos (baked "Powered by Nayvert AI")
+  for (const item of itemsWithDesigns) {
+    for (const d of item.designs) {
+      d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
+    }
+  }
 
   const doc = new PDFDocument({ margin: 30, size: 'A4' });
   res.setHeader('Content-Type', 'application/pdf');
@@ -58,8 +66,8 @@ router.get('/:brandId', (req, res) => {
       const x = 30 + col * colWidth;
       const y = rowStartY;
 
-      // Photo
-      const photoPath = d.photo_path ? path.join(uploadsDir, d.photo_path) : null;
+      // Photo (watermarked, web-sized copy)
+      const photoPath = (d.wm_photo || d.photo_path) ? path.join(uploadsDir, d.wm_photo || d.photo_path) : null;
       if (photoPath && fs.existsSync(photoPath)) {
         try {
           doc.image(photoPath, x, y, { width: colWidth - 8, height: 130, cover: [colWidth - 8, 130] });
