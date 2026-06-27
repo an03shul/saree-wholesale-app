@@ -15,25 +15,44 @@ router.post('/', express.json({ limit: '5mb' }), (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
 
-  const upsert = db.prepare(`
-    INSERT INTO tally_stock (tally_item_name, qty, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(tally_item_name) DO UPDATE SET qty = excluded.qty, updated_at = CURRENT_TIMESTAMP
-  `);
+  try {
+    // Ensure the table exists (defensive — in case the migration didn't run)
+    db.exec(`CREATE TABLE IF NOT EXISTS tally_stock (
+      tally_item_name TEXT PRIMARY KEY,
+      qty REAL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-  let received = 0;
-  for (const it of items) {
-    if (!it || !it.name) continue;
-    upsert.run(String(it.name).trim(), Number(it.qty) || 0);
-    received++;
+    const upsert = db.prepare(`
+      INSERT INTO tally_stock (tally_item_name, qty, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(tally_item_name) DO UPDATE SET qty = excluded.qty, updated_at = CURRENT_TIMESTAMP
+    `);
+
+    let received = 0, skipped = 0;
+    for (const it of items) {
+      const name = it && it.name != null ? String(it.name).trim() : '';
+      if (!name) { skipped++; continue; }
+      let qty = Number(it.qty);
+      if (!Number.isFinite(qty)) qty = 0;
+      try {
+        upsert.run(name, qty);
+        received++;
+      } catch (rowErr) {
+        skipped++; // one bad row shouldn't fail the whole sync
+      }
+    }
+
+    db.prepare(`
+      INSERT INTO settings (key, value) VALUES ('tally_last_sync', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).run(new Date().toISOString());
+
+    res.json({ ok: true, received, skipped });
+  } catch (e) {
+    console.error('tally-sync error:', e.message);
+    res.status(500).json({ error: 'sync failed: ' + e.message });
   }
-
-  db.prepare(`
-    INSERT INTO settings (key, value) VALUES ('tally_last_sync', ?)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value
-  `).run(new Date().toISOString());
-
-  res.json({ ok: true, received });
 });
 
 module.exports = router;
