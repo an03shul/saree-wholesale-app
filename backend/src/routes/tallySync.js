@@ -30,17 +30,26 @@ router.post('/', express.json({ limit: '5mb' }), (req, res) => {
     `);
 
     let received = 0, skipped = 0;
-    for (const it of items) {
-      const name = it && it.name != null ? String(it.name).trim() : '';
-      if (!name) { skipped++; continue; }
-      let qty = Number(it.qty);
-      if (!Number.isFinite(qty)) qty = 0;
-      try {
-        upsert.run(name, qty);
-        received++;
-      } catch (rowErr) {
-        skipped++; // one bad row shouldn't fail the whole sync
+    // Wrap all upserts in one transaction → a single commit instead of thousands
+    // (much faster, far less disk I/O and backup churn for big syncs).
+    db.exec('BEGIN');
+    try {
+      for (const it of items) {
+        const name = it && it.name != null ? String(it.name).trim() : '';
+        if (!name) { skipped++; continue; }
+        let qty = Number(it.qty);
+        if (!Number.isFinite(qty)) qty = 0;
+        try {
+          upsert.run(name, qty);
+          received++;
+        } catch (rowErr) {
+          skipped++; // one bad row shouldn't fail the whole sync
+        }
       }
+      db.exec('COMMIT');
+    } catch (txErr) {
+      try { db.exec('ROLLBACK'); } catch {}
+      throw txErr;
     }
 
     db.prepare(`
