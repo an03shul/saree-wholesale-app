@@ -36,7 +36,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.options('*', cors()); // handle preflight for all routes
-app.use(express.json());
+app.use(express.json({ limit: '15mb' })); // generous limit for large Tally stock syncs
 app.use((req, res, next) => { console.log(`${req.method} ${req.path} auth:${!!req.headers.authorization}`); next(); });
 const { UPLOADS_DIR } = require('./config/paths');
 app.use('/uploads', express.static(UPLOADS_DIR));
