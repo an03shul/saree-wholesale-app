@@ -4,7 +4,7 @@ import {
   ScrollView, ActivityIndicator, Alert, Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { identifyApi, getImageUrl } from '../api/client';
+import { identifyApi, getImageUrl, getThumbUrl } from '../api/client';
 
 export default function IdentifyScreen() {
   const [photo, setPhoto] = useState(null);
@@ -148,7 +148,7 @@ export default function IdentifyScreen() {
                   <View style={styles.matchRow}>
                     {m.photo_path && (
                       <Image
-                        source={{ uri: getImageUrl(m.photo_path) }}
+                        source={{ uri: getThumbUrl(m.photo_path) }}
                         style={styles.matchThumb}
                         resizeMode="cover"
                       />

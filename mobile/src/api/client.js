@@ -130,3 +130,5 @@ export const getPdfUrl = (brandId, params = {}) => {
   return `${BASE_URL}/api/pdf/${brandId}${q ? `?${q}` : ''}`;
 };
 export const getImageUrl = (photoPath) => `${BASE_URL}/uploads/${photoPath}`;
+// Small resized thumbnail for fast in-app lists/grids (full image stays at getImageUrl)
+export const getThumbUrl = (photoPath) => `${BASE_URL}/thumb/${photoPath}`;

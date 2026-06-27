@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, Image, ScrollView, Linking, TextInput
 } from 'react-native';
-import { brandsApi, itemsApi, contactsApi, sendApi, fabricsApi, workCategoriesApi, getImageUrl, getCatalogUrl, getPdfUrl } from '../api/client';
+import { brandsApi, itemsApi, contactsApi, sendApi, fabricsApi, workCategoriesApi, getImageUrl, getThumbUrl, getCatalogUrl, getPdfUrl } from '../api/client';
 import { colors, shadow } from '../constants/theme';
 
 const PRICE_PRESETS = [
@@ -277,7 +277,7 @@ export default function SendScreen() {
                       activeOpacity={0.8}
                     >
                       {d.photo_path
-                        ? <Image source={{ uri: getImageUrl(d.photo_path) }} style={styles.gridPhoto} />
+                        ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.gridPhoto} />
                         : <View style={[styles.gridPhoto, styles.noPhoto]}><Text style={{ color: colors.textSecondary, fontSize: 11 }}>No photo</Text></View>
                       }
                       {excluded && <View style={styles.excludeOverlay}><Text style={{ color: '#fff', fontSize: 22, fontWeight: '800' }}>✕</Text></View>}
@@ -387,7 +387,7 @@ export default function SendScreen() {
             renderItem={({ item: d }) => (
               <View style={styles.previewCard}>
                 {d.photo_path
-                  ? <Image source={{ uri: getImageUrl(d.photo_path) }} style={styles.previewPhoto} />
+                  ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.previewPhoto} />
                   : <View style={[styles.previewPhoto, styles.noPhoto]}><Text style={{ color: colors.textSecondary, fontSize: 12 }}>No photo</Text></View>
                 }
                 <View style={{ padding: 8 }}>

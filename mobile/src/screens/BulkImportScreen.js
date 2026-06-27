@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { brandsApi, itemsApi, importApi, getImageUrl, setAuthToken } from '../api/client';
+import { brandsApi, itemsApi, importApi, getImageUrl, getThumbUrl, setAuthToken } from '../api/client';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
 
@@ -180,7 +180,7 @@ export default function BulkImportScreen({ navigation }) {
 
       {drafts.map((d, idx) => (
         <View key={idx} style={styles.draftCard}>
-          <Image source={{ uri: getImageUrl(d.photo_path) }} style={styles.draftPhoto} />
+          <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.draftPhoto} />
           <View style={{ flex: 1, gap: 6 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               <TextInput style={[styles.dInput, { flex: 1.2 }, !d.design_number && styles.dInputWarn]} placeholder="Design no.*" placeholderTextColor={colors.danger} value={d.design_number || ''} onChangeText={v => updateDraft(idx, 'design_number', v)} />

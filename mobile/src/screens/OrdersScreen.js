@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet, Alert, ActivityIndicator, Modal, RefreshControl, Image, ScrollView,
 } from 'react-native';
-import { ordersApi, designsApi, getImageUrl } from '../api/client';
+import { ordersApi, designsApi, getImageUrl, getThumbUrl } from '../api/client';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -162,7 +162,7 @@ export default function OrdersScreen({ navigation }) {
               activeOpacity={0.75}
             >
               {order.photo_path && (
-                <Image source={{ uri: getImageUrl(order.photo_path) }} style={styles.thumb} />
+                <Image source={{ uri: getThumbUrl(order.photo_path) }} style={styles.thumb} />
               )}
               {!order.photo_path && (
                 <View style={[styles.thumb, styles.thumbPlaceholder]}>

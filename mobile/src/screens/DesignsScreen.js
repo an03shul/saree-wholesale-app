@@ -6,7 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QRCode from 'react-qr-code';
-import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, setAuthToken } from '../api/client';
+import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, getThumbUrl, setAuthToken } from '../api/client';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
@@ -370,7 +370,7 @@ export default function DesignsScreen({ route, navigation }) {
             >
               <View style={styles.photoContainer}>
                 {d.photo_path
-                  ? <Image source={{ uri: getImageUrl(d.photo_path) }} style={styles.photo} />
+                  ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.photo} />
                   : <View style={[styles.photo, styles.noPhoto]}><Text style={styles.noPhotoText}>No photo</Text></View>
                 }
                 <View style={styles.photoHeader}>

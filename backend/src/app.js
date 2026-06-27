@@ -41,6 +41,18 @@ app.use((req, res, next) => { console.log(`${req.method} ${req.path} auth:${!!re
 const { UPLOADS_DIR } = require('./config/paths');
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Small resized thumbnails for fast in-app display (generated + cached on demand)
+const { getThumbPath } = require('./services/thumbnail');
+app.get('/thumb/:name', async (req, res) => {
+  try {
+    const rel = await getThumbPath(req.params.name);
+    if (!rel) return res.status(404).end();
+    res.sendFile(path.join(UPLOADS_DIR, rel));
+  } catch {
+    res.status(404).end();
+  }
+});
+
 // Public routes (no auth needed)
 app.use('/api/auth', require('./routes/auth'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
