@@ -98,6 +98,18 @@ try { db.exec("ALTER TABLE orders ADD COLUMN source TEXT DEFAULT 'orders_tab'");
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_cache REAL'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_updated_at DATETIME'); } catch {}
 
+// Tally stock cache — populated by the sync agent running on the shop PC.
+// Keyed by the exact Tally stock item name; designs join via tally_item_name.
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tally_stock (
+      tally_item_name TEXT PRIMARY KEY,
+      qty REAL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch {}
+
 // Settings table
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (

@@ -1,0 +1,14 @@
+{
+  "name": "gopiram-tally-agent",
+  "version": "1.0.0",
+  "description": "Reads Tally stock on the shop PC and syncs it to the Gopiram cloud backend.",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "xml2js": "^0.6.2"
+  }
+}

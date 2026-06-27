@@ -45,6 +45,8 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/api/auth', require('./routes/auth'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 app.use('/catalog', require('./routes/catalog'));
+// Tally sync agent endpoint — authenticated by its own X-Sync-Token (machine, not user)
+app.use('/api/tally-sync', require('./routes/tallySync'));
 
 // All routes below require login
 app.use('/api', requireAuth);
