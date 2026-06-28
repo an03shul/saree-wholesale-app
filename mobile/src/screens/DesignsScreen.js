@@ -276,6 +276,55 @@ export default function DesignsScreen({ route, navigation }) {
 
   // Fetch watermarked image(s) and open native share sheet.
   // Falls back to wa.me link if Web Share API unavailable.
+  // Draws brand/item header + design details footer onto the watermarked image blob.
+  const buildShareCard = (blob, d) => new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const W = img.naturalWidth;
+      const H = img.naturalHeight;
+      const BAND = Math.round(H * 0.09); // ~9% of image height per band
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H + BAND * 2;
+      const ctx = canvas.getContext('2d');
+
+      // Header band
+      ctx.fillStyle = '#2C1810';
+      ctx.fillRect(0, 0, W, BAND);
+      // Image
+      ctx.drawImage(img, 0, BAND, W, H);
+      // Footer band
+      ctx.fillStyle = '#2C1810';
+      ctx.fillRect(0, BAND + H, W, BAND);
+
+      const fs = Math.max(20, Math.round(BAND * 0.38));
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Header: brand · item
+      ctx.fillStyle = '#F5E6D3';
+      ctx.font = `700 ${fs}px sans-serif`;
+      ctx.fillText(`${brand.name}  ·  ${item.name}`, W / 2, BAND / 2);
+
+      // Footer: design details in gold
+      const parts = [
+        `Design #${d.design_number}`,
+        `₹${d.rate}`,
+        d.pcs_per_set ? `${d.pcs_per_set} pcs/set` : null,
+        d.fabric_type || null,
+      ].filter(Boolean).join('  ·  ');
+      ctx.fillStyle = '#D4A853';
+      ctx.font = `600 ${fs}px sans-serif`;
+      ctx.fillText(parts, W / 2, BAND + H + BAND / 2);
+
+      canvas.toBlob(resolve, 'image/jpeg', 0.88);
+    };
+    img.onerror = reject;
+    img.src = objectUrl;
+  });
+
   const shareDesign = async (d) => {
     if (!d.photo_path) {
       Alert.alert('No photo', 'This design has no photo to share.');
@@ -283,15 +332,15 @@ export default function DesignsScreen({ route, navigation }) {
     }
     setSending(true);
     try {
-      const url = getWmUrl(d.photo_path);
-      const resp = await fetch(url);
-      const blob = await resp.blob();
-      const file = new File([blob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
+      const resp = await fetch(getWmUrl(d.photo_path));
+      const rawBlob = await resp.blob();
+      const cardBlob = await buildShareCard(rawBlob, d);
+      const file = new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
       const text = buildCaption(d);
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text });
       } else {
-        Linking.openURL(whatsappLink(text + '\n' + url));
+        Linking.openURL(whatsappLink(text + '\n' + getWmUrl(d.photo_path)));
       }
     } catch (e) {
       if (e?.name !== 'AbortError') Alert.alert('Error', 'Could not share this design');
@@ -311,8 +360,9 @@ export default function DesignsScreen({ route, navigation }) {
       const files = await Promise.all(
         selected.map(async d => {
           const resp = await fetch(getWmUrl(d.photo_path));
-          const blob = await resp.blob();
-          return new File([blob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
+          const rawBlob = await resp.blob();
+          const cardBlob = await buildShareCard(rawBlob, d);
+          return new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
         })
       );
       if (navigator.canShare?.({ files })) {
