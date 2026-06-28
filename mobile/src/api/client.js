@@ -124,9 +124,10 @@ export const importApi = {
   save: (item_id, designs) => api.post('/api/import/save', { item_id, designs }),
 };
 
+const CATALOG_BASE = process.env.EXPO_PUBLIC_CATALOG_URL || BASE_URL;
 export const getCatalogUrl = (brandId, params = {}) => {
   const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
-  return `${BASE_URL}/catalog/${brandId}${q ? `?${q}` : ''}`;
+  return `${CATALOG_BASE}/catalog/${brandId}${q ? `?${q}` : ''}`;
 };
 // Build a free WhatsApp deep link (wa.me). Pass a phone to target a contact, or
 // omit it to let the user pick the recipient in WhatsApp.

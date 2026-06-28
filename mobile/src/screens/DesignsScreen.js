@@ -276,7 +276,7 @@ export default function DesignsScreen({ route, navigation }) {
 
   // Fetch watermarked image(s) and open native share sheet.
   // Falls back to wa.me link if Web Share API unavailable.
-  // Draws brand/item header + design details footer onto the watermarked image blob.
+  // Draws brand/item header + two-line footer onto the watermarked image blob.
   const buildShareCard = (blob, d) => new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(blob);
     const img = new Image();
@@ -284,40 +284,47 @@ export default function DesignsScreen({ route, navigation }) {
       URL.revokeObjectURL(objectUrl);
       const W = img.naturalWidth;
       const H = img.naturalHeight;
-      const BAND = Math.round(H * 0.09); // ~9% of image height per band
+      const HEAD = Math.round(H * 0.09); // header ~9%
+      const FOOT = Math.round(H * 0.18); // footer ~18% (two lines)
       const canvas = document.createElement('canvas');
       canvas.width = W;
-      canvas.height = H + BAND * 2;
+      canvas.height = H + HEAD + FOOT;
       const ctx = canvas.getContext('2d');
 
       // Header band
-      ctx.fillStyle = '#2C1810';
-      ctx.fillRect(0, 0, W, BAND);
+      ctx.fillStyle = '#1A0F0A';
+      ctx.fillRect(0, 0, W, HEAD);
       // Image
-      ctx.drawImage(img, 0, BAND, W, H);
+      ctx.drawImage(img, 0, HEAD, W, H);
       // Footer band
-      ctx.fillStyle = '#2C1810';
-      ctx.fillRect(0, BAND + H, W, BAND);
+      ctx.fillStyle = '#1A0F0A';
+      ctx.fillRect(0, HEAD + H, W, FOOT);
 
-      const fs = Math.max(20, Math.round(BAND * 0.38));
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Header: brand · item
-      ctx.fillStyle = '#F5E6D3';
-      ctx.font = `700 ${fs}px sans-serif`;
-      ctx.fillText(`${brand.name}  ·  ${item.name}`, W / 2, BAND / 2);
+      // Header: brand · item (small, cream)
+      const hfs = Math.max(18, Math.round(HEAD * 0.42));
+      ctx.fillStyle = '#E8D5C0';
+      ctx.font = `600 ${hfs}px sans-serif`;
+      ctx.fillText(`${brand.name}  ·  ${item.name}`, W / 2, HEAD / 2);
 
-      // Footer: design details in gold
-      const parts = [
-        `Design #${d.design_number}`,
-        `₹${d.rate}`,
-        d.pcs_per_set ? `${d.pcs_per_set} pcs/set` : null,
+      // Footer line 1: #DesignNo · ₹Rate (large, white)
+      const f1fs = Math.max(28, Math.round(FOOT * 0.40));
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `800 ${f1fs}px sans-serif`;
+      ctx.fillText(`#${d.design_number}  ·  ₹${d.rate}`, W / 2, HEAD + H + FOOT * 0.33);
+
+      // Footer line 2: pcs · fabric · colors (smaller, light gray)
+      const f2fs = Math.max(18, Math.round(FOOT * 0.28));
+      const meta = [
+        d.pcs_per_set ? `${d.pcs_per_set} pcs` : null,
         d.fabric_type || null,
+        d.colors || null,
       ].filter(Boolean).join('  ·  ');
-      ctx.fillStyle = '#D4A853';
-      ctx.font = `600 ${fs}px sans-serif`;
-      ctx.fillText(parts, W / 2, BAND + H + BAND / 2);
+      ctx.fillStyle = '#C0A898';
+      ctx.font = `500 ${f2fs}px sans-serif`;
+      ctx.fillText(meta, W / 2, HEAD + H + FOOT * 0.72);
 
       canvas.toBlob(resolve, 'image/jpeg', 0.88);
     };
