@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
+import { subscribeToPush, getNotificationPermission } from '../utils/pushSubscription';
 
 const MENU_ITEMS = [
   { key: 'Scan',     label: 'Scan QR Code',   icon: '📷', desc: 'Scan a design QR to look it up' },
@@ -17,8 +18,18 @@ const ADMIN_ITEMS = [
 export default function MoreScreen({ navigation }) {
   const user = useUser();
   const isAdmin = user?.role === 'admin';
+  const [notifStatus, setNotifStatus] = useState('default');
+
+  useEffect(() => {
+    if (Platform.OS === 'web') setNotifStatus(getNotificationPermission());
+  }, []);
 
   const go = (screen) => navigation.navigate(screen);
+
+  const handleEnableNotifications = async () => {
+    const result = await subscribeToPush();
+    setNotifStatus(result === 'granted' ? 'granted' : getNotificationPermission());
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
@@ -35,6 +46,34 @@ export default function MoreScreen({ navigation }) {
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
       ))}
+
+      {Platform.OS === 'web' && notifStatus !== 'native' && notifStatus !== 'unsupported' && (
+        <>
+          <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Notifications</Text>
+          <TouchableOpacity
+            style={[styles.card, notifStatus === 'granted' && { opacity: 0.7 }]}
+            onPress={notifStatus !== 'granted' ? handleEnableNotifications : undefined}
+            activeOpacity={notifStatus === 'granted' ? 1 : 0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: notifStatus === 'granted' ? '#E8F5E9' : '#FFF3E0' }]}>
+              <Text style={styles.icon}>{notifStatus === 'granted' ? '🔔' : '🔕'}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>
+                {notifStatus === 'granted' ? 'Notifications enabled' : 'Enable order notifications'}
+              </Text>
+              <Text style={styles.desc}>
+                {notifStatus === 'granted'
+                  ? 'You\'ll be notified when customers place orders'
+                  : notifStatus === 'denied'
+                  ? 'Blocked — allow notifications in browser settings'
+                  : 'Tap to get notified when customers place orders'}
+              </Text>
+            </View>
+            {notifStatus !== 'granted' && notifStatus !== 'denied' && <Text style={styles.arrow}>›</Text>}
+          </TouchableOpacity>
+        </>
+      )}
 
       {isAdmin && (
         <>
