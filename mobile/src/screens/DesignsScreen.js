@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Alert, ActivityIndicator, Modal, Image, ScrollView, Platform, RefreshControl, Switch
+  StyleSheet, Alert, ActivityIndicator, Modal, Image, ScrollView, Platform, RefreshControl, Switch, Linking
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QRCode from 'react-qr-code';
-import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, getThumbUrl, setAuthToken } from '../api/client';
+import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, getThumbUrl, getWmUrl, whatsappLink, setAuthToken } from '../api/client';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
@@ -40,9 +40,8 @@ export default function DesignsScreen({ route, navigation }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [contacts, setContacts] = useState([]);
-  const [shareModal, setShareModal] = useState(false);
   const [cardMenu, setCardMenu] = useState(null); // design whose Edit/Delete menu is open
-  const [singleShareDesign, setSingleShareDesign] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(false); // inline two-tap delete confirm
   const [sending, setSending] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({ design_number: '', rate: '', fabric_type: '', pcs_per_set: '', tally_item_name: '', colors: '', work_category: '' });
@@ -213,15 +212,11 @@ export default function DesignsScreen({ route, navigation }) {
     }
   };
 
-  const deleteDesign = (d) => {
+  const deleteDesign = async (d) => {
     setCardMenu(null);
-    Alert.alert('Delete', `Delete design ${d.design_number}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await designsApi.delete(d.id); load(); }
-        catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
-      } }
-    ]);
+    setConfirmDel(false);
+    try { await designsApi.delete(d.id); load(); }
+    catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
   };
 
   const openEdit = (d) => {
@@ -270,13 +265,72 @@ export default function DesignsScreen({ route, navigation }) {
     }
   };
 
-  const shareSingle = (d) => {
-    if (contacts.length === 0) {
-      Alert.alert('No contacts', 'Add contacts in More → Contacts first.');
+  const buildCaption = (d) =>
+    [
+      `*${brand.name} · ${item.name}*`,
+      `Design #${d.design_number} · ₹${d.rate}` + (d.pcs_per_set ? ` · ${d.pcs_per_set} pcs/set` : ''),
+      d.fabric_type || null,
+      d.colors || null,
+      '\nReply here to place an order 🙏',
+    ].filter(Boolean).join('\n');
+
+  // Fetch watermarked image(s) and open native share sheet.
+  // Falls back to wa.me link if Web Share API unavailable.
+  const shareDesign = async (d) => {
+    if (!d.photo_path) {
+      Alert.alert('No photo', 'This design has no photo to share.');
       return;
     }
-    setSingleShareDesign(d);
+    setSending(true);
+    try {
+      const url = getWmUrl(d.photo_path);
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const file = new File([blob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
+      const text = buildCaption(d);
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text });
+      } else {
+        Linking.openURL(whatsappLink(text + '\n' + url));
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') Alert.alert('Error', 'Could not share this design');
+    } finally {
+      setSending(false);
+    }
   };
+
+  const shareMultiple = async () => {
+    const selected = filteredDesigns.filter(d => selectedIds.has(d.id) && d.photo_path);
+    if (!selected.length) {
+      Alert.alert('No photos', 'None of the selected designs have photos.');
+      return;
+    }
+    setSending(true);
+    try {
+      const files = await Promise.all(
+        selected.map(async d => {
+          const resp = await fetch(getWmUrl(d.photo_path));
+          const blob = await resp.blob();
+          return new File([blob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
+        })
+      );
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({ files });
+      } else {
+        const msg = selected.map(d => buildCaption(d)).join('\n\n---\n\n');
+        Linking.openURL(whatsappLink(msg));
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') Alert.alert('Error', 'Could not share designs');
+    } finally {
+      setSending(false);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    }
+  };
+
+  const shareSingle = (d) => shareDesign(d);
 
   const openOrder = (d) => {
     setOrderDesign(d);
@@ -451,101 +505,35 @@ export default function DesignsScreen({ route, navigation }) {
             {selectedIds.size === 0 ? 'Tap designs to select' : `${selectedIds.size} selected`}
           </Text>
           <TouchableOpacity
-            style={[styles.shareBtn, selectedIds.size === 0 && styles.shareBtnDisabled]}
-            disabled={selectedIds.size === 0}
-            onPress={() => setShareModal(true)}
+            style={[styles.shareBtn, (selectedIds.size === 0 || sending) && styles.shareBtnDisabled]}
+            disabled={selectedIds.size === 0 || sending}
+            onPress={shareMultiple}
           >
-            <Text style={styles.shareBtnText}>Share via WhatsApp</Text>
+            <Text style={styles.shareBtnText}>{sending ? 'Preparing…' : 'Share via WhatsApp'}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Design action menu (admin) — web-safe replacement for the 3-button Alert */}
       <Modal visible={!!cardMenu} transparent animationType="fade">
-        <TouchableOpacity style={styles.fabricOverlay} activeOpacity={1} onPress={() => setCardMenu(null)}>
+        <TouchableOpacity style={styles.fabricOverlay} activeOpacity={1} onPress={() => { setCardMenu(null); setConfirmDel(false); }}>
           <View style={[styles.fabricSheet, { paddingBottom: 28 }]}>
             <Text style={styles.fabricTitle}>Design {cardMenu?.design_number}</Text>
-            <TouchableOpacity style={styles.menuItem} onPress={() => { const d = cardMenu; setCardMenu(null); openEdit(d); }}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { const d = cardMenu; setCardMenu(null); setConfirmDel(false); openEdit(d); }}>
               <Text style={styles.menuItemText}>✏️  Edit</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => deleteDesign(cardMenu)}>
-              <Text style={[styles.menuItemText, { color: colors.danger }]}>🗑  Delete</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { confirmDel ? deleteDesign(cardMenu) : setConfirmDel(true); }}>
+              <Text style={[styles.menuItemText, { color: colors.danger }]}>
+                {confirmDel ? '🗑  Tap again to confirm delete' : '🗑  Delete'}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => setCardMenu(null)}>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={() => { setCardMenu(null); setConfirmDel(false); }}>
               <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* Contact Picker for Share */}
-      <Modal visible={shareModal} transparent animationType="slide">
-        <TouchableOpacity style={styles.fabricOverlay} activeOpacity={1} onPress={() => setShareModal(false)}>
-          <View style={styles.fabricSheet}>
-            <Text style={styles.fabricTitle}>Send {selectedIds.size} design{selectedIds.size !== 1 ? 's' : ''} to</Text>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              {contacts.length === 0 && (
-                <Text style={{ color: '#aaa', textAlign: 'center', marginTop: 20 }}>No contacts. Add them in the Contacts tab.</Text>
-              )}
-              {contacts.map(c => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.contactRow}
-                  onPress={async () => {
-                    setShareModal(false);
-                    setSending(true);
-                    try {
-                      await sendApi.sendSelected(Array.from(selectedIds), c.phone);
-                      setSelectMode(false);
-                      setSelectedIds(new Set());
-                      Alert.alert('Sent!', `${selectedIds.size} designs sent to ${c.name}`);
-                    } catch (e) {
-                      Alert.alert('Error', e.response?.data?.error || 'Could not send');
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                >
-                  <Text style={styles.contactName}>{c.name}</Text>
-                  <Text style={styles.contactPhone}>{c.phone}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Single Design Share Modal */}
-      <Modal visible={!!singleShareDesign} transparent animationType="slide">
-        <TouchableOpacity style={styles.fabricOverlay} activeOpacity={1} onPress={() => setSingleShareDesign(null)}>
-          <View style={styles.fabricSheet}>
-            <Text style={styles.fabricTitle}>Send Design {singleShareDesign?.design_number} to</Text>
-            <ScrollView>
-              {contacts.map(c => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.contactRow}
-                  onPress={async () => {
-                    setSingleShareDesign(null);
-                    setSending(true);
-                    try {
-                      await sendApi.sendSelected([singleShareDesign.id], c.phone);
-                      Alert.alert('Sent!', `Design ${singleShareDesign.design_number} sent to ${c.name}`);
-                    } catch (e) {
-                      Alert.alert('Error', e.response?.data?.error || 'Could not send');
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                >
-                  <Text style={styles.contactName}>{c.name}</Text>
-                  <Text style={styles.contactPhone}>{c.phone}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Log Order Modal */}
       <Modal visible={!!orderDesign} transparent animationType="slide">

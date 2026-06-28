@@ -32,5 +32,26 @@ if (!html.includes('rel="manifest"')) {
   html = html.replace('</head>', `${tags}\n  </head>`);
 }
 
+// Register service worker for push notifications (idempotent)
+const swScript = `
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function(e) {
+        console.warn('SW registration failed:', e);
+      });
+    }
+  </script>`;
+if (!html.includes("register('/sw.js')")) {
+  html = html.replace('</body>', `${swScript}\n</body>`);
+}
+
+// Copy sw.js from public/ to dist/ so it's at the root scope
+const swSrc = path.join(__dirname, '..', 'public', 'sw.js');
+const swDst = path.join(__dirname, '..', 'dist', 'sw.js');
+if (fs.existsSync(swSrc)) {
+  fs.copyFileSync(swSrc, swDst);
+  console.log('inject-pwa: sw.js copied to dist/');
+}
+
 fs.writeFileSync(indexPath, html);
 console.log('inject-pwa: PWA tags injected into dist/index.html');

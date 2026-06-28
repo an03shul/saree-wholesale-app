@@ -124,7 +124,17 @@ export const importApi = {
   save: (item_id, designs) => api.post('/api/import/save', { item_id, designs }),
 };
 
-export const getCatalogUrl = (brandId) => `${BASE_URL}/catalog/${brandId}`;
+export const getCatalogUrl = (brandId, params = {}) => {
+  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return `${BASE_URL}/catalog/${brandId}${q ? `?${q}` : ''}`;
+};
+// Build a free WhatsApp deep link (wa.me). Pass a phone to target a contact, or
+// omit it to let the user pick the recipient in WhatsApp.
+export const whatsappLink = (message, phone) => {
+  const text = encodeURIComponent(message || '');
+  const num = (phone || '').replace(/[^0-9]/g, '');
+  return num ? `https://wa.me/${num}?text=${text}` : `https://wa.me/?text=${text}`;
+};
 export const getPdfUrl = (brandId, params = {}) => {
   const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return `${BASE_URL}/api/pdf/${brandId}${q ? `?${q}` : ''}`;
@@ -132,3 +142,5 @@ export const getPdfUrl = (brandId, params = {}) => {
 export const getImageUrl = (photoPath) => `${BASE_URL}/uploads/${photoPath}`;
 // Small resized thumbnail for fast in-app lists/grids (full image stays at getImageUrl)
 export const getThumbUrl = (photoPath) => `${BASE_URL}/thumb/${photoPath}`;
+// Watermarked full-size image (used when sharing externally)
+export const getWmUrl = (photoPath) => `${BASE_URL}/uploads/wm/${photoPath}`;

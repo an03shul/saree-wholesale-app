@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { notifyAll } = require('../services/pushNotify');
 
-// GET /api/orders — all orders, newest first, with design info
-router.get('/', (req, res) => {
+// GET /api/orders — all orders, newest first, with design info (staff only)
+router.get('/', requireAuth, (req, res) => {
   const orders = db.prepare(`
     SELECT o.*,
       d.design_number, d.photo_path,
@@ -28,6 +29,15 @@ router.post('/', (req, res) => {
   const result = db.prepare(
     'INSERT INTO orders (design_id, customer_name, customer_phone, quantity, note, status, source) VALUES (?,?,?,?,?,?,?)'
   ).run(design_id || null, customer_name.trim(), customer_phone?.trim() || null, quantity || 1, note?.trim() || null, 'pending', src);
+
+  // Notify all subscribed devices — fire and forget, never block the response
+  const design = design_id ? db.prepare('SELECT design_number FROM designs WHERE id = ?').get(design_id) : null;
+  notifyAll({
+    title: '🛍️ New Order',
+    body: `${customer_name.trim()} ordered${design ? ` Design #${design.design_number}` : ''}${customer_phone ? ` · ${customer_phone.trim()}` : ''}`,
+    url: '/orders',
+  }).catch(() => {});
+
   res.status(201).json({ id: result.lastInsertRowid });
 });
 

@@ -132,6 +132,19 @@ db.exec(`
     value TEXT NOT NULL
   );
 `);
+
+// Push notification subscriptions (Web Push API)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      endpoint TEXT UNIQUE NOT NULL,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch {}
 // Default WhatsApp caption template
 const tmplExists = db.prepare("SELECT key FROM settings WHERE key='whatsapp_template'").get();
 if (!tmplExists) {

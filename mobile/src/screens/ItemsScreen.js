@@ -19,6 +19,7 @@ export default function ItemsScreen({ route, navigation }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [delItem, setDelItem] = useState(null);
 
   useEffect(() => {
     navigation.setOptions({
@@ -62,11 +63,13 @@ export default function ItemsScreen({ route, navigation }) {
     }
   };
 
-  const deleteItem = (item) => {
-    Alert.alert('Delete', `Delete "${item.name}" and all its designs?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await itemsApi.delete(item.id); load(); } }
-    ]);
+  const deleteItem = (item) => setDelItem(item); // open web-safe confirm modal
+
+  const doDeleteItem = async () => {
+    const item = delItem;
+    setDelItem(null);
+    try { await itemsApi.delete(item.id); load(); }
+    catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
   };
 
   const toggleStock = async (item) => {
@@ -163,6 +166,26 @@ export default function ItemsScreen({ route, navigation }) {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
+
+      {/* Delete confirm (web-safe modal) */}
+      <Modal visible={!!delItem} transparent animationType="fade">
+        <View style={modalBase.overlay}>
+          <View style={modalBase.sheet}>
+            <Text style={modalBase.title}>Delete Item</Text>
+            <Text style={{ color: colors.textSecondary, marginBottom: 20, lineHeight: 22 }}>
+              Delete "{delItem?.name}" and ALL its designs? This can't be undone.
+            </Text>
+            <View style={modalBase.row}>
+              <TouchableOpacity style={modalBase.btnSecondary} onPress={() => setDelItem(null)}>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[modalBase.btnPrimary, { backgroundColor: colors.danger }]} onPress={doDeleteItem}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={modalBase.overlay}>

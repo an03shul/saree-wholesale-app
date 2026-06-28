@@ -20,6 +20,40 @@ import OrdersScreen from './src/screens/OrdersScreen';
 import MoreScreen from './src/screens/MoreScreen';
 import BulkImportScreen from './src/screens/BulkImportScreen';
 import { authApi, setAuthToken, loadStoredToken } from './src/api/client';
+import { Platform } from 'react-native';
+import { API_BASE_URL } from './src/config';
+
+const VAPID_PUBLIC_KEY = process.env.EXPO_PUBLIC_VAPID_KEY || '';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function subscribeToPush() {
+  if (Platform.OS !== 'web') return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!VAPID_PUBLIC_KEY) return;
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON()),
+    });
+  } catch (e) {
+    console.warn('Push subscription failed:', e.message);
+  }
+}
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -112,6 +146,7 @@ export default function App() {
         await loadStoredToken(); // sets token on axios before any request
         const { data } = await authApi.me();
         setUser(data.user);
+        subscribeToPush();
       } catch {
         await AsyncStorage.removeItem('auth_token');
         await AsyncStorage.removeItem('auth_user');
@@ -122,7 +157,7 @@ export default function App() {
     })();
   }, []);
 
-  const handleLogin = (u) => setUser(u);
+  const handleLogin = (u) => { setUser(u); subscribeToPush(); };
   const handleLogout = () => setUser(null);
 
   if (checking) {

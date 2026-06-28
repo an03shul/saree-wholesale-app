@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, Image, ScrollView, Linking, TextInput
+  Alert, ActivityIndicator, Image, ScrollView, Linking, TextInput,
+  Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { brandsApi, itemsApi, contactsApi, sendApi, fabricsApi, workCategoriesApi, getImageUrl, getThumbUrl, getCatalogUrl, getPdfUrl } from '../api/client';
+import { brandsApi, itemsApi, contactsApi, sendApi, fabricsApi, workCategoriesApi, getImageUrl, getThumbUrl, getCatalogUrl, getPdfUrl, whatsappLink } from '../api/client';
 import { colors, shadow } from '../constants/theme';
 
 const PRICE_PRESETS = [
@@ -35,6 +36,10 @@ export default function SendScreen() {
   const [filterFabrics, setFilterFabrics] = useState([]);
   const [filterResults, setFilterResults] = useState(null);
   const [excludedIds, setExcludedIds] = useState(new Set());
+
+  // Catalogue WhatsApp modal
+  const [msgModal, setMsgModal] = useState(false);
+  const [catalogMsg, setCatalogMsg] = useState('');
 
   useEffect(() => {
     Promise.all([brandsApi.getAll(), contactsApi.getAll(), workCategoriesApi.getAll(), fabricsApi.getAll()])
@@ -89,6 +94,24 @@ export default function SendScreen() {
     }
   };
 
+  // Show the message preview modal; user can edit before opening WhatsApp.
+  const sendCatalogOnWhatsApp = () => {
+    if (!selectedBrand) return Alert.alert('Pick a brand', 'Select a brand first.');
+    const params = {};
+    if (minRate) params.minRate = minRate;
+    if (maxRate) params.maxRate = maxRate;
+    if (filterFabrics.length === 1) params.fabric = filterFabrics[0];
+    const link = getCatalogUrl(selectedBrand.id, params);
+    const range = (minRate || maxRate) ? ` (₹${minRate || '0'}–${maxRate || '∞'})` : '';
+    setCatalogMsg(`Namaste! 🙏\nHere's our latest *${selectedBrand.name}* saree catalogue${range}:\n${link}\n\nTap the link to view designs & rates. Reply here to place an order.`);
+    setMsgModal(true);
+  };
+
+  const openWhatsApp = () => {
+    setMsgModal(false);
+    Linking.openURL(whatsappLink(catalogMsg, selectedContact?.phone));
+  };
+
   const selectBrand = async (brand) => {
     setSelectedBrand(brand);
     setSelectedItem(null);
@@ -128,6 +151,7 @@ export default function SendScreen() {
   const outOfStockCount = (preview?.designs?.length || 0) - inStockDesigns.length;
 
   return (
+    <>
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
 
       {/* Mode toggle */}
@@ -162,6 +186,49 @@ export default function SendScreen() {
           ))}
         </ScrollView>
       </View>
+
+      {/* Quick share — always visible once a brand is picked */}
+      {selectedBrand && (
+        <>
+          <TouchableOpacity style={styles.waBtn} onPress={sendCatalogOnWhatsApp}>
+            <Text style={styles.waBtnText}>
+              {'📲 Send Catalogue on WhatsApp'}
+              {(minRate || maxRate) ? ` (₹${minRate || '0'}–${maxRate || '∞'})` : ''}
+              {filterFabrics.length === 1 ? ` · ${filterFabrics[0]}` : ''}
+              {selectedContact ? `\n→ ${selectedContact.name}` : ''}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Inline contact picker so users don't need to scroll down */}
+          {contacts.length > 0 && (
+            <View style={styles.catalogContactRow}>
+              <Text style={styles.catalogContactLabel}>To (optional):</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {contacts.map(c => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.contactChip, selectedContact?.id === c.id && styles.contactChipActive]}
+                    onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
+                  >
+                    <Text style={[styles.contactChipText, selectedContact?.id === c.id && styles.contactChipTextActive]}>
+                      {c.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View style={styles.brandActions}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(getCatalogUrl(selectedBrand.id))}>
+              <Text style={styles.actionBtnText}>🔗 Open Link</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDark]} onPress={() => Linking.openURL(getPdfUrl(selectedBrand.id, { inStockOnly: 'true' }))}>
+              <Text style={styles.actionBtnText}>📄 PDF</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {/* ───────────── FILTER MODE ───────────── */}
       {mode === 'filter' && selectedBrand && (
@@ -336,17 +403,6 @@ export default function SendScreen() {
         </>
       )}
 
-      {mode === 'item' && selectedBrand && (
-        <View style={styles.brandActions}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(getCatalogUrl(selectedBrand.id))}>
-            <Text style={styles.actionBtnText}>🔗 Customer Link</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDark]} onPress={() => Linking.openURL(getPdfUrl(selectedBrand.id, { inStockOnly: 'true' }))}>
-            <Text style={styles.actionBtnText}>📄 PDF Catalog</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* Step 2 — Item */}
       {mode === 'item' && items.length > 0 && (
         <View style={styles.section}>
@@ -438,6 +494,37 @@ export default function SendScreen() {
         </>
       )}
     </ScrollView>
+
+    {/* Catalogue message preview/edit modal */}
+    <Modal visible={msgModal} transparent animationType="slide" onRequestClose={() => setMsgModal(false)}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <TouchableOpacity style={styles.msgOverlay} activeOpacity={1} onPress={() => setMsgModal(false)} />
+        <View style={styles.msgSheet}>
+          <Text style={styles.msgSheetTitle}>Preview & Edit Message</Text>
+          {selectedContact
+            ? <Text style={styles.msgSheetTo}>To: {selectedContact.name} · {selectedContact.phone}</Text>
+            : <Text style={styles.msgSheetTo}>No contact selected — you'll pick the recipient in WhatsApp</Text>
+          }
+          <TextInput
+            style={styles.msgInput}
+            value={catalogMsg}
+            onChangeText={setCatalogMsg}
+            multiline
+            textAlignVertical="top"
+            autoFocus
+          />
+          <View style={styles.msgActions}>
+            <TouchableOpacity style={styles.msgCancelBtn} onPress={() => setMsgModal(false)}>
+              <Text style={styles.msgCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.msgSendBtn} onPress={openWhatsApp}>
+              <Text style={styles.msgSendText}>Open in WhatsApp →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+    </>
   );
 }
 
@@ -454,7 +541,15 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 14 },
   chipTextActive: { color: '#fff', fontWeight: '700' },
-  brandActions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 4 },
+  waBtn: { backgroundColor: colors.whatsapp, marginHorizontal: 16, marginTop: 12, padding: 15, borderRadius: 14, alignItems: 'center', ...shadow.medium, shadowColor: colors.whatsapp },
+  waBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', textAlign: 'center', lineHeight: 22 },
+  catalogContactRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 10, gap: 10 },
+  catalogContactLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, flexShrink: 0 },
+  contactChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
+  contactChipActive: { backgroundColor: colors.whatsapp, borderColor: colors.whatsapp },
+  contactChipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
+  contactChipTextActive: { color: '#fff', fontWeight: '700' },
+  brandActions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 10 },
   actionBtn: { flex: 1, backgroundColor: colors.primary, padding: 12, borderRadius: 12, alignItems: 'center' },
   actionBtnDark: { backgroundColor: colors.primaryDark },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
@@ -510,4 +605,23 @@ const styles = StyleSheet.create({
   excludeOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(192,57,43,0.55)', alignItems: 'center', justifyContent: 'center', height: 120 },
   gridDesign: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
   gridSub: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
+  msgOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  msgSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, paddingBottom: 36,
+  },
+  msgSheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginBottom: 6 },
+  msgSheetTo: { fontSize: 13, color: colors.textSecondary, marginBottom: 14 },
+  msgInput: {
+    borderWidth: 1.5, borderColor: colors.border, borderRadius: 12,
+    padding: 14, fontSize: 15, color: colors.textPrimary,
+    backgroundColor: colors.background, minHeight: 150, maxHeight: 240,
+    marginBottom: 16,
+  },
+  msgActions: { flexDirection: 'row', gap: 10 },
+  msgCancelBtn: { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  msgCancelText: { fontWeight: '700', color: colors.textSecondary, fontSize: 14 },
+  msgSendBtn: { flex: 2, padding: 14, borderRadius: 12, backgroundColor: colors.whatsapp, alignItems: 'center', ...shadow.small, shadowColor: colors.whatsapp },
+  msgSendText: { fontWeight: '800', color: '#fff', fontSize: 14 },
 });

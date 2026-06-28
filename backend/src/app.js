@@ -72,6 +72,8 @@ app.get('/thumb/:name', async (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 app.use('/catalog', require('./routes/catalog'));
+app.use('/api/push', require('./routes/push'));
+app.use('/api/orders', require('./routes/orders')); // public POST for catalog orders
 // Tally sync agent endpoint — authenticated by its own X-Sync-Token (machine, not user)
 app.use('/api/tally-sync', require('./routes/tallySync'));
 
@@ -90,7 +92,6 @@ app.use('/api/pdf',     require('./routes/pdf'));
 app.use('/api/identify',require('./routes/identify'));
 app.use('/api/import',  require('./routes/import'));
 app.use('/api/admin',   require('./routes/admin'));
-app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/stats',    require('./routes/stats'));
 
