@@ -28,10 +28,14 @@ router.get('/:brandId', async (req, res) => {
     db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
   )];
 
-  // Resolve watermarked, web-sized photo for each design (cached after first build)
+  // Resolve watermarked path; fall back to original if watermark step errors
   for (const item of itemsWithDesigns) {
     for (const d of item.designs) {
-      d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
+      try {
+        d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
+      } catch {
+        d.wm_photo = d.photo_path;
+      }
     }
   }
 
@@ -140,15 +144,8 @@ var _designId, _baseUrl = '${baseUrl}';
 
 function openOrder(designId, itemName, designNo, rate) {
   _designId = designId;
-  document.getElementById('modalTitle').textContent = 'Order — Design ' + designNo;
-  document.getElementById('modalSub').textContent = itemName + ' · ₹' + rate;
-  document.getElementById('custName').value = '';
-  document.getElementById('custPhone').value = '';
-  document.getElementById('custQty').value = '1';
-  document.getElementById('modalContent').innerHTML = document.getElementById('modalContent').innerHTML;
-  // restore the form (above line wipes it, so rebuild)
   document.getElementById('modalContent').innerHTML = \`
-    <h3>\${document.getElementById('modalTitle')?.textContent || 'Order — Design ' + designNo}</h3>
+    <h3>Order — Design \${designNo}</h3>
     <p class="sub">\${itemName} · ₹\${rate}</p>
     <input id="custName" placeholder="Your name *" autocomplete="name"/>
     <input id="custPhone" placeholder="WhatsApp number (optional)" type="tel" autocomplete="tel"/>
