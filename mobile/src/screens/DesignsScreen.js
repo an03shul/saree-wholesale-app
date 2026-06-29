@@ -332,25 +332,66 @@ export default function DesignsScreen({ route, navigation }) {
     img.src = objectUrl;
   });
 
+  // Web-safe alert. React Native's Alert.alert is a no-op on web, which was
+  // silently swallowing share failures on the staff's Android phone — the user
+  // saw "nothing happen". window.alert is visible in the browser/PWA.
+  const notify = (title, msg) => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(`${title}\n\n${msg}`);
+    else Alert.alert(title, msg);
+  };
+
+  // Fetch a design's watermarked image and bake the header/footer card onto it.
+  const buildShareFile = async (d) => {
+    const resp = await fetch(getWmUrl(d.photo_path));
+    if (!resp.ok) throw new Error(`image failed to load (${resp.status})`);
+    const rawBlob = await resp.blob();
+    const cardBlob = await buildShareCard(rawBlob, d);
+    return new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
+  };
+
+  // Try the native share sheet. Returns true if it ran (or the user cancelled),
+  // false if sharing isn't possible here so the caller can fall back.
+  const tryNativeShare = async (files, text) => {
+    if (typeof navigator === 'undefined' || !navigator.canShare?.({ files })) return false;
+    try {
+      await navigator.share(text ? { files, text } : { files });
+      return true;
+    } catch (e) {
+      if (e?.name === 'AbortError') return true; // user dismissed the sheet — fine
+      return false; // activation lost / unsupported → fall back
+    }
+  };
+
+  // Fallback for web when native sharing fails: save the image(s) to the device
+  // so the user can attach them manually.
+  const downloadFiles = (files) => {
+    files.forEach((file) => {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    });
+  };
+
   const shareDesign = async (d) => {
     if (!d.photo_path) {
-      Alert.alert('No photo', 'This design has no photo to share.');
+      notify('No photo', 'This design has no photo to share.');
       return;
     }
     setSending(true);
     try {
-      const resp = await fetch(getWmUrl(d.photo_path));
-      const rawBlob = await resp.blob();
-      const cardBlob = await buildShareCard(rawBlob, d);
-      const file = new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
-      const text = buildCaption(d);
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text });
-      } else {
-        Linking.openURL(whatsappLink(text + '\n' + getWmUrl(d.photo_path)));
+      const file = await buildShareFile(d);
+      const shared = await tryNativeShare([file], buildCaption(d));
+      if (!shared && Platform.OS === 'web') {
+        downloadFiles([file]);
+        notify('Image saved', 'Sharing isn’t available on this browser, so the picture was saved to your phone. Attach it in WhatsApp to send.');
       }
     } catch (e) {
-      if (e?.name !== 'AbortError') Alert.alert('Error', 'Could not share this design');
+      notify('Could not share', `Please check your connection and try again.\n(${e.message})`);
     } finally {
       setSending(false);
     }
@@ -359,27 +400,19 @@ export default function DesignsScreen({ route, navigation }) {
   const shareMultiple = async () => {
     const selected = filteredDesigns.filter(d => selectedIds.has(d.id) && d.photo_path);
     if (!selected.length) {
-      Alert.alert('No photos', 'None of the selected designs have photos.');
+      notify('No photos', 'None of the selected designs have photos.');
       return;
     }
     setSending(true);
     try {
-      const files = await Promise.all(
-        selected.map(async d => {
-          const resp = await fetch(getWmUrl(d.photo_path));
-          const rawBlob = await resp.blob();
-          const cardBlob = await buildShareCard(rawBlob, d);
-          return new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
-        })
-      );
-      if (navigator.canShare?.({ files })) {
-        await navigator.share({ files });
-      } else {
-        const msg = selected.map(d => buildCaption(d)).join('\n\n---\n\n');
-        Linking.openURL(whatsappLink(msg));
+      const files = await Promise.all(selected.map(buildShareFile));
+      const shared = await tryNativeShare(files);
+      if (!shared && Platform.OS === 'web') {
+        downloadFiles(files);
+        notify('Images saved', 'Sharing isn’t available on this browser, so the pictures were saved to your phone. Attach them in WhatsApp to send.');
       }
     } catch (e) {
-      if (e?.name !== 'AbortError') Alert.alert('Error', 'Could not share designs');
+      notify('Could not share', `Please check your connection and try again.\n(${e.message})`);
     } finally {
       setSending(false);
       setSelectMode(false);
