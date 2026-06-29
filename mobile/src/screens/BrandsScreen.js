@@ -4,6 +4,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Modal, Share, RefreshControl
 } from 'react-native';
 import { brandsApi, getCatalogUrl, statsApi } from '../api/client';
+import { notify } from '../utils/share';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -29,7 +30,7 @@ export default function BrandsScreen({ navigation }) {
       setBrands(brandsRes.data);
       setStats(statsRes.data);
     } catch {
-      Alert.alert('Error', 'Could not load brands. Is the backend running?');
+      notify('Error', 'Could not load brands. Is the backend running?');
     } finally {
       setLoading(false);
     }
@@ -41,7 +42,7 @@ export default function BrandsScreen({ navigation }) {
   }, [navigation, load]);
 
   const createBrand = async () => {
-    if (!name.trim()) return Alert.alert('Required', 'Please enter a brand name');
+    if (!name.trim()) return notify('Required', 'Please enter a brand name');
     setSaving(true);
     try {
       await brandsApi.create({ name: name.trim(), description: description.trim() });
@@ -49,14 +50,14 @@ export default function BrandsScreen({ navigation }) {
       setName(''); setDescription('');
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not create brand');
+      notify('Error', e.response?.data?.error || 'Could not create brand');
     } finally {
       setSaving(false);
     }
   };
 
   const confirmDeleteBrand = async () => {
-    if (!deletePin) return Alert.alert('Required', 'Enter your PIN');
+    if (!deletePin) return notify('Required', 'Enter your PIN');
     setDeleting(true);
     try {
       await brandsApi.delete(deleteTarget.id, deletePin);
@@ -64,7 +65,7 @@ export default function BrandsScreen({ navigation }) {
       setDeletePin('');
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not delete brand');
+      notify('Error', e.response?.data?.error || 'Could not delete brand');
     } finally {
       setDeleting(false);
     }

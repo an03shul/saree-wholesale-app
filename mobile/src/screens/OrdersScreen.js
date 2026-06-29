@@ -4,7 +4,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Modal, RefreshControl, Image, ScrollView,
 } from 'react-native';
 import { ordersApi, designsApi, getImageUrl, getThumbUrl } from '../api/client';
-import { confirmAction } from '../utils/share';
+import { confirmAction, notify } from '../utils/share';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -39,7 +39,7 @@ export default function OrdersScreen({ navigation }) {
       const { data } = await ordersApi.getAll();
       setOrders(data);
     } catch {
-      Alert.alert('Error', 'Could not load orders');
+      notify('Error', 'Could not load orders');
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export default function OrdersScreen({ navigation }) {
   }, [navigation, load]);
 
   const createOrder = async () => {
-    if (!form.customer_name.trim()) return Alert.alert('Required', 'Enter customer name');
+    if (!form.customer_name.trim()) return notify('Required', 'Enter customer name');
     setSaving(true);
     try {
       await ordersApi.create({
@@ -66,7 +66,7 @@ export default function OrdersScreen({ navigation }) {
       setForm({ customer_name: '', customer_phone: '', quantity: '1', note: '' });
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not create order');
+      notify('Error', e.response?.data?.error || 'Could not create order');
     } finally {
       setSaving(false);
     }
@@ -78,7 +78,7 @@ export default function OrdersScreen({ navigation }) {
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status } : o));
       setStatusModal(null);
     } catch {
-      Alert.alert('Error', 'Could not update status');
+      notify('Error', 'Could not update status');
     }
   };
 

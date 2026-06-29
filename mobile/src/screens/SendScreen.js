@@ -61,7 +61,7 @@ export default function SendScreen() {
   };
 
   const runFilter = async () => {
-    if (!selectedBrand) return Alert.alert('Select brand', 'Pick a brand first');
+    if (!selectedBrand) return notify('Select brand', 'Pick a brand first');
     setLoading(true);
     setFilterResults(null);
     setExcludedIds(new Set());
@@ -74,7 +74,7 @@ export default function SendScreen() {
       const { data } = await sendApi.filterBrand(selectedBrand.id, params);
       setFilterResults(data);
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not filter designs');
+      notify('Error', e.response?.data?.error || 'Could not filter designs');
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function SendScreen() {
 
   // Show the message preview modal; user can edit before opening WhatsApp.
   const sendCatalogOnWhatsApp = () => {
-    if (!selectedBrand) return Alert.alert('Pick a brand', 'Select a brand first.');
+    if (!selectedBrand) return notify('Pick a brand', 'Select a brand first.');
     const params = {};
     if (minRate) params.minRate = minRate;
     if (maxRate) params.maxRate = maxRate;
@@ -133,7 +133,7 @@ export default function SendScreen() {
       const { data } = await sendApi.preview(item.id);
       setPreview(data);
     } catch {
-      Alert.alert('Error', 'Could not load preview');
+      notify('Error', 'Could not load preview');
     } finally {
       setLoading(false);
     }

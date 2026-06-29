@@ -4,6 +4,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Modal, RefreshControl, Switch
 } from 'react-native';
 import { itemsApi, ordersApi } from '../api/client';
+import { notify } from '../utils/share';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -37,7 +38,7 @@ export default function ItemsScreen({ route, navigation }) {
       const { data } = await itemsApi.getAll(brand.id);
       setItems(data);
     } catch {
-      Alert.alert('Error', 'Could not load items.');
+      notify('Error', 'Could not load items.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ export default function ItemsScreen({ route, navigation }) {
   }, [navigation, load]);
 
   const createItem = async () => {
-    if (!name.trim()) return Alert.alert('Required', 'Please enter an item name');
+    if (!name.trim()) return notify('Required', 'Please enter an item name');
     setSaving(true);
     try {
       await itemsApi.create({ name: name.trim(), description: description.trim(), brand_id: brand.id });
@@ -57,7 +58,7 @@ export default function ItemsScreen({ route, navigation }) {
       setName(''); setDescription('');
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not create item');
+      notify('Error', e.response?.data?.error || 'Could not create item');
     } finally {
       setSaving(false);
     }
@@ -69,7 +70,7 @@ export default function ItemsScreen({ route, navigation }) {
     const item = delItem;
     setDelItem(null);
     try { await itemsApi.delete(item.id); load(); }
-    catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
+    catch (e) { notify('Error', e.response?.data?.error || 'Could not delete'); }
   };
 
   const toggleStock = async (item) => {
@@ -77,7 +78,7 @@ export default function ItemsScreen({ route, navigation }) {
       const { data } = await itemsApi.toggleStock(item.id);
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, in_stock: data.in_stock } : i));
     } catch {
-      Alert.alert('Error', 'Could not update stock status');
+      notify('Error', 'Could not update stock status');
     }
   };
 

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { CameraView } from 'expo-camera';
 import { designsApi, getImageUrl } from '../api/client';
+import { notify } from '../utils/share';
 import { colors, shadow } from '../constants/theme';
 
 const QR_PREFIX = 'GOPIRAM:DESIGN:';
@@ -37,7 +38,7 @@ export default function ScanScreen() {
   const handleBarcode = async ({ data }) => {
     if (scanned || loading) return;
     if (!data.startsWith(QR_PREFIX)) {
-      Alert.alert('Unknown QR', 'This QR code is not from Gopiram Saree.');
+      notify('Unknown QR', 'This QR code is not from Gopiram Saree.');
       return;
     }
     setScanned(true);
@@ -48,7 +49,7 @@ export default function ScanScreen() {
       setDesign(d);
       setDetailVisible(true);
     } catch {
-      Alert.alert('Not found', 'Could not find this design in the catalog.');
+      notify('Not found', 'Could not find this design in the catalog.');
       setScanned(false);
     } finally {
       setLoading(false);

@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { brandsApi, itemsApi, importApi, getImageUrl, getThumbUrl, setAuthToken } from '../api/client';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
+import { notify } from '../utils/share';
 
 export default function BulkImportScreen({ navigation }) {
   const [step, setStep] = useState('pick'); // 'pick' | 'review'
@@ -35,7 +36,7 @@ export default function BulkImportScreen({ navigation }) {
 
   const pickPhotos = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Permission needed', 'Allow photo access');
+    if (status !== 'granted') return notify('Permission needed', 'Allow photo access');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -49,8 +50,8 @@ export default function BulkImportScreen({ navigation }) {
   };
 
   const analyze = async () => {
-    if (!item) return Alert.alert('Pick an item', 'Choose the brand and item first.');
-    if (!photos.length) return Alert.alert('Pick photos', 'Select up to 20 design photos.');
+    if (!item) return notify('Pick an item', 'Choose the brand and item first.');
+    if (!photos.length) return notify('Pick photos', 'Select up to 20 design photos.');
     const token = await AsyncStorage.getItem('auth_token');
     if (token) setAuthToken(token);
     setAnalyzing(true);
@@ -71,7 +72,7 @@ export default function BulkImportScreen({ navigation }) {
       setStep('review');
     } catch (e) {
       const msg = e.response?.data?.error || e.message || 'Could not read photos';
-      Alert.alert('Error', msg);
+      notify('Error', msg);
     } finally {
       setAnalyzing(false);
     }
@@ -89,19 +90,19 @@ export default function BulkImportScreen({ navigation }) {
   const save = async () => {
     if (savingRef.current) return; // guard against rapid double-taps creating duplicates
     const ready = drafts.filter(d => d.design_number && d.rate !== '' && d.rate != null);
-    if (!ready.length) return Alert.alert('Nothing ready', 'Each design needs a design number and a rate.');
+    if (!ready.length) return notify('Nothing ready', 'Each design needs a design number and a rate.');
     savingRef.current = true;
     setSaving(true);
     try {
       const { data } = await importApi.save(item.id, drafts);
-      Alert.alert(
+      notify(
         'Saved',
         `${data.saved} design${data.saved !== 1 ? 's' : ''} added.` +
         (data.skipped?.length ? `\n${data.skipped.length} skipped (missing number/rate or duplicate).` : ''),
         [{ text: 'OK', onPress: () => { setStep('pick'); setPhotos([]); setDrafts([]); } }]
       );
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not save');
+      notify('Error', e.response?.data?.error || 'Could not save');
     } finally {
       setSaving(false);
       savingRef.current = false;

@@ -67,7 +67,7 @@ export default function DesignsScreen({ route, navigation }) {
     es.addEventListener('error', (e) => {
       try {
         const { message } = JSON.parse(e.data);
-        Alert.alert('Tally Unavailable', message || 'Could not reach Tally. Make sure Tally is open on the PC.');
+        notify('Tally Unavailable', message || 'Could not reach Tally. Make sure Tally is open on the PC.');
       } catch {}
       es.close();
       setTallyRefreshing(false);
@@ -120,7 +120,7 @@ export default function DesignsScreen({ route, navigation }) {
       setWorkCategories(workCatsRes.data.map(w => w.name));
       setContacts(contactsRes.data);
     } catch {
-      Alert.alert('Error', 'Could not load designs');
+      notify('Error', 'Could not load designs');
     } finally {
       setLoading(false);
     }
@@ -147,14 +147,14 @@ export default function DesignsScreen({ route, navigation }) {
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Permission needed', 'Allow photo access');
+    if (status !== 'granted') return notify('Permission needed', 'Allow photo access');
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Permission needed', 'Allow camera access');
+    if (status !== 'granted') return notify('Permission needed', 'Allow camera access');
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
   };
@@ -163,11 +163,11 @@ export default function DesignsScreen({ route, navigation }) {
   const saveDesign = async () => {
     if (savingRef.current) return; // guard against rapid double-taps creating duplicates
     if (!form.design_number || !form.rate || !form.pcs_per_set) {
-      Alert.alert('Required', 'Design number, rate and pcs/set are required');
+      notify('Required', 'Design number, rate and pcs/set are required');
       return;
     }
     const token = await AsyncStorage.getItem('auth_token');
-    if (!token) { Alert.alert('Session expired', 'Please log out and log in again.'); return; }
+    if (!token) { notify('Session expired', 'Please log out and log in again.'); return; }
     setAuthToken(token);
     savingRef.current = true;
     setSaving(true);
@@ -189,9 +189,9 @@ export default function DesignsScreen({ route, navigation }) {
       setForm(f => ({ ...f, design_number: '' }));
       setPhoto(null);
       load();
-      Alert.alert('Saved', 'Design added successfully');
+      notify('Saved', 'Design added successfully');
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || e.message || 'Unknown error');
+      notify('Error', e.response?.data?.error || e.message || 'Unknown error');
     } finally {
       setSaving(false);
       savingRef.current = false;
@@ -209,7 +209,7 @@ export default function DesignsScreen({ route, navigation }) {
       setAddFabricVisible(false);
       setFabricOpen(false);
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not add fabric');
+      notify('Error', e.response?.data?.error || 'Could not add fabric');
     }
   };
 
@@ -217,7 +217,7 @@ export default function DesignsScreen({ route, navigation }) {
     setCardMenu(null);
     setConfirmDel(false);
     try { await designsApi.delete(d.id); load(); }
-    catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not delete'); }
+    catch (e) { notify('Error', e.response?.data?.error || 'Could not delete'); }
   };
 
   const openEdit = (d) => {
@@ -236,11 +236,11 @@ export default function DesignsScreen({ route, navigation }) {
 
   const saveEdit = async () => {
     if (!editForm.design_number || !editForm.rate || !editForm.pcs_per_set) {
-      Alert.alert('Required', 'Design number, rate and pcs/set are required');
+      notify('Required', 'Design number, rate and pcs/set are required');
       return;
     }
     const token = await AsyncStorage.getItem('auth_token');
-    if (!token) { Alert.alert('Session expired', 'Please log in again.'); return; }
+    if (!token) { notify('Session expired', 'Please log in again.'); return; }
     setAuthToken(token);
     setEditSaving(true);
     try {
@@ -260,7 +260,7 @@ export default function DesignsScreen({ route, navigation }) {
       setEditPhoto(null);
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || e.message || 'Could not save');
+      notify('Error', e.response?.data?.error || e.message || 'Could not save');
     } finally {
       setEditSaving(false);
     }
@@ -321,7 +321,7 @@ export default function DesignsScreen({ route, navigation }) {
   };
 
   const saveOrder = async () => {
-    if (!orderForm.customer_name.trim()) { Alert.alert('Required', 'Enter customer name'); return; }
+    if (!orderForm.customer_name.trim()) { notify('Required', 'Enter customer name'); return; }
     setOrderSaving(true);
     try {
       await ordersApi.create({
@@ -333,9 +333,9 @@ export default function DesignsScreen({ route, navigation }) {
         source: 'design_card',
       });
       setOrderDesign(null);
-      Alert.alert('Saved', 'Order logged successfully');
+      notify('Saved', 'Order logged successfully');
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not save order');
+      notify('Error', e.response?.data?.error || 'Could not save order');
     } finally {
       setOrderSaving(false);
     }
@@ -351,7 +351,7 @@ export default function DesignsScreen({ route, navigation }) {
       const { data } = await designsApi.toggleStock(d.id);
       setDesigns(prev => prev.map(x => x.id === d.id ? { ...x, in_stock: data.in_stock } : x));
     } catch {
-      Alert.alert('Error', 'Could not update stock status');
+      notify('Error', 'Could not update stock status');
     }
   };
 
@@ -821,7 +821,7 @@ export default function DesignsScreen({ route, navigation }) {
                   setNewWorkCatName('');
                   setAddWorkCatVisible(false);
                 } catch (e) {
-                  Alert.alert('Error', e.response?.data?.error || 'Could not add');
+                  notify('Error', e.response?.data?.error || 'Could not add');
                 }
               }}>
                 <Text style={{ color: '#fff' }}>Add</Text>

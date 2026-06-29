@@ -27,7 +27,7 @@ export default function AdminScreen({ user, onLogout }) {
     try {
       const { data } = await adminApi.getActivity(100);
       setLogs(data);
-    } catch { Alert.alert('Error', 'Could not load activity log'); }
+    } catch { notify('Error', 'Could not load activity log'); }
     finally { setLoading(false); }
   }, []);
 
@@ -36,7 +36,7 @@ export default function AdminScreen({ user, onLogout }) {
     try {
       const { data } = await adminApi.getUsers();
       setUsers(data);
-    } catch { Alert.alert('Error', 'Could not load users'); }
+    } catch { notify('Error', 'Could not load users'); }
     finally { setLoading(false); }
   }, []);
 
@@ -51,9 +51,9 @@ export default function AdminScreen({ user, onLogout }) {
     setTemplateSaving(true);
     try {
       await settingsApi.set('whatsapp_template', template);
-      Alert.alert('Saved', 'WhatsApp template updated');
+      notify('Saved', 'WhatsApp template updated');
     } catch {
-      Alert.alert('Error', 'Could not save template');
+      notify('Error', 'Could not save template');
     } finally {
       setTemplateSaving(false);
     }
@@ -69,14 +69,14 @@ export default function AdminScreen({ user, onLogout }) {
   React.useEffect(() => { loadActivity(); }, []);
 
   const addUser = async () => {
-    if (!form.username || !form.pin) return Alert.alert('Required', 'Username and PIN are required');
+    if (!form.username || !form.pin) return notify('Required', 'Username and PIN are required');
     try {
       await adminApi.addUser(form);
       setAddModal(false);
       setForm({ username: '', pin: '', role: 'staff' });
       loadUsers();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not add user');
+      notify('Error', e.response?.data?.error || 'Could not add user');
     }
   };
 
@@ -88,27 +88,27 @@ export default function AdminScreen({ user, onLogout }) {
   };
 
   const resetPin = async () => {
-    if (!newPin || newPin.length < 4) return Alert.alert('Error', 'PIN must be at least 4 digits');
+    if (!newPin || newPin.length < 4) return notify('Error', 'PIN must be at least 4 digits');
     try {
       await adminApi.resetPin(selectedUser.id, newPin);
       setPinModal(false);
       setNewPin('');
-      Alert.alert('Done', `PIN reset for ${selectedUser.username}`);
+      notify('Done', `PIN reset for ${selectedUser.username}`);
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not reset PIN');
+      notify('Error', e.response?.data?.error || 'Could not reset PIN');
     }
   };
 
   const changeOwnPin = async () => {
-    if (!changePinForm.current || !changePinForm.next) return Alert.alert('Required', 'Fill both fields');
-    if (changePinForm.next.length < 4) return Alert.alert('Error', 'New PIN must be at least 4 digits');
+    if (!changePinForm.current || !changePinForm.next) return notify('Required', 'Fill both fields');
+    if (changePinForm.next.length < 4) return notify('Error', 'New PIN must be at least 4 digits');
     try {
       await authApi.changePin(changePinForm.current, changePinForm.next);
       setChangePinModal(false);
       setChangePinForm({ current: '', next: '' });
-      Alert.alert('Done', 'PIN changed successfully');
+      notify('Done', 'PIN changed successfully');
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not change PIN');
+      notify('Error', e.response?.data?.error || 'Could not change PIN');
     }
   };
 

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { identifyApi, getImageUrl, getThumbUrl } from '../api/client';
+import { notify } from '../utils/share';
 
 export default function IdentifyScreen() {
   const [photo, setPhoto] = useState(null);
@@ -17,13 +18,13 @@ export default function IdentifyScreen() {
     if (fromCamera) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        return Alert.alert('Permission needed', 'Camera access is required to take a photo.');
+        return notify('Permission needed', 'Camera access is required to take a photo.');
       }
       result = await ImagePicker.launchCameraAsync({ quality: 0.8, base64: false });
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        return Alert.alert('Permission needed', 'Photo library access is required.');
+        return notify('Permission needed', 'Photo library access is required.');
       }
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: false });
     }
@@ -58,7 +59,7 @@ export default function IdentifyScreen() {
       setMatches(data.matches || []);
       setMessage(data.message || null);
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not identify the piece. Make sure the backend has an ANTHROPIC_API_KEY set.');
+      notify('Error', e.response?.data?.error || 'Could not identify the piece. Make sure the backend has an ANTHROPIC_API_KEY set.');
     } finally {
       setLoading(false);
     }

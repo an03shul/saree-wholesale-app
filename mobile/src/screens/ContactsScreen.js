@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as ExpoContacts from 'expo-contacts';
 import { contactsApi, tallyApi } from '../api/client';
-import { confirmAction } from '../utils/share';
+import { confirmAction, notify } from '../utils/share';
 
 export default function ContactsScreen({ navigation }) {
   const [contacts, setContacts] = useState([]);
@@ -35,7 +35,7 @@ export default function ContactsScreen({ navigation }) {
   const openPhonePicker = async () => {
     const { status } = await ExpoContacts.requestPermissionsAsync();
     if (status !== 'granted') {
-      return Alert.alert('Permission needed', 'Allow access to contacts to import from your phone directory.');
+      return notify('Permission needed', 'Allow access to contacts to import from your phone directory.');
     }
     setLoadingContacts(true);
     setPickerVisible(true);
@@ -52,7 +52,7 @@ export default function ContactsScreen({ navigation }) {
   const selectPhoneContact = (contact) => {
     const phones = contact?.phoneNumbers || [];
     if (phones.length === 0) {
-      Alert.alert('No phone number', `${contact?.name || 'This contact'} has no phone number.`);
+      notify('No phone number', `${contact?.name || 'This contact'} has no phone number.`);
       return;
     }
     if (phones.length === 1) {
@@ -76,14 +76,14 @@ export default function ContactsScreen({ navigation }) {
   };
 
   const save = async () => {
-    if (!form.name || !form.phone) return Alert.alert('Required', 'Name and phone are required');
+    if (!form.name || !form.phone) return notify('Required', 'Name and phone are required');
     try {
       await contactsApi.create(form);
       setModalVisible(false);
       setForm({ name: '', phone: '', type: 'individual' });
       load();
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not save contact');
+      notify('Error', e.response?.data?.error || 'Could not save contact');
     }
   };
 
@@ -95,7 +95,7 @@ export default function ContactsScreen({ navigation }) {
       const { data } = await tallyApi.getCustomers();
       setTallyContacts(data);
     } catch {
-      Alert.alert('Error', 'Could not connect to Tally. Make sure Tally Prime is open and running.');
+      notify('Error', 'Could not connect to Tally. Make sure Tally Prime is open and running.');
       setTallyPickerVisible(false);
     } finally {
       setLoadingTally(false);
@@ -112,7 +112,7 @@ export default function ContactsScreen({ navigation }) {
 
   const importSelected = async () => {
     const list = Object.values(selected);
-    if (!list.length) return Alert.alert('None selected', 'Tap contacts to select them first.');
+    if (!list.length) return notify('None selected', 'Tap contacts to select them first.');
     let imported = 0, skipped = 0;
     for (const c of list) {
       try {
@@ -123,7 +123,7 @@ export default function ContactsScreen({ navigation }) {
     setTallyPickerVisible(false);
     setSelected({});
     load();
-    Alert.alert('Done', `${imported} imported${skipped ? `, ${skipped} skipped (already exist or no phone)` : ''}.`);
+    notify('Done', `${imported} imported${skipped ? `, ${skipped} skipped (already exist or no phone)` : ''}.`);
   };
 
   const filteredPhoneContacts = phoneContacts.filter(c =>
