@@ -3,36 +3,43 @@ const path = require('path');
 const router = express.Router();
 const db = require('../db/database');
 // Public catalog page for customers — uses app in_stock flag only, never Tally stock
-router.get('/:brandId', async (req, res) => {
-  const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
-  if (!brand) return res.status(404).send('Brand not found');
+router.get('/:brandId', (req, res) => {
+  // Wrapped so any error returns a clean page instead of hanging the request
+  // (an unhandled throw in here previously caused the catalog to time out).
+  try {
+    const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
+    if (!brand) return res.status(404).send('Brand not found');
 
-  const { fabric, maxRate, minRate } = req.query;
+    const { fabric, maxRate, minRate } = req.query;
 
-  // Only show in-stock items
-  let items = db.prepare('SELECT * FROM items WHERE brand_id = ? AND in_stock = 1 ORDER BY name').all(brand.id);
+    // Only show in-stock items
+    let items = db.prepare('SELECT * FROM items WHERE brand_id = ? AND in_stock = 1 ORDER BY name').all(brand.id);
 
-  const itemsWithDesigns = items.map((item) => {
-    let designs = db.prepare('SELECT * FROM designs WHERE item_id = ? AND in_stock = 1 ORDER BY CAST(design_number AS INTEGER), design_number').all(item.id);
+    const itemsWithDesigns = items.map((item) => {
+      let designs = db.prepare('SELECT * FROM designs WHERE item_id = ? AND in_stock = 1 ORDER BY CAST(design_number AS INTEGER), design_number').all(item.id);
 
-    if (fabric) designs = designs.filter(d => d.fabric_type === fabric);
-    if (maxRate) designs = designs.filter(d => d.rate <= parseFloat(maxRate));
-    if (minRate) designs = designs.filter(d => d.rate >= parseFloat(minRate));
+      if (fabric) designs = designs.filter(d => d.fabric_type === fabric);
+      if (maxRate) designs = designs.filter(d => d.rate <= parseFloat(maxRate));
+      if (minRate) designs = designs.filter(d => d.rate >= parseFloat(minRate));
 
-    return { ...item, designs };
-  }).filter(i => i.designs.length > 0);
+      return { ...item, designs };
+    }).filter(i => i.designs.length > 0);
 
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const shopPhone = process.env.SHOP_WHATSAPP || '';
-  const allFabrics = [...new Set(
-    db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
-  )];
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const shopPhone = process.env.SHOP_WHATSAPP || '';
+    const allFabrics = [...new Set(
+      db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
+    )];
 
-  // NOTE: watermarks are NOT resolved here. The <img> tags point at
-  // /uploads/wm/<file>, which lazy-generates and caches the watermark on first
-  // request. This keeps the catalog HTML fast (returns in ms) instead of
-  // blocking on a serial watermark queue for every design (which timed out).
-  res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, baseUrl, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
+    // NOTE: watermarks are NOT resolved here. The <img> tags point at
+    // /uploads/wm/<file>, which lazy-generates and caches the watermark on first
+    // request. This keeps the catalog HTML fast (returns in ms) instead of
+    // blocking on a serial watermark queue for every design (which timed out).
+    res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, baseUrl, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
+  } catch (err) {
+    console.error('Catalog render error:', err.message);
+    res.status(500).send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>Catalog temporarily unavailable</h2><p>Please try again in a moment.</p></body></html>');
+  }
 });
 
 function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filters }) {
@@ -175,7 +182,7 @@ async function submitOrder() {
       <div class="success">
         <div class="tick">✅</div>
         <h3>Order Placed!</h3>
-        <p>Thank you, \${name}. We'll contact you${phone ? ' on WhatsApp' : ''} shortly.</p>
+        <p>Thank you, \${name}. We'll contact you\${phone ? ' on WhatsApp' : ''} shortly.</p>
       </div>
     \`;
     setTimeout(closeOrder, 3000);
