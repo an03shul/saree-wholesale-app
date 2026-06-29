@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { adminApi, authApi, setAuthToken, settingsApi } from '../api/client';
+import { confirmAction, notify } from '../utils/share';
 
 export default function AdminScreen({ user, onLogout }) {
   const [tab, setTab] = useState('activity'); // 'activity' | 'users' | 'template'
@@ -80,13 +81,10 @@ export default function AdminScreen({ user, onLogout }) {
   };
 
   const deleteUser = (u) => {
-    Alert.alert('Remove User', `Remove ${u.username}? They will be logged out immediately.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: async () => {
-        try { await adminApi.deleteUser(u.id); loadUsers(); }
-        catch (e) { Alert.alert('Error', e.response?.data?.error || 'Could not remove user'); }
-      }},
-    ]);
+    confirmAction('Remove User', `Remove ${u.username}? They will be logged out immediately.`, async () => {
+      try { await adminApi.deleteUser(u.id); loadUsers(); }
+      catch (e) { notify('Error', e.response?.data?.error || 'Could not remove user'); }
+    }, 'Remove');
   };
 
   const resetPin = async () => {
@@ -115,16 +113,13 @@ export default function AdminScreen({ user, onLogout }) {
   };
 
   const logout = () => {
-    Alert.alert('Log Out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: async () => {
-        try { await authApi.logout(); } catch {}
-        await AsyncStorage.removeItem('auth_token');
-        await AsyncStorage.removeItem('auth_user');
-        setAuthToken(null);
-        onLogout();
-      }},
-    ]);
+    confirmAction('Log Out', 'Are you sure?', async () => {
+      try { await authApi.logout(); } catch {}
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('auth_user');
+      setAuthToken(null);
+      onLogout();
+    }, 'Log Out');
   };
 
   const formatTime = (ts) => {

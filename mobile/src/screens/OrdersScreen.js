@@ -4,6 +4,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Modal, RefreshControl, Image, ScrollView,
 } from 'react-native';
 import { ordersApi, designsApi, getImageUrl, getThumbUrl } from '../api/client';
+import { confirmAction } from '../utils/share';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -82,10 +83,9 @@ export default function OrdersScreen({ navigation }) {
   };
 
   const deleteOrder = (order) => {
-    Alert.alert('Delete', `Delete order from ${order.customer_name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await ordersApi.delete(order.id); load(); } },
-    ]);
+    confirmAction('Delete', `Delete order from ${order.customer_name}?`, async () => {
+      await ordersApi.delete(order.id); load();
+    }, 'Delete');
   };
 
   const searchDesigns = async (q) => {

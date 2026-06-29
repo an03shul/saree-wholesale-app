@@ -79,6 +79,9 @@ app.get('/thumb/:name', async (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 app.use('/catalog', require('./routes/catalog'));
+// PDF brochure: same watermarked, in-stock-only data as /catalog, opened in a
+// plain browser tab (no auth header), so it must be public like the catalog.
+app.use('/api/pdf', require('./routes/pdf'));
 app.use('/api/push', require('./routes/push'));
 app.use('/api/orders', require('./routes/orders')); // public POST for catalog orders
 // Tally sync agent endpoint — authenticated by its own X-Sync-Token (machine, not user)
@@ -95,7 +98,6 @@ app.use('/api/designs', require('./routes/designs'));
 app.use('/api/contacts',require('./routes/contacts'));
 app.use('/api/send',    require('./routes/send'));
 app.use('/api/tally',   require('./routes/tally'));
-app.use('/api/pdf',     require('./routes/pdf'));
 app.use('/api/identify',require('./routes/identify'));
 app.use('/api/import',  require('./routes/import'));
 app.use('/api/admin',   require('./routes/admin'));

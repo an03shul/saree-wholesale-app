@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as ExpoContacts from 'expo-contacts';
 import { contactsApi, tallyApi } from '../api/client';
+import { confirmAction } from '../utils/share';
 
 export default function ContactsScreen({ navigation }) {
   const [contacts, setContacts] = useState([]);
@@ -147,10 +148,7 @@ export default function ContactsScreen({ navigation }) {
               <Text style={styles.phone}>{c.phone}</Text>
               <Text style={styles.type}>{c.type}</Text>
             </View>
-            <TouchableOpacity onPress={() => Alert.alert('Delete', `Remove ${c.name}?`, [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: async () => { await contactsApi.delete(c.id); load(); } }
-            ])}>
+            <TouchableOpacity onPress={() => confirmAction('Delete', `Remove ${c.name}?`, async () => { await contactsApi.delete(c.id); load(); }, 'Delete')}>
               <Text style={styles.del}>✕</Text>
             </TouchableOpacity>
           </View>

@@ -10,6 +10,7 @@ import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, orders
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
+import { shareDesignsList, notify } from '../utils/share';
 
 export default function DesignsScreen({ route, navigation }) {
   const { item, brand } = route.params;
@@ -274,109 +275,6 @@ export default function DesignsScreen({ route, navigation }) {
       '\nReply here to place an order 🙏',
     ].filter(Boolean).join('\n');
 
-  // Fetch watermarked image(s) and open native share sheet.
-  // Falls back to wa.me link if Web Share API unavailable.
-  // Draws brand/item header + two-line footer onto the watermarked image blob.
-  const buildShareCard = (blob, d) => new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const W = img.naturalWidth;
-      const H = img.naturalHeight;
-      const HEAD = Math.round(H * 0.09); // header ~9%
-      const FOOT = Math.round(H * 0.18); // footer ~18% (two lines)
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H + HEAD + FOOT;
-      const ctx = canvas.getContext('2d');
-
-      // Header band
-      ctx.fillStyle = '#1A0F0A';
-      ctx.fillRect(0, 0, W, HEAD);
-      // Image
-      ctx.drawImage(img, 0, HEAD, W, H);
-      // Footer band
-      ctx.fillStyle = '#1A0F0A';
-      ctx.fillRect(0, HEAD + H, W, FOOT);
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Header: brand · item (small, cream)
-      const hfs = Math.max(18, Math.round(HEAD * 0.42));
-      ctx.fillStyle = '#E8D5C0';
-      ctx.font = `600 ${hfs}px sans-serif`;
-      ctx.fillText(`${brand.name}  ·  ${item.name}`, W / 2, HEAD / 2);
-
-      // Footer line 1: #DesignNo · ₹Rate (large, white)
-      const f1fs = Math.max(28, Math.round(FOOT * 0.40));
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = `800 ${f1fs}px sans-serif`;
-      ctx.fillText(`#${d.design_number}  ·  ₹${d.rate}`, W / 2, HEAD + H + FOOT * 0.33);
-
-      // Footer line 2: pcs · fabric · colors (smaller, light gray)
-      const f2fs = Math.max(18, Math.round(FOOT * 0.28));
-      const meta = [
-        d.pcs_per_set ? `${d.pcs_per_set} pcs` : null,
-        d.fabric_type || null,
-        d.colors || null,
-      ].filter(Boolean).join('  ·  ');
-      ctx.fillStyle = '#C0A898';
-      ctx.font = `500 ${f2fs}px sans-serif`;
-      ctx.fillText(meta, W / 2, HEAD + H + FOOT * 0.72);
-
-      canvas.toBlob(resolve, 'image/jpeg', 0.88);
-    };
-    img.onerror = reject;
-    img.src = objectUrl;
-  });
-
-  // Web-safe alert. React Native's Alert.alert is a no-op on web, which was
-  // silently swallowing share failures on the staff's Android phone — the user
-  // saw "nothing happen". window.alert is visible in the browser/PWA.
-  const notify = (title, msg) => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(`${title}\n\n${msg}`);
-    else Alert.alert(title, msg);
-  };
-
-  // Fetch a design's watermarked image and bake the header/footer card onto it.
-  const buildShareFile = async (d) => {
-    const resp = await fetch(getWmUrl(d.photo_path));
-    if (!resp.ok) throw new Error(`image failed to load (${resp.status})`);
-    const rawBlob = await resp.blob();
-    const cardBlob = await buildShareCard(rawBlob, d);
-    return new File([cardBlob], `Design-${d.design_number}.jpg`, { type: 'image/jpeg' });
-  };
-
-  // Try the native share sheet. Returns true if it ran (or the user cancelled),
-  // false if sharing isn't possible here so the caller can fall back.
-  const tryNativeShare = async (files, text) => {
-    if (typeof navigator === 'undefined' || !navigator.canShare?.({ files })) return false;
-    try {
-      await navigator.share(text ? { files, text } : { files });
-      return true;
-    } catch (e) {
-      if (e?.name === 'AbortError') return true; // user dismissed the sheet — fine
-      return false; // activation lost / unsupported → fall back
-    }
-  };
-
-  // Fallback for web when native sharing fails: save the image(s) to the device
-  // so the user can attach them manually.
-  const downloadFiles = (files) => {
-    files.forEach((file) => {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    });
-  };
-
   const shareDesign = async (d) => {
     if (!d.photo_path) {
       notify('No photo', 'This design has no photo to share.');
@@ -384,14 +282,12 @@ export default function DesignsScreen({ route, navigation }) {
     }
     setSending(true);
     try {
-      const file = await buildShareFile(d);
-      const shared = await tryNativeShare([file], buildCaption(d));
-      if (!shared && Platform.OS === 'web') {
-        downloadFiles([file]);
-        notify('Image saved', 'Sharing isn’t available on this browser, so the picture was saved to your phone. Attach it in WhatsApp to send.');
-      }
-    } catch (e) {
-      notify('Could not share', `Please check your connection and try again.\n(${e.message})`);
+      await shareDesignsList({
+        designs: [d],
+        brandName: brand.name,
+        defaultItemName: item.name,
+        caption: buildCaption(d),
+      });
     } finally {
       setSending(false);
     }
@@ -405,14 +301,11 @@ export default function DesignsScreen({ route, navigation }) {
     }
     setSending(true);
     try {
-      const files = await Promise.all(selected.map(buildShareFile));
-      const shared = await tryNativeShare(files);
-      if (!shared && Platform.OS === 'web') {
-        downloadFiles(files);
-        notify('Images saved', 'Sharing isn’t available on this browser, so the pictures were saved to your phone. Attach them in WhatsApp to send.');
-      }
-    } catch (e) {
-      notify('Could not share', `Please check your connection and try again.\n(${e.message})`);
+      await shareDesignsList({
+        designs: selected,
+        brandName: brand.name,
+        defaultItemName: item.name,
+      });
     } finally {
       setSending(false);
       setSelectMode(false);

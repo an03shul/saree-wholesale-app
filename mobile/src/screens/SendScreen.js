@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { brandsApi, itemsApi, contactsApi, sendApi, fabricsApi, workCategoriesApi, getImageUrl, getThumbUrl, getCatalogUrl, getPdfUrl, whatsappLink } from '../api/client';
 import { colors, shadow } from '../constants/theme';
+import { shareDesignsList, notify } from '../utils/share';
 
 const PRICE_PRESETS = [
   { label: '300–500', min: '300', max: '500' },
@@ -80,15 +81,19 @@ export default function SendScreen() {
   };
 
   const sendFiltered = async () => {
-    if (!selectedContact) return Alert.alert('Select contact', 'Please select a recipient');
-    const ids = filterResults.designs.filter(d => !excludedIds.has(d.id)).map(d => d.id);
-    if (!ids.length) return Alert.alert('Nothing to send', 'No designs selected');
+    const activeDesigns = filterResults?.designs?.filter(d => !excludedIds.has(d.id)) || [];
+    if (!activeDesigns.length) return notify('Nothing to send', 'No designs selected');
     setSending(true);
     try {
-      const { data } = await sendApi.sendSelected(ids, selectedContact.phone);
-      Alert.alert('Sent!', `${data.sent} designs sent to ${selectedContact.name}`);
-    } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not send');
+      const caption = selectedContact
+        ? `*${selectedBrand?.name || 'Gopiram Saree'}* Collection\nFor: ${selectedContact.name}\nReply here to place an order 🙏`
+        : `*${selectedBrand?.name || 'Gopiram Saree'}* Collection\nReply here to place an order 🙏`;
+
+      await shareDesignsList({
+        designs: activeDesigns,
+        brandName: selectedBrand?.name,
+        caption,
+      });
     } finally {
       setSending(false);
     }
@@ -135,13 +140,19 @@ export default function SendScreen() {
   };
 
   const send = async () => {
-    if (!selectedContact) return Alert.alert('Select contact', 'Please select a recipient');
+    if (!inStockDesigns.length) return notify('Nothing to send', 'No in-stock designs available');
     setSending(true);
     try {
-      const { data } = await sendApi.send(selectedItem.id, selectedContact.phone);
-      Alert.alert('Sent!', `${data.sent} designs sent, ${data.skipped} out-of-stock skipped.`);
-    } catch (e) {
-      Alert.alert('Error', e.response?.data?.error || 'Could not send');
+      const caption = selectedContact
+        ? `*${selectedBrand?.name || 'Gopiram Saree'} · ${selectedItem?.name || ''}*\nFor: ${selectedContact.name}\nReply here to place an order 🙏`
+        : `*${selectedBrand?.name || 'Gopiram Saree'} · ${selectedItem?.name || ''}*\nReply here to place an order 🙏`;
+
+      await shareDesignsList({
+        designs: inStockDesigns,
+        brandName: selectedBrand?.name,
+        defaultItemName: selectedItem?.name,
+        caption,
+      });
     } finally {
       setSending(false);
     }
@@ -388,12 +399,12 @@ export default function SendScreen() {
                   </View>
 
                   <TouchableOpacity
-                    style={[styles.sendBtn, (!selectedContact || sending || (filterResults.designs.length - excludedIds.size) === 0) && styles.sendBtnDisabled]}
+                    style={[styles.sendBtn, (sending || (filterResults.designs.length - excludedIds.size) === 0) && styles.sendBtnDisabled]}
                     onPress={sendFiltered}
-                    disabled={!selectedContact || sending || (filterResults.designs.length - excludedIds.size) === 0}
+                    disabled={sending || (filterResults.designs.length - excludedIds.size) === 0}
                   >
                     <Text style={styles.sendBtnText}>
-                      {sending ? 'Sending…' : `📤 Send ${filterResults.designs.length - excludedIds.size} designs via WhatsApp`}
+                      {sending ? 'Preparing Share Sheet…' : `📤 Share ${filterResults.designs.length - excludedIds.size} designs via WhatsApp`}
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -483,12 +494,12 @@ export default function SendScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.sendBtn, (!selectedContact || sending || inStockDesigns.length === 0) && styles.sendBtnDisabled]}
+            style={[styles.sendBtn, (sending || inStockDesigns.length === 0) && styles.sendBtnDisabled]}
             onPress={send}
-            disabled={!selectedContact || sending || inStockDesigns.length === 0}
+            disabled={sending || inStockDesigns.length === 0}
           >
             <Text style={styles.sendBtnText}>
-              {sending ? 'Sending…' : `📤 Send ${inStockDesigns.length} designs via WhatsApp`}
+              {sending ? 'Preparing Share Sheet…' : `📤 Share ${inStockDesigns.length} designs via WhatsApp`}
             </Text>
           </TouchableOpacity>
         </>
