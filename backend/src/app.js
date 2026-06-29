@@ -42,10 +42,17 @@ app.use((req, res, next) => { console.log(`${req.method} ${req.path} auth:${!!re
 // cached wm/ and thumb/ derivatives. e.g. /uploads/x.jpg, /uploads/wm/x.jpg
 const storage = require('./services/storage');
 const { getThumbBuffer } = require('./services/thumbnail');
+const { getWatermarkedBuffer } = require('./services/watermark');
 app.get('/uploads/*', async (req, res) => {
   try {
     const key = req.params[0]; // e.g. "x.jpg" or "wm/x.jpg"
-    const buf = await storage.getFile(key);
+    let buf = await storage.getFile(key);
+    // Lazy-generate watermarked derivatives on first request, then cache in R2.
+    // This keeps the catalog page fast: the HTML returns instantly and each
+    // image generates on demand instead of blocking the page render.
+    if (!buf && key.startsWith('wm/')) {
+      buf = await getWatermarkedBuffer(key.slice(3));
+    }
     if (!buf) return res.status(404).end();
     res.set('Content-Type', storage.contentTypeFor(key));
     res.set('Cache-Control', 'public, max-age=86400');

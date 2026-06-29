@@ -1,7 +1,7 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const db = require('../db/database');
-const { getWatermarkedPath } = require('../services/watermark');
 // Public catalog page for customers — uses app in_stock flag only, never Tally stock
 router.get('/:brandId', async (req, res) => {
   const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
@@ -28,17 +28,10 @@ router.get('/:brandId', async (req, res) => {
     db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
   )];
 
-  // Resolve watermarked path; fall back to original if watermark step errors
-  for (const item of itemsWithDesigns) {
-    for (const d of item.designs) {
-      try {
-        d.wm_photo = d.photo_path ? await getWatermarkedPath(d.photo_path) : null;
-      } catch {
-        d.wm_photo = d.photo_path;
-      }
-    }
-  }
-
+  // NOTE: watermarks are NOT resolved here. The <img> tags point at
+  // /uploads/wm/<file>, which lazy-generates and caches the watermark on first
+  // request. This keeps the catalog HTML fast (returns in ms) instead of
+  // blocking on a serial watermark queue for every design (which timed out).
   res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, baseUrl, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
 });
 
@@ -46,7 +39,7 @@ function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filter
   const designCards = items.flatMap(item =>
     item.designs.map(d => {
       const photoHtml = d.photo_path
-        ? `<img src="${baseUrl}/uploads/${d.wm_photo || d.photo_path}" alt="Design ${d.design_number}" loading="lazy"/>`
+        ? `<img src="${baseUrl}/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
         <div class="card">
