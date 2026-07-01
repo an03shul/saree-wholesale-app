@@ -20,7 +20,20 @@ export default function ContactsScreen({ navigation }) {
   const [tallySearch, setTallySearch] = useState('');
   const [loadingTally, setLoadingTally] = useState(false);
   const [selected, setSelected] = useState({});
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', type: 'individual' });
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm({ name: '', phone: '', type: 'individual' });
+    setModalVisible(true);
+  };
+
+  const openEdit = (c) => {
+    setEditingId(c.id);
+    setForm({ name: c.name, phone: c.phone, type: c.type || 'individual' });
+    setModalVisible(true);
+  };
 
   const load = useCallback(async () => {
     const { data } = await contactsApi.getAll();
@@ -78,8 +91,10 @@ export default function ContactsScreen({ navigation }) {
   const save = async () => {
     if (!form.name || !form.phone) return notify('Required', 'Name and phone are required');
     try {
-      await contactsApi.create(form);
+      if (editingId) await contactsApi.update(editingId, form);
+      else await contactsApi.create(form);
       setModalVisible(false);
+      setEditingId(null);
       setForm({ name: '', phone: '', type: 'individual' });
       load();
     } catch (e) {
@@ -139,7 +154,7 @@ export default function ContactsScreen({ navigation }) {
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={<Text style={styles.empty}>No contacts yet.{'\n'}Tap + to add manually or import from your phone.</Text>}
         renderItem={({ item: c }) => (
-          <View style={styles.card}>
+          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => openEdit(c)}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{String(c.name || '?').charAt(0).toUpperCase()}</Text>
             </View>
@@ -148,10 +163,11 @@ export default function ContactsScreen({ navigation }) {
               <Text style={styles.phone}>{c.phone}</Text>
               <Text style={styles.type}>{c.type}</Text>
             </View>
+            <Text style={styles.editHint}>✎</Text>
             <TouchableOpacity onPress={() => confirmAction('Delete', `Remove ${c.name}?`, async () => { await contactsApi.delete(c.id); load(); }, 'Delete')}>
               <Text style={styles.del}>✕</Text>
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         )}
       />
 
@@ -163,7 +179,7 @@ export default function ContactsScreen({ navigation }) {
         <TouchableOpacity style={[styles.importBtn, { backgroundColor: '#1a6b3c' }]} onPress={openTallyPicker}>
           <Text style={styles.importBtnText}>🏦 Tally</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity style={styles.fab} onPress={openAdd}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -190,7 +206,7 @@ export default function ContactsScreen({ navigation }) {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add Contact</Text>
+            <Text style={styles.modalTitle}>{editingId ? 'Edit Contact' : 'Add Contact'}</Text>
             <TextInput style={styles.input} placeholder="Name" value={form.name} onChangeText={v => setForm(f => ({ ...f, name: v }))} />
             <TextInput style={styles.input} placeholder="Phone with country code (e.g. 919876543210)" value={form.phone} onChangeText={v => setForm(f => ({ ...f, phone: v }))} keyboardType="phone-pad" />
             <View style={styles.typeRow}>
@@ -201,7 +217,7 @@ export default function ContactsScreen({ navigation }) {
               ))}
             </View>
             <View style={styles.row}>
-              <TouchableOpacity style={styles.btnSecondary} onPress={() => setModalVisible(false)}><Text>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.btnSecondary} onPress={() => { setModalVisible(false); setEditingId(null); }}><Text>Cancel</Text></TouchableOpacity>
               <TouchableOpacity style={styles.btnPrimary} onPress={save}><Text style={{ color: '#fff' }}>Save</Text></TouchableOpacity>
             </View>
           </View>
@@ -332,6 +348,7 @@ const styles = StyleSheet.create({
   name: { fontWeight: '700', fontSize: 16, color: '#2c1810' },
   phone: { color: '#555', marginTop: 2, fontSize: 13 },
   type: { color: '#aaa', fontSize: 12, marginTop: 1 },
+  editHint: { fontSize: 18, color: '#c0392b', paddingHorizontal: 6 },
   del: { fontSize: 20, color: '#e74c3c', paddingLeft: 8 },
   empty: { textAlign: 'center', marginTop: 60, color: '#aaa', lineHeight: 24 },
   fabRow: { position: 'absolute', bottom: 28, right: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },

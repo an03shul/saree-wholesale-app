@@ -88,7 +88,9 @@ export const ordersApi = {
 export const contactsApi = {
   getAll: () => api.get('/api/contacts'),
   create: (data) => api.post('/api/contacts', data),
+  update: (id, data) => api.put(`/api/contacts/${id}`, data),
   delete: (id) => api.delete(`/api/contacts/${id}`),
+  import: (contacts) => api.post('/api/contacts/import', { contacts }),
 };
 
 export const sendApi = {
