@@ -32,7 +32,7 @@ router.post('/', (req, res) => {
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAdmin, (req, res) => {
   const { name, description } = req.body;
   db.prepare('UPDATE brands SET name = ?, description = ? WHERE id = ?').run(name, description, req.params.id);
   res.json({ id: req.params.id, name, description });

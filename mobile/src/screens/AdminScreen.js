@@ -6,6 +6,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { adminApi, authApi, setAuthToken, settingsApi } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
+import { parseServerDate } from '../utils/date';
 
 export default function AdminScreen({ user, onLogout }) {
   const [tab, setTab] = useState('activity'); // 'activity' | 'users' | 'template'
@@ -123,7 +124,7 @@ export default function AdminScreen({ user, onLogout }) {
   };
 
   const formatTime = (ts) => {
-    const d = new Date(ts);
+    const d = parseServerDate(ts);
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' +
       d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { ordersApi, designsApi, getImageUrl, getThumbUrl } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
+import { parseServerDate } from '../utils/date';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
 
@@ -107,7 +108,7 @@ export default function OrdersScreen({ navigation }) {
   };
 
   const formatDate = (dt) => {
-    const d = new Date(dt);
+    const d = parseServerDate(dt);
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
@@ -157,7 +158,7 @@ export default function OrdersScreen({ navigation }) {
           return (
             <TouchableOpacity
               style={styles.card}
-              onPress={() => isAdmin && setStatusModal(order)}
+              onPress={() => setStatusModal(order)}
               onLongPress={() => isAdmin && deleteOrder(order)}
               activeOpacity={0.75}
             >

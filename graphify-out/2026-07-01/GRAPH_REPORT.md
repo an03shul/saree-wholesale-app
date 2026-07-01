@@ -1,16 +1,16 @@
-# Graph Report - gopiram-saree  (2026-07-01)
+# Graph Report - gopiram-saree  (2026-06-28)
 
 ## Corpus Check
-- 74 files · ~54,150 words
+- 67 files · ~49,014 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 511 nodes · 726 edges · 37 communities (31 shown, 6 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.8)
+- 476 nodes · 633 edges · 35 communities (29 shown, 6 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e86a15ed`
+- Built from commit: `09a464f7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -49,52 +49,51 @@
 - [[_COMMUNITY_Community 31|Community 31]]
 - [[_COMMUNITY_Community 32|Community 32]]
 - [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 35|Community 35]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `notify()` - 12 edges
-2. `useUser()` - 11 edges
-3. `expo` - 10 edges
-4. `colors` - 10 edges
-5. `shadow` - 10 edges
-6. `getImageUrl()` - 9 edges
-7. `requireAdmin()` - 8 edges
-8. `web` - 8 edges
-9. `setAuthToken()` - 8 edges
-10. `Cloudflare Workers` - 7 edges
+1. `useUser()` - 11 edges
+2. `expo` - 10 edges
+3. `colors` - 10 edges
+4. `shadow` - 10 edges
+5. `getImageUrl()` - 9 edges
+6. `requireAdmin()` - 8 edges
+7. `web` - 8 edges
+8. `setAuthToken()` - 7 edges
+9. `Cloudflare Workers` - 7 edges
+10. `deploy` - 6 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `buildShareFile()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
-- `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
 - `sendDesignUpdates()` --calls--> `getWatermarkedPath()`  [EXTRACTED]
   backend/src/services/whatsapp.js → backend/src/services/watermark.js
 - `BrandsScreen()` --calls--> `useUser()`  [EXTRACTED]
   mobile/src/screens/BrandsScreen.js → mobile/App.js
 - `DesignsScreen()` --calls--> `useUser()`  [EXTRACTED]
   mobile/src/screens/DesignsScreen.js → mobile/App.js
+- `ItemsScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/ItemsScreen.js → mobile/App.js
+- `MoreScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/MoreScreen.js → mobile/App.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 6 thin omitted)
+## Communities (35 total, 6 thin omitted)
 
 ### Community 0 - "Mobile API Client Modules"
-Cohesion: 0.06
-Nodes (73): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+65 more)
+Cohesion: 0.05
+Nodes (64): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+56 more)
 
 ### Community 1 - "Authentication & Security Middleware"
 Cohesion: 0.16
 Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
 
 ### Community 2 - "Catalog Generation & HTML Services"
-Cohesion: 0.07
-Nodes (28): db, express, path, router, db, express, fs, { getWatermarkedBuffer } (+20 more)
+Cohesion: 0.06
+Nodes (34): db, express, { getWatermarkedPath }, router, db, express, fs, { getWatermarkedBuffer } (+26 more)
 
 ### Community 3 - "Design Management & Uploads"
 Cohesion: 0.06
-Nodes (30): path, TEMP_UPLOADS_DIR, db, express, multer, path, { requireAdmin }, router (+22 more)
+Nodes (30): db, express, multer, path, { requireAdmin }, router, storage, upload (+22 more)
 
 ### Community 4 - "Mobile Dependencies & Expo Modules"
 Cohesion: 0.06
@@ -106,19 +105,19 @@ Nodes (13): crypto, { DatabaseSync }, db, fabricCount, itemsInfo, path, tmplExis
 
 ### Community 6 - "Backend Dependencies & Services"
 Cohesion: 0.08
-Nodes (25): dependencies, @anthropic-ai/sdk, @aws-sdk/client-s3, axios, cors, dotenv, express, jimp (+17 more)
+Nodes (24): dependencies, @anthropic-ai/sdk, @aws-sdk/client-s3, axios, cors, dotenv, express, jimp (+16 more)
 
 ### Community 7 - "Mobile Assets & Icons Configuration"
 Cohesion: 0.08
 Nodes (23): backgroundColor, backgroundImage, foregroundImage, monochromeImage, adaptiveIcon, expo, android, icon (+15 more)
 
 ### Community 8 - "File Storage & Paths Configuration"
-Cohesion: 0.11
-Nodes (16): getThumbBuffer(), inFlight, { Jimp }, path, queue, storage, app, cors (+8 more)
+Cohesion: 0.12
+Nodes (15): path, TEMP_UPLOADS_DIR, db, express, { extractDesignsFromPhotos }, multer, { requireAdmin }, router (+7 more)
 
 ### Community 9 - "Tally ERP Sync Integration"
-Cohesion: 0.13
-Nodes (18): db, express, { getStockForDesigns }, router, { sendDesignUpdates }, db, express, { getCustomers, getStockBalance, detectMode } (+10 more)
+Cohesion: 0.21
+Nodes (12): db, express, { getCustomers, getStockBalance, detectMode }, router, axios, detectMode(), getCustomers(), getStockBalance() (+4 more)
 
 ### Community 10 - "Bulk Import Service"
 Cohesion: 0.15
@@ -145,16 +144,12 @@ Cohesion: 0.28
 Nodes (6): axios, CLOUD_URL, readTallyCustomers(), readTallyStock(), syncOnce(), xml2js
 
 ### Community 16 - "Tally Desktop Agent Core"
-Cohesion: 0.29
-Nodes (6): fs, html, indexPath, path, swDst, swSrc
-
-### Community 17 - "Theme & Styling Constants"
-Cohesion: 0.22
-Nodes (5): fetch(), MyWorkflow, getNotificationPermission(), subscribeToPush(), urlBase64ToUint8Array()
+Cohesion: 0.40
+Nodes (4): fs, html, indexPath, path
 
 ### Community 20 - "Community 20"
-Cohesion: 0.12
-Nodes (14): Architecture, Backend, Backend (`backend/src/`), Commands, Data model, Deployment, ⚠️ Deployment gotchas (learned the hard way), Environment Variables (+6 more)
+Cohesion: 0.13
+Nodes (13): Architecture, Backend, Backend (`backend/src/`), Commands, Data model, Deployment, Environment Variables, Expo Version Note (+5 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.20
@@ -173,12 +168,16 @@ Cohesion: 0.29
 Nodes (5): crypto, db, express, { requireAdmin }, router
 
 ### Community 25 - "Community 25"
-Cohesion: 0.18
-Nodes (9): requireAdmin(), db, express, { requireAdmin }, router, db, express, { requireAdmin } (+1 more)
+Cohesion: 0.33
+Nodes (5): requireAdmin(), db, express, { requireAdmin }, router
 
 ### Community 26 - "Community 26"
-Cohesion: 0.22
-Nodes (8): db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll(), webpush
+Cohesion: 0.40
+Nodes (4): db, express, { requireAdmin }, router
+
+### Community 27 - "Community 27"
+Cohesion: 0.40
+Nodes (4): db, express, { requireAdmin }, router
 
 ### Community 28 - "Community 28"
 Cohesion: 0.50
@@ -192,29 +191,25 @@ Nodes (3): db, express, router
 Cohesion: 0.50
 Nodes (3): db, express, router
 
-### Community 35 - "Community 35"
-Cohesion: 0.50
-Nodes (3): db, express, router
-
 ## Knowledge Gaps
-- **300 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+295 more)
+- **289 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+284 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `requireAdmin()` connect `Community 25` to `Authentication & Security Middleware`, `Design Management & Uploads`, `Community 23`, `Community 24`, `Community 26`?**
+- **Why does `requireAdmin()` connect `Community 25` to `Authentication & Security Middleware`, `Design Management & Uploads`, `File Storage & Paths Configuration`, `Community 23`, `Community 24`, `Community 26`, `Community 27`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `fetch()` connect `Theme & Styling Constants` to `Mobile API Client Modules`?**
-  _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
-  _300 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _289 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Mobile API Client Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.05512308015989901 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.054075235109717866 - nodes in this community are weakly interconnected._
 - **Should `Catalog Generation & HTML Services` be split into smaller, more focused modules?**
-  _Cohesion score 0.0748663101604278 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06097560975609756 - nodes in this community are weakly interconnected._
 - **Should `Design Management & Uploads` be split into smaller, more focused modules?**
-  _Cohesion score 0.058029689608636977 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05512820512820513 - nodes in this community are weakly interconnected._
 - **Should `Mobile Dependencies & Expo Modules` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+- **Should `Database Core & Schema Management` be split into smaller, more focused modules?**
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._

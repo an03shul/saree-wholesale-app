@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 import { subscribeToPush, getNotificationPermission } from '../utils/pushSubscription';
+import { authApi, setAuthToken } from '../api/client';
+import { confirmAction } from '../utils/share';
 
 const MENU_ITEMS = [
   { key: 'Scan',     label: 'Scan QR Code',   icon: '📷', desc: 'Scan a design QR to look it up' },
@@ -15,7 +18,7 @@ const ADMIN_ITEMS = [
   { key: 'Admin',    label: 'Admin Panel',     icon: '⚙️', desc: 'Users, activity log, templates' },
 ];
 
-export default function MoreScreen({ navigation }) {
+export default function MoreScreen({ navigation, onLogout }) {
   const user = useUser();
   const isAdmin = user?.role === 'admin';
   const [notifStatus, setNotifStatus] = useState('default');
@@ -25,6 +28,16 @@ export default function MoreScreen({ navigation }) {
   }, []);
 
   const go = (screen) => navigation.navigate(screen);
+
+  const logout = () => {
+    confirmAction('Log Out', 'Are you sure?', async () => {
+      try { await authApi.logout(); } catch {}
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('auth_user');
+      setAuthToken(null);
+      onLogout();
+    }, 'Log Out');
+  };
 
   const handleEnableNotifications = async () => {
     const result = await subscribeToPush();
@@ -92,6 +105,10 @@ export default function MoreScreen({ navigation }) {
           ))}
         </>
       )}
+
+      <TouchableOpacity style={styles.logoutCard} onPress={logout} activeOpacity={0.7}>
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -121,4 +138,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   desc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   arrow: { fontSize: 24, color: colors.gold },
+  logoutCard: {
+    marginTop: 24, backgroundColor: colors.card, borderRadius: 16, padding: 16,
+    alignItems: 'center', borderWidth: 1.5, borderColor: colors.danger,
+  },
+  logoutText: { fontSize: 16, fontWeight: '700', color: colors.danger },
 });

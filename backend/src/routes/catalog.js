@@ -10,10 +10,11 @@ router.get('/:brandId', (req, res) => {
     const brand = db.prepare('SELECT * FROM brands WHERE id = ?').get(req.params.brandId);
     if (!brand) return res.status(404).send('Brand not found');
 
-    const { fabric, maxRate, minRate } = req.query;
+    const { fabric, maxRate, minRate, item: itemParam } = req.query;
 
     // Only show in-stock items
     let items = db.prepare('SELECT * FROM items WHERE brand_id = ? AND in_stock = 1 ORDER BY name').all(brand.id);
+    if (itemParam) items = items.filter(i => i.name.toLowerCase() === String(itemParam).toLowerCase());
 
     const itemsWithDesigns = items.map((item) => {
       let designs = db.prepare('SELECT * FROM designs WHERE item_id = ? AND in_stock = 1 ORDER BY CAST(design_number AS INTEGER), design_number').all(item.id);

@@ -29,6 +29,11 @@ router.post('/login', (req, res) => {
   }
 
   clearAttempts(ip);
+  // Staff can only be logged in on one device at a time — a new login silently
+  // invalidates any older sessions. Admins keep unlimited concurrent sessions.
+  if (user.role === 'staff') {
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  }
   const token = generateToken();
   db.prepare('INSERT INTO sessions (token, user_id) VALUES (?,?)').run(token, user.id);
   db.prepare('INSERT INTO activity_log (user_id, username, action) VALUES (?,?,?)').run(user.id, user.username, 'Logged in');

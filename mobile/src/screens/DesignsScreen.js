@@ -6,11 +6,12 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QRCode from 'react-qr-code';
-import { designsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, getThumbUrl, getWmUrl, whatsappLink, setAuthToken } from '../api/client';
+import { designsApi, brandsApi, itemsApi, fabricsApi, workCategoriesApi, sendApi, contactsApi, ordersApi, tallyApi, getImageUrl, getThumbUrl, getWmUrl, whatsappLink, setAuthToken } from '../api/client';
 import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
 import { shareDesignsList, notify } from '../utils/share';
+import ImageViewerModal from '../components/ImageViewerModal';
 
 export default function DesignsScreen({ route, navigation }) {
   const { item, brand } = route.params;
@@ -42,6 +43,11 @@ export default function DesignsScreen({ route, navigation }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [contacts, setContacts] = useState([]);
   const [cardMenu, setCardMenu] = useState(null); // design whose Edit/Delete menu is open
+  const [viewerDesign, setViewerDesign] = useState(null); // design whose photo is open in the zoom viewer
+  const [moveDesignTarget, setMoveDesignTarget] = useState(null); // design being reassigned to another item
+  const [moveBrands, setMoveBrands] = useState([]);
+  const [moveBrand, setMoveBrand] = useState(null);
+  const [moveItems, setMoveItems] = useState([]);
   const [confirmDel, setConfirmDel] = useState(false); // inline two-tap delete confirm
   const [sending, setSending] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -266,6 +272,40 @@ export default function DesignsScreen({ route, navigation }) {
     }
   };
 
+  const openMoveDesign = async (d) => {
+    setMoveDesignTarget(d);
+    setMoveBrand(null);
+    setMoveItems([]);
+    try {
+      const { data } = await brandsApi.getAll();
+      setMoveBrands(data);
+    } catch {
+      notify('Error', 'Could not load brands');
+    }
+  };
+
+  const selectMoveBrand = async (b) => {
+    setMoveBrand(b);
+    setMoveItems([]);
+    try {
+      const { data } = await itemsApi.getAll(b.id);
+      setMoveItems(data);
+    } catch {
+      notify('Error', 'Could not load items');
+    }
+  };
+
+  const saveMoveDesign = async (targetItem) => {
+    const d = moveDesignTarget;
+    try {
+      await designsApi.update(d.id, { item_id: targetItem.id });
+      setMoveDesignTarget(null);
+      load();
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Could not move design');
+    }
+  };
+
   const buildCaption = (d) =>
     [
       `*${brand.name} · ${item.name}*`,
@@ -406,6 +446,8 @@ export default function DesignsScreen({ route, navigation }) {
                     next.has(d.id) ? next.delete(d.id) : next.add(d.id);
                     return next;
                   });
+                } else if (d.photo_path) {
+                  setViewerDesign(d);
                 }
               }}
               onLongPress={() => onCardLongPress(d)}
@@ -476,7 +518,7 @@ export default function DesignsScreen({ route, navigation }) {
         }}
       />
 
-      {isAdmin && !selectMode && (
+      {!selectMode && (
         <TouchableOpacity style={styles.fab} onPress={openAddModal}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
@@ -505,6 +547,9 @@ export default function DesignsScreen({ route, navigation }) {
             <TouchableOpacity style={styles.menuItem} onPress={() => { const d = cardMenu; setCardMenu(null); setConfirmDel(false); openEdit(d); }}>
               <Text style={styles.menuItemText}>✏️  Edit</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { const d = cardMenu; setCardMenu(null); setConfirmDel(false); openMoveDesign(d); }}>
+              <Text style={styles.menuItemText}>🔀  Move to…</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => { confirmDel ? deleteDesign(cardMenu) : setConfirmDel(true); }}>
               <Text style={[styles.menuItemText, { color: colors.danger }]}>
                 {confirmDel ? '🗑  Tap again to confirm delete' : '🗑  Delete'}
@@ -517,6 +562,56 @@ export default function DesignsScreen({ route, navigation }) {
         </TouchableOpacity>
       </Modal>
 
+      {/* Move design to a different item modal (admin) */}
+      <Modal visible={!!moveDesignTarget} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={[styles.fabricSheet, { padding: 24, paddingBottom: 32, maxHeight: '75%' }]}>
+            <Text style={styles.modalTitle}>Move Design {moveDesignTarget?.design_number}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 14 }}>Pick the brand, then the item to move it into.</Text>
+            <Text style={styles.label}>Brand</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
+              {moveBrands.map(b => (
+                <TouchableOpacity
+                  key={b.id}
+                  style={[styles.moveChip, moveBrand?.id === b.id && styles.moveChipActive]}
+                  onPress={() => selectMoveBrand(b)}
+                >
+                  <Text style={[styles.moveChipText, moveBrand?.id === b.id && styles.moveChipTextActive]}>{b.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {moveBrand && (
+              <>
+                <Text style={styles.label}>Item</Text>
+                <ScrollView style={{ maxHeight: 220 }}>
+                  {moveItems.map(it => (
+                    <TouchableOpacity
+                      key={it.id}
+                      style={styles.fabricItem}
+                      onPress={() => saveMoveDesign(it)}
+                    >
+                      <Text style={styles.fabricItemText}>{it.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {moveItems.length === 0 && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, padding: 8 }}>No items in this brand</Text>
+                  )}
+                </ScrollView>
+              </>
+            )}
+            <TouchableOpacity style={[styles.btnSecondary, { marginTop: 16 }]} onPress={() => setMoveDesignTarget(null)}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Full-screen zoom viewer */}
+      <ImageViewerModal
+        visible={!!viewerDesign}
+        uri={viewerDesign?.photo_path ? getImageUrl(viewerDesign.photo_path) : null}
+        onClose={() => setViewerDesign(null)}
+      />
 
       {/* Log Order Modal */}
       <Modal visible={!!orderDesign} transparent animationType="slide">
@@ -851,17 +946,17 @@ const styles = StyleSheet.create({
   noPhotoText: { color: colors.textSecondary, fontSize: 13 },
   photoHeader: {
     position: 'absolute', top: 0, left: 0, right: 0,
-    backgroundColor: 'rgba(26,10,13,0.55)', paddingHorizontal: 7, paddingVertical: 4,
+    backgroundColor: 'rgba(26,10,13,0.55)', paddingHorizontal: 6, paddingVertical: 2,
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  photoHeaderLogo: { width: 22, height: 22, opacity: 0.9 },
-  photoHeaderText: { color: '#fff', fontSize: 9, fontWeight: '600', flex: 1, letterSpacing: 0.2, opacity: 0.9 },
+  photoHeaderLogo: { width: 16, height: 16, opacity: 0.9 },
+  photoHeaderText: { color: '#fff', fontSize: 8, fontWeight: '600', flex: 1, letterSpacing: 0.2, opacity: 0.9 },
   photoFooter: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: 'rgba(26,10,13,0.68)', paddingHorizontal: 8, paddingVertical: 5,
+    backgroundColor: 'rgba(26,10,13,0.68)', paddingHorizontal: 7, paddingVertical: 3,
   },
-  photoFooterMain: { color: '#fff', fontSize: 12, fontWeight: '800', letterSpacing: 0.1 },
-  photoFooterSub: { color: 'rgba(255,255,255,0.75)', fontSize: 9, marginTop: 1 },
+  photoFooterMain: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.1 },
+  photoFooterSub: { color: 'rgba(255,255,255,0.75)', fontSize: 8, marginTop: 1 },
   cardInfo: { padding: 6 },
   cardActions: { flexDirection: 'row', gap: 4, marginBottom: 4 },
   actionBtn: { flex: 1, paddingVertical: 5, borderRadius: 7, alignItems: 'center' },
@@ -893,6 +988,10 @@ const styles = StyleSheet.create({
   fabricItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   fabricItemActive: { backgroundColor: '#FDF5F6' },
   fabricItemText: { fontSize: 16, color: colors.textPrimary },
+  moveChip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border },
+  moveChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  moveChipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
+  moveChipTextActive: { color: '#fff', fontWeight: '700' },
   addFabricBtn: { paddingVertical: 16, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4 },
   addFabricBtnText: { color: colors.primary, fontWeight: '800', fontSize: 15 },
   cardSelected: { borderWidth: 2.5, borderColor: colors.whatsapp },

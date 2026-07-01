@@ -7,8 +7,8 @@ const { requireAdmin } = require('../middleware/auth');
 router.get('/', (req, res) => {
   const { brand_id } = req.query;
   const items = brand_id
-    ? db.prepare('SELECT * FROM items WHERE brand_id = ? ORDER BY name').all(brand_id)
-    : db.prepare('SELECT i.*, b.name as brand_name FROM items i LEFT JOIN brands b ON i.brand_id = b.id ORDER BY i.name').all();
+    ? db.prepare('SELECT * FROM items WHERE brand_id = ? ORDER BY in_stock DESC, name').all(brand_id)
+    : db.prepare('SELECT i.*, b.name as brand_name FROM items i LEFT JOIN brands b ON i.brand_id = b.id ORDER BY i.in_stock DESC, i.name').all();
   res.json(items);
 });
 
@@ -27,7 +27,7 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: result.lastInsertRowid, name, description, brand_id });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAdmin, (req, res) => {
   const { name, description, brand_id } = req.body;
   db.prepare('UPDATE items SET name = ?, description = ?, brand_id = ? WHERE id = ?').run(name, description, brand_id, req.params.id);
   res.json({ id: req.params.id, name, description, brand_id });

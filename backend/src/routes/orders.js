@@ -41,8 +41,8 @@ router.post('/', (req, res) => {
   res.status(201).json({ id: result.lastInsertRowid });
 });
 
-// PATCH /api/orders/:id/status — update status
-router.patch('/:id/status', requireAdmin, (req, res) => {
+// PATCH /api/orders/:id/status — update status (any logged-in staff member)
+router.patch('/:id/status', requireAuth, (req, res) => {
   const { status } = req.body;
   const allowed = ['pending', 'confirmed', 'dispatched', 'cancelled'];
   if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });

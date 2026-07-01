@@ -23,6 +23,10 @@ export default function BrandsScreen({ navigation }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletePin, setDeletePin] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -68,6 +72,26 @@ export default function BrandsScreen({ navigation }) {
       notify('Error', e.response?.data?.error || 'Could not delete brand');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const openEdit = (brand) => {
+    setEditTarget(brand);
+    setEditName(brand.name);
+    setEditDescription(brand.description || '');
+  };
+
+  const saveEdit = async () => {
+    if (!editName.trim()) return notify('Required', 'Please enter a brand name');
+    setEditSaving(true);
+    try {
+      await brandsApi.update(editTarget.id, { name: editName.trim(), description: editDescription.trim() });
+      setEditTarget(null);
+      load();
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Could not save brand');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -141,6 +165,11 @@ export default function BrandsScreen({ navigation }) {
             <TouchableOpacity style={styles.shareBtn} onPress={() => shareOrderingLink(brand)}>
               <Text style={styles.shareBtnText}>Share</Text>
             </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity style={styles.editBtn} onPress={() => openEdit(brand)}>
+                <Text style={styles.editBtnText}>✏️</Text>
+              </TouchableOpacity>
+            )}
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
         )}
@@ -165,6 +194,25 @@ export default function BrandsScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity style={modalBase.btnPrimary} onPress={createBrand} disabled={saving}>
                 <Text style={{ color: '#fff', fontWeight: '700' }}>{saving ? 'Saving...' : 'Create'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Brand Modal (admin) */}
+      <Modal visible={!!editTarget} transparent animationType="slide">
+        <View style={modalBase.overlay}>
+          <View style={modalBase.sheet}>
+            <Text style={modalBase.title}>Edit Brand</Text>
+            <TextInput style={modalBase.input} placeholder="Brand name" placeholderTextColor={colors.textSecondary} value={editName} onChangeText={setEditName} />
+            <TextInput style={modalBase.input} placeholder="Description (optional)" placeholderTextColor={colors.textSecondary} value={editDescription} onChangeText={setEditDescription} />
+            <View style={modalBase.row}>
+              <TouchableOpacity style={modalBase.btnSecondary} onPress={() => setEditTarget(null)}>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={modalBase.btnPrimary} onPress={saveEdit} disabled={editSaving}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{editSaving ? 'Saving...' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -222,6 +270,8 @@ const styles = StyleSheet.create({
   arrow: { fontSize: 24, color: colors.gold, marginLeft: 8 },
   shareBtn: { backgroundColor: colors.background, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginRight: 8 },
   shareBtnText: { fontSize: 12, color: colors.primary, fontWeight: '700' },
+  editBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  editBtnText: { fontSize: 14 },
   statsBanner: {
     flexDirection: 'row', backgroundColor: colors.card, borderRadius: 16,
     padding: 16, marginBottom: 16, alignItems: 'center', justifyContent: 'space-around',

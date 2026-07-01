@@ -54,7 +54,9 @@ function CatalogStack() {
 function MoreStack({ user, onLogout }) {
   return (
     <Stack.Navigator screenOptions={{ headerStyle, headerTintColor, headerTitleStyle }}>
-      <Stack.Screen name="MoreMenu" component={MoreScreen} options={{ title: 'More' }} />
+      <Stack.Screen name="MoreMenu" options={{ title: 'More' }}>
+        {(props) => <MoreScreen {...props} onLogout={onLogout} />}
+      </Stack.Screen>
       <Stack.Screen name="Scan" component={ScanScreen} options={{ title: 'Scan QR' }} />
       <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: 'Contacts' }} />
       <Stack.Screen name="Identify" component={IdentifyScreen} options={{ title: 'Identify Piece' }} />

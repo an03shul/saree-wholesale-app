@@ -17,7 +17,7 @@ async function saveUpload(file) {
 }
 
 router.get('/item/:itemId', (req, res) => {
-  const designs = db.prepare('SELECT * FROM designs WHERE item_id = ? ORDER BY CAST(design_number AS INTEGER), design_number').all(req.params.itemId);
+  const designs = db.prepare('SELECT * FROM designs WHERE item_id = ? ORDER BY in_stock DESC, CAST(design_number AS INTEGER), design_number').all(req.params.itemId);
   res.json(designs);
 });
 
@@ -80,15 +80,15 @@ router.post('/item/:itemId', (req, res, next) => {
   }
 });
 
-router.put('/:id', upload.single('photo'), async (req, res) => {
-  const { design_number, rate, colors, fabric_type, pcs_per_set, tally_item_name, work_category } = req.body;
+router.put('/:id', requireAdmin, upload.single('photo'), async (req, res) => {
+  const { design_number, rate, colors, fabric_type, pcs_per_set, tally_item_name, work_category, item_id } = req.body;
   const existing = db.prepare('SELECT * FROM designs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Design not found' });
   const photo_path = req.file ? await saveUpload(req.file) : existing.photo_path;
   db.prepare(
-    'UPDATE designs SET design_number=?, photo_path=?, rate=?, colors=?, fabric_type=?, pcs_per_set=?, tally_item_name=?, work_category=? WHERE id=?'
-  ).run(design_number || existing.design_number, photo_path, parseFloat(rate) || existing.rate, colors || existing.colors, fabric_type || existing.fabric_type, parseInt(pcs_per_set) || existing.pcs_per_set, tally_item_name || existing.tally_item_name, work_category !== undefined ? (work_category || null) : existing.work_category, req.params.id);
-  res.json({ id: req.params.id, design_number, photo_path, rate, colors, fabric_type, pcs_per_set, work_category });
+    'UPDATE designs SET design_number=?, photo_path=?, rate=?, colors=?, fabric_type=?, pcs_per_set=?, tally_item_name=?, work_category=?, item_id=? WHERE id=?'
+  ).run(design_number || existing.design_number, photo_path, parseFloat(rate) || existing.rate, colors || existing.colors, fabric_type || existing.fabric_type, parseInt(pcs_per_set) || existing.pcs_per_set, tally_item_name || existing.tally_item_name, work_category !== undefined ? (work_category || null) : existing.work_category, item_id || existing.item_id, req.params.id);
+  res.json({ id: req.params.id, design_number, photo_path, rate, colors, fabric_type, pcs_per_set, work_category, item_id: item_id || existing.item_id });
 });
 
 router.patch('/:id/stock', requireAdmin, (req, res) => {

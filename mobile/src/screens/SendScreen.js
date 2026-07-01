@@ -30,12 +30,15 @@ export default function SendScreen() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Filter mode state
+  // Filter mode state — multiple brands can be picked at once; each still
+  // gets its own separate WhatsApp share (per user's request), but filters
+  // (price/fabric/work) are picked once and applied to every selected brand.
+  const [filterBrandIds, setFilterBrandIds] = useState(new Set());
   const [minRate, setMinRate] = useState('');
   const [maxRate, setMaxRate] = useState('');
   const [filterWorkCats, setFilterWorkCats] = useState([]);
   const [filterFabrics, setFilterFabrics] = useState([]);
-  const [filterResults, setFilterResults] = useState(null);
+  const [filterBatches, setFilterBatches] = useState(null); // [{ brand, count, designs }]
   const [excludedIds, setExcludedIds] = useState(new Set());
 
   // Catalogue WhatsApp modal
@@ -60,10 +63,19 @@ export default function SendScreen() {
     });
   };
 
+  const toggleFilterBrand = (id) => {
+    setFilterBrandIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+    setFilterBatches(null);
+  };
+
   const runFilter = async () => {
-    if (!selectedBrand) return notify('Select brand', 'Pick a brand first');
+    if (!filterBrandIds.size) return notify('Select brand', 'Pick at least one brand first');
     setLoading(true);
-    setFilterResults(null);
+    setFilterBatches(null);
     setExcludedIds(new Set());
     try {
       const params = { in_stock_only: 'true' };
@@ -71,8 +83,9 @@ export default function SendScreen() {
       if (maxRate) params.max_rate = maxRate;
       if (filterWorkCats.length) params.work_categories = filterWorkCats.join(',');
       if (filterFabrics.length) params.fabric_types = filterFabrics.join(',');
-      const { data } = await sendApi.filterBrand(selectedBrand.id, params);
-      setFilterResults(data);
+      const brandList = brands.filter(b => filterBrandIds.has(b.id));
+      const results = await Promise.all(brandList.map(b => sendApi.filterBrand(b.id, params)));
+      setFilterBatches(results.map((res, idx) => ({ brand: brandList[idx], ...res.data })).filter(batch => batch.count > 0));
     } catch (e) {
       notify('Error', e.response?.data?.error || 'Could not filter designs');
     } finally {
@@ -80,18 +93,20 @@ export default function SendScreen() {
     }
   };
 
-  const sendFiltered = async () => {
-    const activeDesigns = filterResults?.designs?.filter(d => !excludedIds.has(d.id)) || [];
-    if (!activeDesigns.length) return notify('Nothing to send', 'No designs selected');
+  // One WhatsApp share per brand batch — staff picks filters once, then taps
+  // through a separate share sheet for each brand.
+  const sendBatch = async (batch) => {
+    const activeDesigns = batch.designs.filter(d => !excludedIds.has(d.id));
+    if (!activeDesigns.length) return notify('Nothing to send', `No designs selected for ${batch.brand.name}`);
     setSending(true);
     try {
       const caption = selectedContact
-        ? `*${selectedBrand?.name || 'Gopiram Saree'}* Collection\nFor: ${selectedContact.name}\nReply here to place an order 🙏`
-        : `*${selectedBrand?.name || 'Gopiram Saree'}* Collection\nReply here to place an order 🙏`;
+        ? `*${batch.brand.name}* Collection\nFor: ${selectedContact.name}\nReply here to place an order 🙏`
+        : `*${batch.brand.name}* Collection\nReply here to place an order 🙏`;
 
       await shareDesignsList({
         designs: activeDesigns,
-        brandName: selectedBrand?.name,
+        brandName: batch.brand.name,
         caption,
       });
     } finally {
@@ -99,16 +114,16 @@ export default function SendScreen() {
     }
   };
 
-  // Show the message preview modal; user can edit before opening WhatsApp.
-  const sendCatalogOnWhatsApp = () => {
-    if (!selectedBrand) return notify('Pick a brand', 'Select a brand first.');
+  // Show the message preview modal for a single brand; user can edit before opening WhatsApp.
+  const sendCatalogOnWhatsApp = (brand) => {
+    if (!brand) return notify('Pick a brand', 'Select a brand first.');
     const params = {};
     if (minRate) params.minRate = minRate;
     if (maxRate) params.maxRate = maxRate;
     if (filterFabrics.length === 1) params.fabric = filterFabrics[0];
-    const link = getCatalogUrl(selectedBrand.id, params);
+    const link = getCatalogUrl(brand.id, params);
     const range = (minRate || maxRate) ? ` (₹${minRate || '0'}–${maxRate || '∞'})` : '';
-    setCatalogMsg(`Namaste! 🙏\nHere's our latest *${selectedBrand.name}* saree catalogue${range}:\n${link}\n\nTap the link to view designs & rates. Reply here to place an order.`);
+    setCatalogMsg(`Namaste! 🙏\nHere's our latest *${brand.name}* saree catalogue${range}:\n${link}\n\nTap the link to view designs & rates. Reply here to place an order.`);
     setMsgModal(true);
   };
 
@@ -184,28 +199,41 @@ export default function SendScreen() {
       {/* Step 1 — Brand */}
       <View style={styles.section}>
         <Text style={styles.stepLabel}>Step 1</Text>
-        <Text style={styles.stepTitle}>Select Brand</Text>
+        <Text style={styles.stepTitle}>
+          Select Brand{mode === 'filter' && filterBrandIds.size > 0 ? ` (${filterBrandIds.size})` : ''}
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-          {brands.map(b => (
+          {mode === 'filter' && brands.length > 0 && (
             <TouchableOpacity
-              key={b.id}
-              style={[styles.chip, selectedBrand?.id === b.id && styles.chipActive]}
-              onPress={() => { mode === 'filter' ? (setSelectedBrand(b), setFilterResults(null)) : selectBrand(b); }}
+              style={[styles.chip, filterBrandIds.size === brands.length && styles.chipActive]}
+              onPress={() => setFilterBrandIds(filterBrandIds.size === brands.length ? new Set() : new Set(brands.map(b => b.id)))}
             >
-              <Text style={[styles.chipText, selectedBrand?.id === b.id && styles.chipTextActive]}>{b.name}</Text>
+              <Text style={[styles.chipText, filterBrandIds.size === brands.length && styles.chipTextActive]}>
+                {filterBrandIds.size === brands.length ? 'Clear All' : 'Select All'}
+              </Text>
             </TouchableOpacity>
-          ))}
+          )}
+          {brands.map(b => {
+            const active = mode === 'filter' ? filterBrandIds.has(b.id) : selectedBrand?.id === b.id;
+            return (
+              <TouchableOpacity
+                key={b.id}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => { mode === 'filter' ? toggleFilterBrand(b.id) : selectBrand(b); }}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{b.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
-      {/* Quick share — always visible once a brand is picked */}
-      {selectedBrand && (
+      {/* Quick share — item mode, single brand */}
+      {mode === 'item' && selectedBrand && (
         <>
-          <TouchableOpacity style={styles.waBtn} onPress={sendCatalogOnWhatsApp}>
+          <TouchableOpacity style={styles.waBtn} onPress={() => sendCatalogOnWhatsApp(selectedBrand)}>
             <Text style={styles.waBtnText}>
               {'📲 Send Catalogue on WhatsApp'}
-              {(minRate || maxRate) ? ` (₹${minRate || '0'}–${maxRate || '∞'})` : ''}
-              {filterFabrics.length === 1 ? ` · ${filterFabrics[0]}` : ''}
               {selectedContact ? `\n→ ${selectedContact.name}` : ''}
             </Text>
           </TouchableOpacity>
@@ -241,8 +269,48 @@ export default function SendScreen() {
         </>
       )}
 
+      {/* Quick share — filter mode, one row per selected brand so filters are picked once */}
+      {mode === 'filter' && filterBrandIds.size > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.stepLabel}>Quick Send</Text>
+          <Text style={styles.stepTitle}>Catalogue Link per Brand</Text>
+          {brands.filter(b => filterBrandIds.has(b.id)).map(b => (
+            <View key={b.id} style={styles.quickSendRow}>
+              <Text style={styles.quickSendRowName} numberOfLines={1}>{b.name}</Text>
+              <TouchableOpacity style={styles.quickSendBtn} onPress={() => sendCatalogOnWhatsApp(b)}>
+                <Text style={styles.quickSendBtnText}>📲 Send</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickSendIconBtn} onPress={() => Linking.openURL(getCatalogUrl(b.id, filterFabrics.length === 1 ? { fabric: filterFabrics[0] } : {}))}>
+                <Text style={styles.quickSendIconText}>🔗</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickSendIconBtn} onPress={() => Linking.openURL(getPdfUrl(b.id, { inStockOnly: 'true' }))}>
+                <Text style={styles.quickSendIconText}>📄</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {contacts.length > 0 && (
+            <View style={[styles.catalogContactRow, { paddingHorizontal: 0, marginTop: 12 }]}>
+              <Text style={styles.catalogContactLabel}>To (optional):</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {contacts.map(c => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[styles.contactChip, selectedContact?.id === c.id && styles.contactChipActive]}
+                    onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
+                  >
+                    <Text style={[styles.contactChipText, selectedContact?.id === c.id && styles.contactChipTextActive]}>
+                      {c.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* ───────────── FILTER MODE ───────────── */}
-      {mode === 'filter' && selectedBrand && (
+      {mode === 'filter' && filterBrandIds.size > 0 && (
         <>
           <View style={styles.section}>
             <Text style={styles.stepLabel}>Step 2</Text>
@@ -291,6 +359,14 @@ export default function SendScreen() {
             <View style={styles.section}>
               <Text style={styles.stepTitle}>Work Category {filterWorkCats.length > 0 ? `(${filterWorkCats.length})` : ''}</Text>
               <View style={styles.wrapChips}>
+                <TouchableOpacity
+                  style={[styles.filterChip, filterWorkCats.length === workCats.length && styles.filterChipActive]}
+                  onPress={() => setFilterWorkCats(filterWorkCats.length === workCats.length ? [] : [...workCats])}
+                >
+                  <Text style={[styles.filterChipText, filterWorkCats.length === workCats.length && styles.filterChipTextActive]}>
+                    {filterWorkCats.length === workCats.length ? 'Clear All' : 'Select All'}
+                  </Text>
+                </TouchableOpacity>
                 {workCats.map(w => {
                   const active = filterWorkCats.includes(w);
                   return (
@@ -311,6 +387,14 @@ export default function SendScreen() {
             <View style={styles.section}>
               <Text style={styles.stepTitle}>Fabric Type {filterFabrics.length > 0 ? `(${filterFabrics.length})` : ''}</Text>
               <View style={styles.wrapChips}>
+                <TouchableOpacity
+                  style={[styles.filterChip, filterFabrics.length === fabrics.length && styles.filterChipActive]}
+                  onPress={() => setFilterFabrics(filterFabrics.length === fabrics.length ? [] : [...fabrics])}
+                >
+                  <Text style={[styles.filterChipText, filterFabrics.length === fabrics.length && styles.filterChipTextActive]}>
+                    {filterFabrics.length === fabrics.length ? 'Clear All' : 'Select All'}
+                  </Text>
+                </TouchableOpacity>
                 {fabrics.map(f => {
                   const active = filterFabrics.includes(f);
                   return (
@@ -333,82 +417,87 @@ export default function SendScreen() {
             <Text style={styles.applyBtnText}>{loading ? 'Searching…' : '🔍 Find Matching Designs'}</Text>
           </TouchableOpacity>
 
-          {filterResults && (
+          {filterBatches && (
             <>
-              <View style={styles.section}>
-                <Text style={styles.stepTitle}>
-                  {filterResults.designs.length - excludedIds.size} of {filterResults.count} selected
-                </Text>
-                {filterResults.count === 0 && (
-                  <Text style={styles.emptyNote}>No in-stock designs match these filters.</Text>
-                )}
-                <Text style={styles.skippedNote2}>Tap a design to exclude it from this send.</Text>
-              </View>
-              <View style={styles.gridWrap}>
-                {filterResults.designs.map(d => {
-                  const excluded = excludedIds.has(d.id);
-                  return (
+              {filterBatches.length === 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.emptyNote}>No in-stock designs match these filters in the selected brands.</Text>
+                </View>
+              )}
+
+              {filterBatches.length > 0 && (
+                <View style={[styles.section, { marginTop: 4 }]}>
+                  <Text style={styles.stepLabel}>Final Step</Text>
+                  <Text style={styles.stepTitle}>Select Recipient</Text>
+                  {contacts.length === 0 && (
+                    <Text style={styles.emptyNote}>No contacts yet. Add them in More → Contacts.</Text>
+                  )}
+                  {contacts.map(c => (
                     <TouchableOpacity
-                      key={d.id}
-                      style={[styles.gridCard, excluded && styles.gridCardExcluded]}
-                      onPress={() => toggleInSet(setExcludedIds, d.id)}
-                      activeOpacity={0.8}
+                      key={c.id}
+                      style={[styles.contactCard, selectedContact?.id === c.id && styles.contactCardActive]}
+                      onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
                     >
-                      {d.photo_path
-                        ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.gridPhoto} />
-                        : <View style={[styles.gridPhoto, styles.noPhoto]}><Text style={{ color: colors.textSecondary, fontSize: 11 }}>No photo</Text></View>
-                      }
-                      {excluded && <View style={styles.excludeOverlay}><Text style={{ color: '#fff', fontSize: 22, fontWeight: '800' }}>✕</Text></View>}
-                      <View style={{ padding: 6 }}>
-                        <Text style={styles.gridDesign}>#{d.design_number} · ₹{d.rate}</Text>
-                        <Text style={styles.gridSub} numberOfLines={1}>
-                          {d.item_name}{d.work_category ? ` · ${d.work_category}` : ''}
+                      <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
+                          {String(c.name || '?').charAt(0).toUpperCase()}
                         </Text>
                       </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.contactName}>{c.name}</Text>
+                        <Text style={styles.contactPhone}>{c.phone} · {c.type}</Text>
+                      </View>
+                      {selectedContact?.id === c.id && <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>}
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {filterResults.count > 0 && (
-                <>
-                  <View style={[styles.section, { marginTop: 12 }]}>
-                    <Text style={styles.stepLabel}>Final Step</Text>
-                    <Text style={styles.stepTitle}>Select Recipient</Text>
-                    {contacts.length === 0 && (
-                      <Text style={styles.emptyNote}>No contacts yet. Add them in More → Contacts.</Text>
-                    )}
-                    {contacts.map(c => (
-                      <TouchableOpacity
-                        key={c.id}
-                        style={[styles.contactCard, selectedContact?.id === c.id && styles.contactCardActive]}
-                        onPress={() => setSelectedContact(c)}
-                      >
-                        <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
-                          <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
-                            {String(c.name || '?').charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.contactName}>{c.name}</Text>
-                          <Text style={styles.contactPhone}>{c.phone} · {c.type}</Text>
-                        </View>
-                        {selectedContact?.id === c.id && <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.sendBtn, (sending || (filterResults.designs.length - excludedIds.size) === 0) && styles.sendBtnDisabled]}
-                    onPress={sendFiltered}
-                    disabled={sending || (filterResults.designs.length - excludedIds.size) === 0}
-                  >
-                    <Text style={styles.sendBtnText}>
-                      {sending ? 'Preparing Share Sheet…' : `📤 Share ${filterResults.designs.length - excludedIds.size} designs via WhatsApp`}
-                    </Text>
-                  </TouchableOpacity>
-                </>
+                  ))}
+                  <Text style={styles.skippedNote2}>Tap a design below to exclude it from that brand's send.</Text>
+                </View>
               )}
+
+              {filterBatches.map(batch => {
+                const activeCount = batch.designs.length - batch.designs.filter(d => excludedIds.has(d.id)).length;
+                return (
+                  <View key={batch.brand.id}>
+                    <View style={[styles.section, { paddingTop: 16 }]}>
+                      <Text style={styles.stepTitle}>{batch.brand.name} — {activeCount} of {batch.count} selected</Text>
+                    </View>
+                    <View style={styles.gridWrap}>
+                      {batch.designs.map(d => {
+                        const excluded = excludedIds.has(d.id);
+                        return (
+                          <TouchableOpacity
+                            key={d.id}
+                            style={[styles.gridCard, excluded && styles.gridCardExcluded]}
+                            onPress={() => toggleInSet(setExcludedIds, d.id)}
+                            activeOpacity={0.8}
+                          >
+                            {d.photo_path
+                              ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.gridPhoto} />
+                              : <View style={[styles.gridPhoto, styles.noPhoto]}><Text style={{ color: colors.textSecondary, fontSize: 11 }}>No photo</Text></View>
+                            }
+                            {excluded && <View style={styles.excludeOverlay}><Text style={{ color: '#fff', fontSize: 22, fontWeight: '800' }}>✕</Text></View>}
+                            <View style={{ padding: 6 }}>
+                              <Text style={styles.gridDesign}>#{d.design_number} · ₹{d.rate}</Text>
+                              <Text style={styles.gridSub} numberOfLines={1}>
+                                {d.item_name}{d.work_category ? ` · ${d.work_category}` : ''}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.sendBtn, (sending || activeCount === 0) && styles.sendBtnDisabled]}
+                      onPress={() => sendBatch(batch)}
+                      disabled={sending || activeCount === 0}
+                    >
+                      <Text style={styles.sendBtnText}>
+                        {sending ? 'Preparing Share Sheet…' : `📤 Share ${activeCount} designs via WhatsApp — ${batch.brand.name}`}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </>
           )}
         </>
@@ -635,4 +724,14 @@ const styles = StyleSheet.create({
   msgCancelText: { fontWeight: '700', color: colors.textSecondary, fontSize: 14 },
   msgSendBtn: { flex: 2, padding: 14, borderRadius: 12, backgroundColor: colors.whatsapp, alignItems: 'center', ...shadow.small, shadowColor: colors.whatsapp },
   msgSendText: { fontWeight: '800', color: '#fff', fontSize: 14 },
+  quickSendRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.card, borderRadius: 12, padding: 10, marginBottom: 8,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  quickSendRowName: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  quickSendBtn: { backgroundColor: colors.whatsapp, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  quickSendBtnText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  quickSendIconBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  quickSendIconText: { fontSize: 13 },
 });
