@@ -27,6 +27,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Cloudflare Wrangler local cache
+.wrangler/
+
 # Logs & OS junk
 *.log
 .DS_Store
