@@ -25,7 +25,7 @@ router.get('/item/:itemId', (req, res) => {
 router.get('/search', (req, res) => {
   const q = `%${req.query.q || ''}%`;
   const designs = db.prepare(`
-    SELECT d.*, i.name AS item_name, b.name AS brand_name
+    SELECT d.*, i.name AS item_name, b.id AS brand_id, b.name AS brand_name
     FROM designs d
     JOIN items i ON i.id = d.item_id
     JOIN brands b ON b.id = i.brand_id

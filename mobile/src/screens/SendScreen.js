@@ -16,6 +16,72 @@ const PRICE_PRESETS = [
   { label: '1200+', min: '1200', max: '' },
 ];
 
+// Search-based recipient picker. With 1000+ contacts we can't render the whole
+// list — show a search box, reveal matches only as the user types, and collapse
+// to a compact bar once a contact is picked.
+function ContactPicker({ contacts, selected, onSelect }) {
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const results = q
+    ? contacts.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (digits && (c.phone || '').includes(digits))
+      ).slice(0, 30)
+    : [];
+
+  if (selected) {
+    return (
+      <View style={styles.pickedBar}>
+        <View style={[styles.contactAvatar, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.contactAvatarText, { color: '#fff' }]}>{String(selected.name || '?').charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.contactName} numberOfLines={1}>{selected.name}</Text>
+          <Text style={styles.contactPhone}>{selected.phone}</Text>
+        </View>
+        <TouchableOpacity style={styles.changeBtn} onPress={() => onSelect(null)}>
+          <Text style={styles.changeBtnText}>Change</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <TextInput
+        style={styles.contactSearch}
+        placeholder="🔍  Search contact by name or number…"
+        placeholderTextColor={colors.textSecondary}
+        value={query}
+        onChangeText={setQuery}
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
+      {q.length === 0 && (
+        <Text style={styles.skippedNote2}>Type a name or number to find a contact.</Text>
+      )}
+      {q.length > 0 && results.length === 0 && (
+        <Text style={styles.emptyNote}>No contacts match "{query}".</Text>
+      )}
+      {results.map(c => (
+        <TouchableOpacity key={c.id} style={styles.contactCard} onPress={() => { onSelect(c); setQuery(''); }}>
+          <View style={styles.contactAvatar}>
+            <Text style={styles.contactAvatarText}>{String(c.name || '?').charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contactName} numberOfLines={1}>{c.name}</Text>
+            <Text style={styles.contactPhone}>{c.phone} · {c.type}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+      {results.length === 30 && (
+        <Text style={styles.skippedNote2}>Showing first 30 — keep typing to narrow down.</Text>
+      )}
+    </View>
+  );
+}
+
 export default function SendScreen() {
   const [mode, setMode] = useState('item'); // 'item' | 'filter'
   const [brands, setBrands] = useState([]);
@@ -240,21 +306,9 @@ export default function SendScreen() {
 
           {/* Inline contact picker so users don't need to scroll down */}
           {contacts.length > 0 && (
-            <View style={styles.catalogContactRow}>
+            <View style={styles.catalogContactPicker}>
               <Text style={styles.catalogContactLabel}>To (optional):</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {contacts.map(c => (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={[styles.contactChip, selectedContact?.id === c.id && styles.contactChipActive]}
-                    onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
-                  >
-                    <Text style={[styles.contactChipText, selectedContact?.id === c.id && styles.contactChipTextActive]}>
-                      {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <ContactPicker contacts={contacts} selected={selectedContact} onSelect={setSelectedContact} />
             </View>
           )}
 
@@ -289,21 +343,9 @@ export default function SendScreen() {
             </View>
           ))}
           {contacts.length > 0 && (
-            <View style={[styles.catalogContactRow, { paddingHorizontal: 0, marginTop: 12 }]}>
+            <View style={{ marginTop: 12 }}>
               <Text style={styles.catalogContactLabel}>To (optional):</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {contacts.map(c => (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={[styles.contactChip, selectedContact?.id === c.id && styles.contactChipActive]}
-                    onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
-                  >
-                    <Text style={[styles.contactChipText, selectedContact?.id === c.id && styles.contactChipTextActive]}>
-                      {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <ContactPicker contacts={contacts} selected={selectedContact} onSelect={setSelectedContact} />
             </View>
           )}
         </View>
@@ -429,28 +471,12 @@ export default function SendScreen() {
                 <View style={[styles.section, { marginTop: 4 }]}>
                   <Text style={styles.stepLabel}>Final Step</Text>
                   <Text style={styles.stepTitle}>Select Recipient</Text>
-                  {contacts.length === 0 && (
+                  {contacts.length === 0 ? (
                     <Text style={styles.emptyNote}>No contacts yet. Add them in More → Contacts.</Text>
+                  ) : (
+                    <ContactPicker contacts={contacts} selected={selectedContact} onSelect={setSelectedContact} />
                   )}
-                  {contacts.map(c => (
-                    <TouchableOpacity
-                      key={c.id}
-                      style={[styles.contactCard, selectedContact?.id === c.id && styles.contactCardActive]}
-                      onPress={() => setSelectedContact(selectedContact?.id === c.id ? null : c)}
-                    >
-                      <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
-                          {String(c.name || '?').charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.contactName}>{c.name}</Text>
-                        <Text style={styles.contactPhone}>{c.phone} · {c.type}</Text>
-                      </View>
-                      {selectedContact?.id === c.id && <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>}
-                    </TouchableOpacity>
-                  ))}
-                  <Text style={styles.skippedNote2}>Tap a design below to exclude it from that brand's send.</Text>
+                  <Text style={[styles.skippedNote2, { marginTop: 8 }]}>Tap a design below to exclude it from that brand's send.</Text>
                 </View>
               )}
 
@@ -559,27 +585,11 @@ export default function SendScreen() {
           <View style={[styles.section, { marginTop: 20 }]}>
             <Text style={styles.stepLabel}>Step 4</Text>
             <Text style={styles.stepTitle}>Select Recipient</Text>
-            {contacts.length === 0 && (
+            {contacts.length === 0 ? (
               <Text style={styles.emptyNote}>No contacts yet. Add them in More → Contacts.</Text>
+            ) : (
+              <ContactPicker contacts={contacts} selected={selectedContact} onSelect={setSelectedContact} />
             )}
-            {contacts.map(c => (
-              <TouchableOpacity
-                key={c.id}
-                style={[styles.contactCard, selectedContact?.id === c.id && styles.contactCardActive]}
-                onPress={() => setSelectedContact(c)}
-              >
-                <View style={[styles.contactAvatar, selectedContact?.id === c.id && { backgroundColor: colors.primary }]}>
-                  <Text style={[styles.contactAvatarText, selectedContact?.id === c.id && { color: '#fff' }]}>
-                    {String(c.name || '?').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.contactName}>{c.name}</Text>
-                  <Text style={styles.contactPhone}>{c.phone} · {c.type}</Text>
-                </View>
-                {selectedContact?.id === c.id && <Text style={{ color: colors.primary, fontSize: 18 }}>✓</Text>}
-              </TouchableOpacity>
-            ))}
           </View>
 
           <TouchableOpacity
@@ -643,12 +653,19 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#fff', fontWeight: '700' },
   waBtn: { backgroundColor: colors.whatsapp, marginHorizontal: 16, marginTop: 12, padding: 15, borderRadius: 14, alignItems: 'center', ...shadow.medium, shadowColor: colors.whatsapp },
   waBtnText: { color: '#fff', fontSize: 15, fontWeight: '800', textAlign: 'center', lineHeight: 22 },
-  catalogContactRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 10, gap: 10 },
-  catalogContactLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, flexShrink: 0 },
-  contactChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
-  contactChipActive: { backgroundColor: colors.whatsapp, borderColor: colors.whatsapp },
-  contactChipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
-  contactChipTextActive: { color: '#fff', fontWeight: '700' },
+  catalogContactPicker: { paddingHorizontal: 16, marginTop: 10 },
+  catalogContactLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 8 },
+  contactSearch: {
+    backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.textPrimary, marginBottom: 8,
+  },
+  pickedBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#FDF5F6', borderRadius: 14, padding: 12,
+    borderWidth: 1.5, borderColor: colors.primary,
+  },
+  changeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
+  changeBtnText: { color: colors.primary, fontWeight: '800', fontSize: 13 },
   brandActions: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 10 },
   actionBtn: { flex: 1, backgroundColor: colors.primary, padding: 12, borderRadius: 12, alignItems: 'center' },
   actionBtnDark: { backgroundColor: colors.primaryDark },

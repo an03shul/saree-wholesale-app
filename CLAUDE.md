@@ -107,6 +107,21 @@ activity_log               (audit trail)
 5. **`Alert.alert` is a no-op on web (react-native-web).** In the mobile app's web/PWA build, `Alert.alert` shows nothing, so `catch { Alert.alert('Error', …) }` silently swallows failures — this is why the Send/share button "did nothing" on the staff's Android phone. Use a web-aware notifier (`window.alert` on web) for anything the user must see. Also: `navigator.share()` needs transient user activation, which an intervening `await fetch()` can drop on Android Chrome — always provide a fallback (e.g. download the image) when it fails.
 6. **SQLite's `CURRENT_TIMESTAMP` is UTC with no timezone marker, and `new Date(ts)` silently mis-parses it.** Timestamps come back as `"YYYY-MM-DD HH:MM:SS"` (space-separated, no `Z`). Passing that straight to `new Date(ts)` on the client gets parsed as *local* time instead of UTC, so every displayed timestamp is off by the viewer's UTC offset (e.g. admin activity-log times looked wrong by exactly +5:30 for IST users). Always normalize with `mobile/src/utils/date.js`'s `parseServerDate()` (replaces the space with `T` and appends `Z`) before constructing a `Date` from any `created_at`-style column — don't call `new Date(ts)` directly on raw server timestamps.
 
+## Search, contacts import & audit logging
+
+**Design search (home screen).** `GET /api/designs/search?q=` (`designsApi.search`) searches design_number / item name / brand name across all brands and returns `d.*` plus `item_name`, `brand_name`, `brand_id` (LIMIT 50). Used by both `OrdersScreen` (attach a design to an order) and `BrandsScreen` (the home-screen search bar that shows each match's **stock status + price**, tappable to the brand's items). Available to admin **and** staff — no admin gate on the route or the UI.
+
+**Contact list search.** `ContactsScreen` and the Send screen's recipient picker (`ContactPicker` in `SendScreen.js`) both filter client-side over the full contacts array (name substring or digits-only phone match) — never render all ~1000 rows at once. The Send picker collapses to a compact "picked" bar with a Change button once a recipient is chosen.
+
+**Bulk contact import.** `backend/scripts/import-contacts.js` loads `backend/scripts/contacts-seed.json` either directly into the DB (respects `DB_PATH`) or over HTTP via `POST /api/contacts/import` (admin-only, idempotent — `INSERT OR IGNORE` on the unique phone). Phones are normalized to `91XXXXXXXXXX`. HTTP mode: `API_URL=https://api.gopiramsarees.in node scripts/import-contacts.js --http --token=<ADMIN_TOKEN>` (mint the token via `POST /api/auth/login`; admin allows concurrent sessions so this won't sign you out).
+
+**Audit logging.** The `logActivity(action, getDetails)` middleware (in `middleware/auth.js`) writes to `activity_log`, viewable in **Admin Panel → Logs** (admin-only). It is wired onto the contacts routes: **Added / Edited / Deleted contact** and **Imported contacts**, each with the contact `name · phone` in `details`. The DELETE route looks up the contact and returns it in the response body (`{ success, deleted }`) so the middleware — which reads `res.json`'s body *after* the row is gone — can still name what was removed. Add more audit entries the same way: attach `logActivity(...)` as route middleware and return anything it needs in the response body.
+
+### Role permissions (staff vs admin)
+- **Staff can:** add items, add designs, add/edit/**delete** contacts (contacts have no admin gate on either the API or the UI).
+- **Admin only:** create/edit/delete brands, edit/delete items, edit/delete/stock-toggle designs, delete orders, bulk contact import, everything under `/api/admin/*`, and viewing the activity log. These are enforced with `requireAdmin` on the backend **and** `isAdmin` gates in the UI.
+- **Known gap:** the backend `POST` routes for brands/items/designs are *not* `requireAdmin` — only the mobile UI hides those add buttons (brand-add is UI-gated; item/design add is intentionally open to staff). A staff user could still create brands via the raw API. Add `requireAdmin` to those POSTs if you want defense in depth.
+
 ## Graphify Knowledge Graph
 
 This project uses graphify. See `.agents/rules/graphify.md` for full rules (trigger: always_on). Key points:

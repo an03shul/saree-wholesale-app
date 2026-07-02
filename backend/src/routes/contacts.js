@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, logActivity } = require('../middleware/auth');
+
+// Formats a contact for the audit log, e.g. "AADHYA COLLECTION · 919340772259".
+const contactLabel = (c) => (c && c.name ? `${c.name} · ${c.phone}` : null);
 
 router.get('/', (req, res) => {
   res.json(db.prepare('SELECT * FROM contacts ORDER BY name').all());
 });
 
-router.post('/', (req, res) => {
+router.post('/', logActivity('Added contact', (req, body) => contactLabel(body)), (req, res) => {
   const { name, phone, type } = req.body;
   if (!name || !phone) return res.status(400).json({ error: 'name and phone required' });
   try {
@@ -19,7 +22,7 @@ router.post('/', (req, res) => {
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', logActivity('Edited contact', (req, body) => contactLabel(body)), (req, res) => {
   const { name, phone, type } = req.body;
   if (!name || !phone) return res.status(400).json({ error: 'name and phone required' });
   const existing = db.prepare('SELECT id FROM contacts WHERE id = ?').get(req.params.id);
@@ -35,7 +38,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Bulk import (admin only). Idempotent: existing phones are skipped, not overwritten.
-router.post('/import', requireAdmin, (req, res) => {
+router.post('/import', requireAdmin, logActivity('Imported contacts', (req, body) => body ? `${body.imported} added, ${body.skipped} skipped (of ${body.total})` : null), (req, res) => {
   const list = Array.isArray(req.body?.contacts) ? req.body.contacts : null;
   if (!list) return res.status(400).json({ error: 'contacts array required' });
   const ins = db.prepare('INSERT OR IGNORE INTO contacts (name, phone, type) VALUES (?,?,?)');
@@ -50,9 +53,11 @@ router.post('/import', requireAdmin, (req, res) => {
   res.json({ imported, skipped, total: list.length });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', logActivity('Deleted contact', (req, body) => contactLabel(body && body.deleted)), (req, res) => {
+  // Capture the contact before deleting so the audit log can name it.
+  const deleted = db.prepare('SELECT name, phone FROM contacts WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM contacts WHERE id = ?').run(req.params.id);
-  res.json({ success: true });
+  res.json({ success: true, deleted: deleted || null });
 });
 
 module.exports = router;

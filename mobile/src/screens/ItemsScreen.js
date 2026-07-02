@@ -168,7 +168,7 @@ export default function ItemsScreen({ route, navigation }) {
               <Text style={styles.numberText}>{String(index + 1).padStart(2, '0')}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
               {item.description
                 ? <Text style={styles.desc}>{item.description}</Text>
                 : <Text style={styles.descPlaceholder}>Tap to view designs</Text>
@@ -200,9 +200,6 @@ export default function ItemsScreen({ route, navigation }) {
                 <Text style={styles.iconBtnText}>✏️</Text>
               </TouchableOpacity>
             )}
-            <View style={styles.arrowCircle}>
-              <Text style={styles.arrow}>›</Text>
-            </View>
           </TouchableOpacity>
         )}
       />
@@ -301,7 +298,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 8,
     ...shadow.small,
   },
   numberBadge: {
@@ -314,14 +311,8 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   desc: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
   descPlaceholder: { fontSize: 12, color: colors.border, marginTop: 3, fontStyle: 'italic' },
-  arrowCircle: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.background,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  arrow: { fontSize: 20, color: colors.gold, fontWeight: '700' },
   cardOutOfStock: { opacity: 0.55 },
-  stockToggle: { alignItems: 'center', gap: 3, marginRight: 2 },
+  stockToggle: { alignItems: 'center', gap: 2, marginRight: 0 },
   stockLabel: { fontSize: 10, fontWeight: '700' },
   stockBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginRight: 6 },
   stockOut: { backgroundColor: '#FEE9E9' },
@@ -338,8 +329,8 @@ const styles = StyleSheet.create({
     ...shadow.medium, shadowColor: colors.primary,
   },
   fabText: { color: '#fff', fontSize: 32, lineHeight: 36 },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
-  iconBtnText: { fontSize: 14 },
+  iconBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  iconBtnText: { fontSize: 13 },
   editLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6, marginTop: 6, letterSpacing: 0.5, textTransform: 'uppercase' },
   editChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border },
   editChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

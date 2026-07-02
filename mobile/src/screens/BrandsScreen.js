@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Alert, ActivityIndicator, Modal, Share, RefreshControl
+  StyleSheet, Alert, ActivityIndicator, Modal, Share, RefreshControl, Image
 } from 'react-native';
-import { brandsApi, getCatalogUrl, statsApi } from '../api/client';
+import { brandsApi, designsApi, getCatalogUrl, getThumbUrl, statsApi } from '../api/client';
 import { notify } from '../utils/share';
 import { useUser } from '../../App';
 import { colors, shadow, modalBase } from '../constants/theme';
@@ -27,6 +27,29 @@ export default function BrandsScreen({ navigation }) {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+
+  // Design search (available to admin + staff) — check stock & price from the home screen.
+  const [designQuery, setDesignQuery] = useState('');
+  const [designResults, setDesignResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
+
+  const searchDesigns = (q) => {
+    setDesignQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setDesignResults([]); setSearching(false); return; }
+    setSearching(true);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const { data } = await designsApi.search(q.trim());
+        setDesignResults(data);
+      } catch {
+        setDesignResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -103,8 +126,68 @@ export default function BrandsScreen({ navigation }) {
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
 
+  const isSearching = designQuery.trim().length > 0;
+
   return (
     <View style={styles.container}>
+      <View style={styles.searchWrap}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="🔍  Search design # / item / brand — stock & price"
+          placeholderTextColor={colors.textSecondary}
+          value={designQuery}
+          onChangeText={searchDesigns}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
+
+      {isSearching ? (
+        <FlatList
+          data={designResults}
+          keyExtractor={d => String(d.id)}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            <Text style={styles.listHeader}>
+              {searching ? 'Searching…' : `${designResults.length} design${designResults.length !== 1 ? 's' : ''} found`}
+            </Text>
+          }
+          ListEmptyComponent={
+            !searching ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyIcon}>🔍</Text>
+                <Text style={styles.emptyTitle}>No designs found</Text>
+                <Text style={styles.emptySubtitle}>Nothing matches "{designQuery}"</Text>
+              </View>
+            ) : null
+          }
+          renderItem={({ item: d }) => (
+            <TouchableOpacity
+              style={styles.resultCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('Items', {
+                brand: { id: d.brand_id, name: d.brand_name },
+              })}
+            >
+              {d.photo_path
+                ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.resultPhoto} />
+                : <View style={[styles.resultPhoto, styles.resultNoPhoto]}><Text style={styles.resultNoPhotoText}>No photo</Text></View>
+              }
+              <View style={{ flex: 1 }}>
+                <Text style={styles.resultDesign} numberOfLines={1}>Design {d.design_number}</Text>
+                <Text style={styles.resultSub} numberOfLines={1}>{d.brand_name} · {d.item_name}</Text>
+                <Text style={styles.resultRate}>₹{d.rate}</Text>
+              </View>
+              <View style={[styles.stockPill, d.in_stock ? styles.stockPillIn : styles.stockPillOut]}>
+                <Text style={[styles.stockPillText, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>
+                  {d.in_stock ? 'In Stock' : 'Out of Stock'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      ) : (
       <FlatList
         data={brands}
         keyExtractor={b => String(b.id)}
@@ -174,6 +257,7 @@ export default function BrandsScreen({ navigation }) {
           </TouchableOpacity>
         )}
       />
+      )}
 
       {isAdmin && (
         <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
@@ -245,6 +329,26 @@ export default function BrandsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  searchInput: {
+    backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.textPrimary, ...shadow.small,
+  },
+  resultCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.card, borderRadius: 14, padding: 10, marginBottom: 10,
+    ...shadow.small,
+  },
+  resultPhoto: { width: 54, height: 54, borderRadius: 10, backgroundColor: colors.background },
+  resultNoPhoto: { alignItems: 'center', justifyContent: 'center' },
+  resultNoPhotoText: { fontSize: 9, color: colors.textSecondary },
+  resultDesign: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  resultSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  resultRate: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 3 },
+  stockPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  stockPillIn: { backgroundColor: '#E8F5E9' },
+  stockPillOut: { backgroundColor: '#FEE9E9' },
+  stockPillText: { fontSize: 11, fontWeight: '800' },
   listHeader: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
   card: {
     backgroundColor: colors.card,

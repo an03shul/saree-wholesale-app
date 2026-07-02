@@ -21,7 +21,17 @@ export default function ContactsScreen({ navigation }) {
   const [loadingTally, setLoadingTally] = useState(false);
   const [selected, setSelected] = useState({});
   const [editingId, setEditingId] = useState(null);
+  const [listSearch, setListSearch] = useState('');
   const [form, setForm] = useState({ name: '', phone: '', type: 'individual' });
+
+  const q = listSearch.trim().toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const filteredContacts = q
+    ? contacts.filter(c =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (digits && (c.phone || '').includes(digits))
+      )
+    : contacts;
 
   const openAdd = () => {
     setEditingId(null);
@@ -148,11 +158,32 @@ export default function ContactsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={styles.listSearchWrap}>
+        <TextInput
+          style={styles.listSearchInput}
+          placeholder="🔍  Search contacts by name or number…"
+          placeholderTextColor="#999"
+          value={listSearch}
+          onChangeText={setListSearch}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        <Text style={styles.listSearchCount}>
+          {listSearch ? `${filteredContacts.length} of ${contacts.length}` : `${contacts.length} contacts`}
+        </Text>
+      </View>
       <FlatList
-        data={contacts}
+        data={filteredContacts}
         keyExtractor={c => String(c.id)}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 16 }}
-        ListEmptyComponent={<Text style={styles.empty}>No contacts yet.{'\n'}Tap + to add manually or import from your phone.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {listSearch
+              ? `No contacts match "${listSearch}".`
+              : 'No contacts yet.\nTap + to add manually or import from your phone.'}
+          </Text>
+        }
         renderItem={({ item: c }) => (
           <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => openEdit(c)}>
             <View style={styles.avatar}>
@@ -339,6 +370,12 @@ export default function ContactsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f4f0' },
+  listSearchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, backgroundColor: '#f8f4f0' },
+  listSearchInput: {
+    backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ddd',
+    paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#2c1810',
+  },
+  listSearchCount: { fontSize: 12, color: '#aaa', marginTop: 6, marginLeft: 4 },
   card: {
     backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10,
     flexDirection: 'row', alignItems: 'center', gap: 12,

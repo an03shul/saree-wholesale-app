@@ -1,16 +1,16 @@
-# Graph Report - gopiram-saree  (2026-07-02)
+# Graph Report - gopiram-saree  (2026-07-01)
 
 ## Corpus Check
-- 76 files · ~64,890 words
+- 74 files · ~54,150 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 525 nodes · 745 edges · 37 communities (31 shown, 6 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.8)
+- 511 nodes · 726 edges · 37 communities (31 shown, 6 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `87b0ffa5`
+- Built from commit: `e86a15ed`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -57,23 +57,23 @@
 3. `expo` - 10 edges
 4. `colors` - 10 edges
 5. `shadow` - 10 edges
-6. `requireAdmin()` - 9 edges
-7. `getImageUrl()` - 9 edges
+6. `getImageUrl()` - 9 edges
+7. `requireAdmin()` - 8 edges
 8. `web` - 8 edges
 9. `setAuthToken()` - 8 edges
-10. `getThumbUrl()` - 7 edges
+10. `Cloudflare Workers` - 7 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `viaHttp()` --calls--> `fetch()`  [INFERRED]
-  backend/scripts/import-contacts.js → mobile/broken-violet-21ab/src/index.js
-- `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
 - `buildShareFile()` --calls--> `fetch()`  [INFERRED]
   mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
+- `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
+  mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
 - `sendDesignUpdates()` --calls--> `getWatermarkedPath()`  [EXTRACTED]
   backend/src/services/whatsapp.js → backend/src/services/watermark.js
 - `BrandsScreen()` --calls--> `useUser()`  [EXTRACTED]
   mobile/src/screens/BrandsScreen.js → mobile/App.js
+- `DesignsScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/DesignsScreen.js → mobile/App.js
 
 ## Import Cycles
 - None detected.
@@ -81,11 +81,11 @@
 ## Communities (37 total, 6 thin omitted)
 
 ### Community 0 - "Mobile API Client Modules"
-Cohesion: 0.05
-Nodes (76): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+68 more)
+Cohesion: 0.06
+Nodes (73): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+65 more)
 
 ### Community 1 - "Authentication & Security Middleware"
-Cohesion: 0.18
+Cohesion: 0.16
 Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
 
 ### Community 2 - "Catalog Generation & HTML Services"
@@ -149,12 +149,12 @@ Cohesion: 0.29
 Nodes (6): fs, html, indexPath, path, swDst, swSrc
 
 ### Community 17 - "Theme & Styling Constants"
-Cohesion: 0.14
-Nodes (9): contacts, fs, path, seedPath, tokenArg, useHttp, viaHttp(), fetch() (+1 more)
+Cohesion: 0.22
+Nodes (5): fetch(), MyWorkflow, getNotificationPermission(), subscribeToPush(), urlBase64ToUint8Array()
 
 ### Community 20 - "Community 20"
-Cohesion: 0.11
-Nodes (16): Architecture, Backend, Backend (`backend/src/`), Commands, Data model, Deployment, ⚠️ Deployment gotchas (learned the hard way), Environment Variables (+8 more)
+Cohesion: 0.12
+Nodes (14): Architecture, Backend, Backend (`backend/src/`), Commands, Data model, Deployment, ⚠️ Deployment gotchas (learned the hard way), Environment Variables (+6 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.20
@@ -181,8 +181,8 @@ Cohesion: 0.22
 Nodes (8): db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll(), webpush
 
 ### Community 28 - "Community 28"
-Cohesion: 0.29
-Nodes (5): logActivity(), db, express, { requireAdmin, logActivity }, router
+Cohesion: 0.50
+Nodes (3): db, express, router
 
 ### Community 29 - "Community 29"
 Cohesion: 0.50
@@ -197,21 +197,21 @@ Cohesion: 0.50
 Nodes (3): db, express, router
 
 ## Knowledge Gaps
-- **308 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+303 more)
+- **300 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+295 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
+- **Why does `requireAdmin()` connect `Community 25` to `Authentication & Security Middleware`, `Design Management & Uploads`, `Community 23`, `Community 24`, `Community 26`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Why does `fetch()` connect `Theme & Styling Constants` to `Mobile API Client Modules`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `subscribeToPush()` connect `Mobile API Client Modules` to `Theme & Styling Constants`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
-  _308 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _300 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Mobile API Client Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.05153099327856609 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05512308015989901 - nodes in this community are weakly interconnected._
 - **Should `Catalog Generation & HTML Services` be split into smaller, more focused modules?**
   _Cohesion score 0.0748663101604278 - nodes in this community are weakly interconnected._
 - **Should `Design Management & Uploads` be split into smaller, more focused modules?**
