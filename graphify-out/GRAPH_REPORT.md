@@ -1,16 +1,16 @@
 # Graph Report - gopiram-saree  (2026-07-02)
 
 ## Corpus Check
-- 79 files · ~68,132 words
+- 79 files · ~68,557 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 528 nodes · 761 edges · 37 communities (31 shown, 6 thin omitted)
+- 528 nodes · 762 edges · 37 communities (31 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e2105c4a`
+- Built from commit: `6e1d2ffa`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -209,7 +209,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
   _308 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Mobile API Client Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.05504950495049505 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05524752475247525 - nodes in this community are weakly interconnected._
 - **Should `Catalog Generation & HTML Services` be split into smaller, more focused modules?**
   _Cohesion score 0.06097560975609756 - nodes in this community are weakly interconnected._
 - **Should `Design Management & Uploads` be split into smaller, more focused modules?**

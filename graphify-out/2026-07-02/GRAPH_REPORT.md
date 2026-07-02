@@ -1,16 +1,16 @@
 # Graph Report - gopiram-saree  (2026-07-02)
 
 ## Corpus Check
-- 78 files · ~65,808 words
+- 79 files · ~68,132 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 524 nodes · 744 edges · 37 communities (31 shown, 6 thin omitted)
+- 528 nodes · 761 edges · 37 communities (31 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dd60179a`
+- Built from commit: `e2105c4a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -52,28 +52,28 @@
 - [[_COMMUNITY_Community 35|Community 35]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `notify()` - 12 edges
+1. `notify()` - 13 edges
 2. `useUser()` - 11 edges
-3. `expo` - 10 edges
-4. `colors` - 10 edges
-5. `shadow` - 10 edges
+3. `colors` - 11 edges
+4. `shadow` - 11 edges
+5. `expo` - 10 edges
 6. `requireAdmin()` - 9 edges
 7. `getImageUrl()` - 9 edges
 8. `web` - 8 edges
 9. `setAuthToken()` - 8 edges
-10. `getThumbUrl()` - 7 edges
+10. `getThumbUrl()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `viaHttp()` --calls--> `fetch()`  [INFERRED]
   backend/scripts/import-contacts.js → mobile/broken-violet-21ab/src/index.js
-- `buildShareFile()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
 - `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
   mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
+- `buildShareFile()` --calls--> `fetch()`  [INFERRED]
+  mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
+- `buildShareFile()` --calls--> `getWmUrl()`  [EXTRACTED]
+  mobile/src/utils/share.js → mobile/src/api/client.js
 - `sendDesignUpdates()` --calls--> `getWatermarkedPath()`  [EXTRACTED]
   backend/src/services/whatsapp.js → backend/src/services/watermark.js
-- `BrandsScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/BrandsScreen.js → mobile/App.js
 
 ## Import Cycles
 - None detected.
@@ -81,8 +81,8 @@
 ## Communities (37 total, 6 thin omitted)
 
 ### Community 0 - "Mobile API Client Modules"
-Cohesion: 0.05
-Nodes (73): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+65 more)
+Cohesion: 0.06
+Nodes (74): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+66 more)
 
 ### Community 1 - "Authentication & Security Middleware"
 Cohesion: 0.18
@@ -149,8 +149,8 @@ Cohesion: 0.29
 Nodes (6): fs, html, indexPath, path, swDst, swSrc
 
 ### Community 17 - "Theme & Styling Constants"
-Cohesion: 0.11
-Nodes (12): contacts, fs, path, seedPath, tokenArg, useHttp, viaHttp(), fetch() (+4 more)
+Cohesion: 0.10
+Nodes (14): contacts, fs, path, seedPath, tokenArg, useHttp, viaHttp(), fetch() (+6 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.11
@@ -197,24 +197,24 @@ Cohesion: 0.50
 Nodes (3): db, express, router
 
 ## Knowledge Gaps
-- **307 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+302 more)
+- **308 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+303 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `fetch()` connect `Theme & Styling Constants` to `Mobile API Client Modules`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Why does `subscribeToPush()` connect `Theme & Styling Constants` to `Mobile API Client Modules`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
-  _307 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _308 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Mobile API Client Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.054627911770768915 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05504950495049505 - nodes in this community are weakly interconnected._
 - **Should `Catalog Generation & HTML Services` be split into smaller, more focused modules?**
   _Cohesion score 0.06097560975609756 - nodes in this community are weakly interconnected._
 - **Should `Design Management & Uploads` be split into smaller, more focused modules?**
   _Cohesion score 0.059743954480796585 - nodes in this community are weakly interconnected._
 - **Should `Mobile Dependencies & Expo Modules` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+- **Should `Database Core & Schema Management` be split into smaller, more focused modules?**
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._

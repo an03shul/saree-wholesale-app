@@ -8,9 +8,10 @@ const { notifyAll } = require('../services/pushNotify');
 router.get('/', requireAuth, (req, res) => {
   const orders = db.prepare(`
     SELECT o.*,
-      d.design_number, d.photo_path,
-      i.name AS item_name,
-      b.name AS brand_name
+      COALESCE(d.design_number, o.design_number) AS design_number,
+      COALESCE(i.name, o.item_name) AS item_name,
+      COALESCE(b.name, o.brand_name) AS brand_name,
+      d.photo_path
     FROM orders o
     LEFT JOIN designs d ON d.id = o.design_id
     LEFT JOIN items i ON i.id = d.item_id
@@ -22,13 +23,32 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/orders — create new order/inquiry
 router.post('/', (req, res) => {
-  const { design_id, customer_name, customer_phone, quantity, note, source } = req.body;
+  const { 
+    design_id, customer_name, customer_phone, quantity, note, source,
+    design_number, item_name, brand_name
+  } = req.body;
+  
   if (!customer_name) return res.status(400).json({ error: 'customer_name is required' });
-  const validSources = ['design_card', 'orders_tab'];
+  const validSources = ['design_card', 'orders_tab', 'catalog', 'custom_form'];
   const src = validSources.includes(source) ? source : 'orders_tab';
-  const result = db.prepare(
-    'INSERT INTO orders (design_id, customer_name, customer_phone, quantity, note, status, source) VALUES (?,?,?,?,?,?,?)'
-  ).run(design_id || null, customer_name.trim(), customer_phone?.trim() || null, quantity || 1, note?.trim() || null, 'pending', src);
+  
+  const result = db.prepare(`
+    INSERT INTO orders (
+      design_id, customer_name, customer_phone, quantity, note, status, source,
+      design_number, item_name, brand_name
+    ) VALUES (?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    design_id || null, 
+    customer_name.trim(), 
+    customer_phone?.trim() || null, 
+    quantity || 1, 
+    note?.trim() || null, 
+    'pending', 
+    src,
+    design_number || null,
+    item_name || null,
+    brand_name || null
+  );
 
   // Notify all subscribed devices — fire and forget, never block the response
   const design = design_id ? db.prepare('SELECT design_number FROM designs WHERE id = ?').get(design_id) : null;

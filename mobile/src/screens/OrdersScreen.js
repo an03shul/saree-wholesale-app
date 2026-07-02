@@ -166,8 +166,8 @@ export default function OrdersScreen({ navigation }) {
                 <Image source={{ uri: getThumbUrl(order.photo_path) }} style={styles.thumb} />
               )}
               {!order.photo_path && (
-                <View style={[styles.thumb, styles.thumbPlaceholder]}>
-                  <Text style={{ fontSize: 22 }}>🛍️</Text>
+                <View style={[styles.thumb, styles.thumbPlaceholder, order.source === 'custom_form' && { backgroundColor: '#E0F7FA' }]}>
+                  <Text style={{ fontSize: 22 }}>{order.source === 'custom_form' ? '📝' : '🛍️'}</Text>
                 </View>
               )}
               <View style={{ flex: 1 }}>
@@ -175,11 +175,11 @@ export default function OrdersScreen({ navigation }) {
                 {order.customer_phone ? <Text style={styles.customerPhone}>{order.customer_phone}</Text> : null}
                 {order.design_number ? (
                   <Text style={styles.designRef}>
-                    Design {order.design_number}{order.item_name ? ` · ${order.item_name}` : ''}{order.brand_name ? ` · ${order.brand_name}` : ''}
+                    {order.source === 'custom_form' ? '' : 'Design '}{order.design_number}{order.item_name ? ` · ${order.item_name}` : ''}{order.brand_name ? ` · ${order.brand_name}` : ''}
                   </Text>
                 ) : null}
                 <View style={styles.metaRow}>
-                  <Text style={styles.qty}>Qty: {order.quantity}</Text>
+                  <Text style={styles.qty}>{order.source === 'custom_form' ? 'Designs' : 'Qty'}: {order.quantity}</Text>
                   <Text style={styles.date}>{formatDate(order.created_at)}</Text>
                 </View>
                 {order.note ? <Text style={styles.note} numberOfLines={2}>{order.note}</Text> : null}

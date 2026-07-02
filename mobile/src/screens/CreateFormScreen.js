@@ -5,7 +5,7 @@ import {
   Linking, Clipboard, Platform
 } from 'react-native';
 import { CameraView } from 'expo-camera';
-import { designsApi, contactsApi, getThumbUrl, getCustomCatalogUrl, whatsappLink } from '../api/client';
+import { designsApi, contactsApi, ordersApi, getThumbUrl, getCustomCatalogUrl, whatsappLink } from '../api/client';
 import { notify, confirmAction } from '../utils/share';
 import { colors, shadow } from '../constants/theme';
 
@@ -25,6 +25,13 @@ export default function CreateFormScreen() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [camPermission, setCamPermission] = useState('idle'); // idle | requesting | active | denied | error
   const [scannedFeedback, setScannedFeedback] = useState('');
+
+  // Customer details inquiry state
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [saveToInquiries, setSaveToInquiries] = useState(true);
+  const [inquiryModalVisible, setInquiryModalVisible] = useState(false);
+  const [savingInquiry, setSavingInquiry] = useState(false);
 
   // Results sharing modal state
   const [shareModalVisible, setShareModalVisible] = useState(false);
@@ -119,15 +126,58 @@ export default function CreateFormScreen() {
     }
   };
 
-  // Generate & Share Link
+  // Handle click on bottom bar Generate Link button
   const handleGenerateLink = () => {
     if (selectedDesigns.length === 0) {
       notify('No designs', 'Select at least one design first.');
       return;
     }
+    // Open the customer details modal first to get info for the inquiry
+    setInquiryModalVisible(true);
+  };
+
+  // Generate link, save inquiry to database (if checked), and navigate to share screen
+  const submitFormAndInquiry = async () => {
+    if (saveToInquiries && !customerName.trim()) {
+      notify('Required', 'Please enter a customer name to save this inquiry.');
+      return;
+    }
+
     const ids = selectedDesigns.map(d => d.id);
     const link = getCustomCatalogUrl(ids);
     setGeneratedLink(link);
+
+    if (saveToInquiries) {
+      setSavingInquiry(true);
+      try {
+        const designNos = selectedDesigns.map(d => d.design_number).join(', ');
+        await ordersApi.create({
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim() || null,
+          note: `Custom catalog link: ${link}`,
+          design_number: `${selectedDesigns.length} designs (${designNos})`,
+          brand_name: 'Custom Form',
+          quantity: selectedDesigns.length,
+          source: 'custom_form',
+        });
+        notify('Saved', 'Inquiry saved successfully under Orders.');
+      } catch (e) {
+        notify('Error', e.response?.data?.error || 'Could not save inquiry.');
+      } finally {
+        setSavingInquiry(false);
+      }
+    }
+
+    // Auto-select contact if matching phone number was typed
+    if (customerPhone.trim()) {
+      const match = contacts.find(c => (c.phone || '').includes(customerPhone.trim()));
+      if (match) setSelectedContact(match);
+      else setSelectedContact({ name: customerName.trim(), phone: customerPhone.trim() });
+    } else {
+      setSelectedContact(null);
+    }
+
+    setInquiryModalVisible(false);
     setShareModalVisible(true);
   };
 
@@ -140,6 +190,11 @@ export default function CreateFormScreen() {
     const text = `Namaste! 🙏\nHere's a custom order form created for you containing our selected designs:\n\n${generatedLink}\n\nTap the link to view, adjust quantities, and place your order directly.`;
     Linking.openURL(whatsappLink(text, selectedContact?.phone));
     setShareModalVisible(false);
+    
+    // Clear selection on success
+    setSelectedDesigns([]);
+    setCustomerName('');
+    setCustomerPhone('');
   };
 
   return (
@@ -272,6 +327,59 @@ export default function CreateFormScreen() {
               </View>
             </View>
           </CameraView>
+        </View>
+      </Modal>
+
+      {/* Customer Details & Inquiry Modal */}
+      <Modal visible={inquiryModalVisible} animationType="slide" transparent>
+        <View style={styles.shareOverlay}>
+          <View style={styles.shareSheet}>
+            <Text style={styles.shareTitle}>Inquiry Details</Text>
+            <Text style={styles.inquirySub}>Enter customer details to generate the link and save this custom catalog as an inquiry.</Text>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Customer Name *"
+              placeholderTextColor={colors.textSecondary}
+              value={customerName}
+              onChangeText={setCustomerName}
+              autoCorrect={false}
+            />
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="WhatsApp Number (optional)"
+              placeholderTextColor={colors.textSecondary}
+              value={customerPhone}
+              onChangeText={setCustomerPhone}
+              keyboardType="phone-pad"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setSaveToInquiries(v => !v)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.checkboxIcon}>{saveToInquiries ? '☑️' : '⬛'}</Text>
+              <Text style={styles.checkboxLabel}>Save under Order Inquiries</Text>
+            </TouchableOpacity>
+
+            <View style={styles.shareActions}>
+              <TouchableOpacity style={styles.copyBtn} onPress={() => setInquiryModalVisible(false)}>
+                <Text style={styles.copyBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.whatsappBtn, { backgroundColor: colors.primary || '#8B1A2B' }]}
+                onPress={submitFormAndInquiry}
+                disabled={savingInquiry}
+              >
+                <Text style={styles.whatsappBtnText}>
+                  {savingInquiry ? 'Saving...' : 'Generate & Continue'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -440,10 +548,41 @@ const styles = StyleSheet.create({
   contactChipActive: { backgroundColor: colors.primary || '#8B1A2B', borderColor: colors.primary || '#8B1A2B' },
   contactChipText: { fontSize: 13, color: '#666', fontWeight: '600' },
   shareActions: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  copyBtn: { flex: 1, borderHeight: 48, borderWidth: 1.5, borderColor: '#ddd', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  copyBtn: { flex: 1, height: 48, borderWidth: 1.5, borderColor: '#ddd', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   copyBtnText: { color: '#666', fontWeight: '700', fontSize: 14 },
   whatsappBtn: { flex: 2, height: 48, backgroundColor: '#25D366', padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   whatsappBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   closeShareBtn: { height: 48, alignItems: 'center', justifyContent: 'center' },
   closeShareBtnText: { color: '#999', fontSize: 14, fontWeight: '600' },
+
+  // Inquiry form specific UI
+  inquirySub: { fontSize: 13, color: '#888', marginBottom: 16 },
+  modalInput: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    borderWidth: 1.5,
+    borderColor: '#e8e2dc',
+    marginBottom: 12,
+    color: '#2c1810',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    paddingVertical: 4,
+  },
+  checkboxIcon: {
+    fontSize: 18,
+    color: colors.primary || '#8B1A2B',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
+  },
 });
