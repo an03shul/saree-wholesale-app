@@ -1105,7 +1105,7 @@
       "label": "buildCatalogHtml()",
       "file_type": "code",
       "source_file": "backend/src/routes/catalog.js",
-      "source_location": "L46",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "routes_catalog_buildcataloghtml",
       "community": 2,
@@ -12989,5 +12989,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e0f1fd6152abd9a719b013c3c7a51407dfe0eeb4"
+  "built_at_commit": "dd60179a2d85703e02b457f1f73f69f145757635"
 }

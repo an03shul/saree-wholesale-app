@@ -2,6 +2,81 @@ const express = require('express');
 const path = require('path');
 const router = express.Router();
 const db = require('../db/database');
+
+// GET /catalog/custom — Render a custom selection of designs across brands
+router.get('/custom', (req, res) => {
+  try {
+    const idsStr = req.query.ids || '';
+    const ids = idsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    
+    if (ids.length === 0) {
+      return res.status(400).send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>No designs selected</h2><p>Please check the link and try again.</p></body></html>');
+    }
+
+    const { fabric, maxRate, minRate } = req.query;
+
+    const queryParams = [...ids];
+    let filterSql = '';
+    if (fabric) {
+      filterSql += ' AND d.fabric_type = ?';
+      queryParams.push(fabric);
+    }
+    if (minRate) {
+      filterSql += ' AND d.rate >= ?';
+      queryParams.push(parseFloat(minRate));
+    }
+    if (maxRate) {
+      filterSql += ' AND d.rate <= ?';
+      queryParams.push(parseFloat(maxRate));
+    }
+
+    // SQLite `IN` query requires dynamically matching the number of placeholders
+    const placeholders = ids.map(() => '?').join(',');
+    const designs = db.prepare(`
+      SELECT d.*, i.name AS item_name, b.name AS brand_name
+      FROM designs d
+      JOIN items i ON d.item_id = i.id
+      JOIN brands b ON b.id = i.brand_id
+      WHERE d.id IN (${placeholders}) AND d.in_stock = 1 ${filterSql}
+      ORDER BY b.name, i.name, CAST(d.design_number AS INTEGER), d.design_number
+    `).all(...queryParams);
+
+    // Group designs by Brand + Item
+    const itemsMap = {};
+    designs.forEach(d => {
+      const itemKey = `${d.brand_name} · ${d.item_name}`;
+      if (!itemsMap[itemKey]) {
+        itemsMap[itemKey] = {
+          name: itemKey,
+          designs: []
+        };
+      }
+      itemsMap[itemKey].designs.push(d);
+    });
+    const itemsWithDesigns = Object.values(itemsMap);
+
+    const brand = {
+      name: 'Selected Collection',
+      description: 'Handpicked designs for you'
+    };
+
+    const shopPhone = process.env.SHOP_WHATSAPP || '';
+    
+    // Calculate all fabrics dynamically from the initial set of designs
+    const allFabrics = [...new Set(
+      db.prepare(`
+        SELECT DISTINCT fabric_type FROM designs 
+        WHERE id IN (${placeholders}) AND fabric_type IS NOT NULL
+      `).all(...ids).map(r => r.fabric_type)
+    )];
+
+    res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
+  } catch (err) {
+    console.error('Custom catalog render error:', err.message);
+    res.status(500).send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>Catalog temporarily unavailable</h2><p>Please try again in a moment.</p></body></html>');
+  }
+});
+
 // Public catalog page for customers — uses app in_stock flag only, never Tally stock
 router.get('/:brandId', (req, res) => {
   // Wrapped so any error returns a clean page instead of hanging the request

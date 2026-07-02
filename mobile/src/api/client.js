@@ -130,6 +130,9 @@ export const getCatalogUrl = (brandId, params = {}) => {
   const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return `${BASE_URL}/catalog/${brandId}${q ? `?${q}` : ''}`;
 };
+export const getCustomCatalogUrl = (ids = []) => {
+  return `${BASE_URL}/catalog/custom?ids=${ids.join(',')}`;
+};
 // Build a free WhatsApp deep link (wa.me). Pass a phone to target a contact, or
 // omit it to let the user pick the recipient in WhatsApp.
 export const whatsappLink = (message, phone) => {

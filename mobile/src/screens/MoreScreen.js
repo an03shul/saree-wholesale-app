@@ -9,6 +9,7 @@ import { confirmAction } from '../utils/share';
 
 const MENU_ITEMS = [
   { key: 'Scan',     label: 'Scan QR Code',   icon: '📷', desc: 'Scan a design QR to look it up' },
+  { key: 'CreateForm', label: 'Create Order Form', icon: '📝', desc: 'Select designs to generate a customer link' },
   { key: 'Contacts', label: 'Contacts',        icon: '👥', desc: 'Manage WhatsApp contacts & groups' },
   { key: 'Identify', label: 'Identify Piece',  icon: '🔍', desc: 'Use AI to identify a saree design' },
   { key: 'BulkImport', label: 'Bulk Add Designs', icon: '⚡', desc: 'Upload many photos — AI fills the details' },
