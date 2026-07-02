@@ -49,14 +49,14 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
         ? `<img src="/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
-        <div class="card">
+        <div class="card" id="card-${d.id}">
           ${photoHtml}
           <div class="card-body">
             <div class="item-name">${item.name}</div>
             <div class="design-no">Design ${d.design_number}</div>
             <div class="rate">₹${d.rate}</div>
             <div class="meta">${d.pcs_per_set} pcs/set${d.fabric_type ? ` • ${d.fabric_type}` : ''}${d.colors ? `<br>${d.colors}` : ''}</div>
-            <button class="order-btn" onclick="openOrder(${d.id},'${item.name.replace(/'/g,"\\'")}','${d.design_number}',${d.rate})">Order Now</button>
+            <button class="order-btn" id="btn-${d.id}" onclick="toggleCart(${d.id},'${item.name.replace(/'/g,"\\'")}','${d.design_number}',${d.rate})">Add to Order</button>
           </div>
         </div>`;
     })
@@ -74,7 +74,7 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
 <title>${brand.name} — Catalog</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:sans-serif;background:#f8f4f0;color:#2c1810}
+  body{font-family:sans-serif;background:#f8f4f0;color:#2c1810;padding-bottom:80px}
   header{background:#c0392b;color:#fff;padding:16px 20px;text-align:center}
   header h1{font-size:22px}
   header p{font-size:13px;opacity:.85;margin-top:4px}
@@ -90,9 +90,30 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   .design-no{font-weight:700;font-size:15px;margin-top:2px}
   .rate{color:#c0392b;font-weight:700;font-size:17px;margin:4px 0}
   .meta{font-size:12px;color:#888;line-height:1.5}
-  .order-btn{display:block;margin-top:10px;background:#25d366;color:#fff;text-align:center;padding:9px;border-radius:8px;border:none;font-weight:600;font-size:14px;cursor:pointer;width:100%}
+  .order-btn{display:block;margin-top:10px;background:#c0392b;color:#fff;text-align:center;padding:9px;border-radius:8px;border:none;font-weight:600;font-size:14px;cursor:pointer;width:100%}
+  .order-btn.added{background:#27ae60}
   .order-btn:active{opacity:.85}
   .empty{text-align:center;padding:60px 20px;color:#aaa}
+  
+  /* Floating Bottom Cart Bar */
+  .cart-bar{position:fixed;bottom:0;left:0;width:100%;background:#fff;border-top:1.5px solid #eee;padding:12px 20px;display:none;align-items:center;justify-content:space-between;z-index:99;box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+  .cart-info{font-weight:800;font-size:15px;color:#2c1810}
+  .cart-btn{background:#c0392b;color:#fff;padding:12px 24px;border-radius:10px;border:none;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(192,57,43,.3)}
+  .cart-btn:active{opacity:.85}
+
+  /* Cart Modal List Layout */
+  .cart-list{max-height:200px;overflow-y:auto;margin-bottom:20px;border:1px solid #eee;border-radius:10px;padding:4px 12px;background:#fafafa}
+  .cart-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;gap:10px}
+  .cart-item:last-child{border-bottom:none}
+  .cart-item-info{flex:1;min-width:0}
+  .cart-item-title{font-weight:700;font-size:13.5px;color:#2c1810;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cart-item-sub{font-size:12px;color:#c0392b;font-weight:600;margin-top:2px}
+  .cart-item-qty{display:flex;align-items:center;gap:6px}
+  .qty-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid #ddd;background:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;color:#555}
+  .qty-btn:active{background:#eee}
+  .qty-val{width:28px;text-align:center;font-size:14px;font-weight:800;color:#2c1810}
+  .remove-btn{color:#e74c3c;background:none;border:none;font-size:18px;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center}
+  
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
   .modal-overlay.open{display:flex}
   .modal{background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 40px;width:100%;max-width:500px}
@@ -124,36 +145,108 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
 <div class="grid">
   ${designCards || '<div class="empty">No in-stock designs found.</div>'}
 </div>
+
+<!-- Floating bottom cart bar -->
+<div class="cart-bar" id="cartBar">
+  <div class="cart-info" id="cartCount">0 designs selected</div>
+  <button class="cart-btn" onclick="openCart()">Place Order</button>
+</div>
+
 <!-- Order modal -->
 <div class="modal-overlay" id="orderModal">
   <div class="modal" id="modalContent">
-    <h3 id="modalTitle">Place Order</h3>
-    <p class="sub" id="modalSub"></p>
-    <input id="custName" placeholder="Your name *" autocomplete="name"/>
-    <input id="custPhone" placeholder="WhatsApp number (optional)" type="tel" autocomplete="tel"/>
-    <input id="custQty" placeholder="Quantity (sets)" type="number" min="1" value="1"/>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeOrder()">Cancel</button>
-      <button class="btn-submit" id="submitBtn" onclick="submitOrder()">Confirm Order</button>
-    </div>
+    <!-- Replaced dynamically -->
   </div>
 </div>
 
 <script>
-var _designId, _shopPhone = '${shopPhone}';
-var _itemName, _designNo, _rate;
+var _shopPhone = '${shopPhone}';
+var _cart = {}; // designId -> { id, itemName, designNo, rate, qty }
 
-function openOrder(designId, itemName, designNo, rate) {
-  _designId = designId;
-  _itemName = itemName;
-  _designNo = designNo;
-  _rate = rate;
+function toggleCart(designId, itemName, designNo, rate) {
+  var btn = document.getElementById('btn-' + designId);
+  if (_cart[designId]) {
+    delete _cart[designId];
+    btn.classList.remove('added');
+    btn.textContent = 'Add to Order';
+  } else {
+    _cart[designId] = {
+      id: designId,
+      itemName: itemName,
+      designNo: designNo,
+      rate: rate,
+      qty: 1
+    };
+    btn.classList.add('added');
+    btn.textContent = '✓ Added';
+  }
+  updateCartBar();
+}
+
+function updateCartBar() {
+  var keys = Object.keys(_cart);
+  var bar = document.getElementById('cartBar');
+  var count = document.getElementById('cartCount');
+  if (keys.length > 0) {
+    bar.style.display = 'flex';
+    count.textContent = keys.length + ' design' + (keys.length !== 1 ? 's' : '') + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function updateQty(designId, delta) {
+  if (!_cart[designId]) return;
+  _cart[designId].qty += delta;
+  if (_cart[designId].qty < 1) _cart[designId].qty = 1;
+  document.getElementById('qty-' + designId).textContent = _cart[designId].qty;
+}
+
+function removeFromCart(designId) {
+  delete _cart[designId];
+  var btn = document.getElementById('btn-' + designId);
+  if (btn) {
+    btn.classList.remove('added');
+    btn.textContent = 'Add to Order';
+  }
+  updateCartBar();
+  openCart(); // Re-render cart modal
+}
+
+function openCart() {
+  var keys = Object.keys(_cart);
+  if (keys.length === 0) {
+    closeOrder();
+    return;
+  }
+  
+  var itemsHtml = '';
+  keys.forEach(function(key) {
+    var item = _cart[key];
+    itemsHtml += \`
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-title">\${item.itemName} (Design #\${item.designNo})</div>
+          <div class="cart-item-sub">₹\${item.rate}</div>
+        </div>
+        <div class="cart-item-qty">
+          <button class="qty-btn" onclick="updateQty(\${item.id}, -1)">-</button>
+          <span class="qty-val" id="qty-\${item.id}">\${item.qty}</span>
+          <button class="qty-btn" onclick="updateQty(\${item.id}, 1)">+</button>
+        </div>
+        <button class="remove-btn" onclick="removeFromCart(\${item.id})">✕</button>
+      </div>
+    \`;
+  });
+
   document.getElementById('modalContent').innerHTML = \`
-    <h3>Order — Design \${designNo}</h3>
-    <p class="sub">\${itemName} · ₹\${rate}</p>
+    <h3>Confirm Order</h3>
+    <p class="sub">Please enter details to place your order.</p>
+    <div class="cart-list">
+      \${itemsHtml}
+    </div>
     <input id="custName" placeholder="Your name *" autocomplete="name"/>
     <input id="custPhone" placeholder="WhatsApp number (optional)" type="tel" autocomplete="tel"/>
-    <input id="custQty" placeholder="Quantity (sets)" type="number" min="1" value="1"/>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeOrder()">Cancel</button>
       <button class="btn-submit" id="submitBtn" onclick="submitOrder()">Confirm Order</button>
@@ -171,17 +264,33 @@ async function submitOrder() {
   var name = document.getElementById('custName').value.trim();
   if (!name) { document.getElementById('custName').focus(); return; }
   var phone = document.getElementById('custPhone').value.trim();
-  var qty = parseInt(document.getElementById('custQty').value) || 1;
   var btn = document.getElementById('submitBtn');
+  
+  var keys = Object.keys(_cart);
+  if (keys.length === 0) return;
+
   btn.disabled = true;
   btn.textContent = 'Placing order…';
+  
   try {
-    var resp = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ design_id: _designId, customer_name: name, customer_phone: phone || null, quantity: qty, source: 'catalog' })
+    var promises = keys.map(function(key) {
+      var item = _cart[key];
+      return fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          design_id: item.id,
+          customer_name: name,
+          customer_phone: phone || null,
+          quantity: item.qty,
+          source: 'catalog'
+        })
+      });
     });
-    if (!resp.ok) throw new Error('failed');
+
+    var responses = await Promise.all(promises);
+    var failed = responses.some(r => !r.ok);
+    if (failed) throw new Error('failed');
     
     if (_shopPhone) {
       document.getElementById('modalContent').innerHTML = \`
@@ -191,14 +300,26 @@ async function submitOrder() {
           <p>Opening WhatsApp to send order details...</p>
         </div>
       \`;
-      var text = "Hello! I would like to place an order from your catalog:\\n\\n" +
-                 "• *Item*: " + _itemName + "\\n" +
-                 "• *Design*: #" + _designNo + "\\n" +
-                 "• *Rate*: ₹" + _rate + "\\n" +
-                 "• *Quantity*: " + qty + " set(s)\\n" +
-                 "• *My Name*: " + name + (phone ? " (" + phone + ")" : "");
       
-      var waUrl = "https://wa.me/" + _shopPhone + "?text=" + encodeURIComponent(text);
+      var messageText = "Hello! I would like to place an order from your catalog:\\n\\n";
+      keys.forEach(function(key) {
+        var item = _cart[key];
+        messageText += "• *" + item.itemName + "* (Design #" + item.designNo + ") · " + item.qty + " set(s) · ₹" + item.rate + "\\n";
+      });
+      messageText += "\\n*My Name*: " + name + (phone ? " (" + phone + ")" : "");
+
+      // Reset cart UI
+      keys.forEach(function(key) {
+        var cardBtn = document.getElementById('btn-' + key);
+        if (cardBtn) {
+          cardBtn.classList.remove('added');
+          cardBtn.textContent = 'Add to Order';
+        }
+      });
+      _cart = {};
+      updateCartBar();
+
+      var waUrl = "https://wa.me/" + _shopPhone + "?text=" + encodeURIComponent(messageText);
       setTimeout(function() {
         window.location.href = waUrl;
       }, 1500);
@@ -210,6 +331,18 @@ async function submitOrder() {
           <p>Thank you, \${name}. We'll contact you\${phone ? ' on WhatsApp' : ''} shortly.</p>
         </div>
       \`;
+      
+      // Reset cart UI
+      keys.forEach(function(key) {
+        var cardBtn = document.getElementById('btn-' + key);
+        if (cardBtn) {
+          cardBtn.classList.remove('added');
+          cardBtn.textContent = 'Add to Order';
+        }
+      });
+      _cart = {};
+      updateCartBar();
+
       setTimeout(closeOrder, 3000);
     }
   } catch(e) {
