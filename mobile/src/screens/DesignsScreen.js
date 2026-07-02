@@ -12,9 +12,10 @@ import { colors, shadow } from '../constants/theme';
 import { compressImage } from '../utils/image';
 import { shareDesignsList, notify } from '../utils/share';
 import ImageViewerModal from '../components/ImageViewerModal';
+import ImageEditorModal from '../components/ImageEditorModal';
 
 export default function DesignsScreen({ route, navigation }) {
-  const { item, brand } = route.params;
+  const { item, brand, focusDesign } = route.params;
   const user = useUser();
   const isAdmin = user?.role === 'admin';
 
@@ -38,7 +39,7 @@ export default function DesignsScreen({ route, navigation }) {
   const [qrDesign, setQrDesign] = useState(null);
   const [form, setForm] = useState({ design_number: '', rate: '', fabric_type: '', pcs_per_set: '', tally_item_name: '', work_category: '' });
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(focusDesign ? String(focusDesign) : '');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [contacts, setContacts] = useState([]);
@@ -57,6 +58,18 @@ export default function DesignsScreen({ route, navigation }) {
   const [orderDesign, setOrderDesign] = useState(null);
   const [orderForm, setOrderForm] = useState({ customer_name: '', customer_phone: '', quantity: '1', note: '' });
   const [orderSaving, setOrderSaving] = useState(false);
+  // In-app crop/rotate editor. editorTarget picks which form receives the result.
+  const [editorUri, setEditorUri] = useState(null);
+  const [editorTarget, setEditorTarget] = useState('add'); // 'add' | 'edit'
+
+  const openEditor = (uri, target) => { setEditorTarget(target); setEditorUri(uri); };
+  const closeEditor = () => setEditorUri(null);
+  const handleEditorDone = async (asset) => {
+    setEditorUri(null);
+    const compressed = await compressImage(asset);
+    if (editorTarget === 'edit') setEditPhoto(compressed);
+    else setPhoto(compressed);
+  };
 
   const refreshTallyStock = useCallback(() => {
     if (tallyRefreshing) return;
@@ -154,15 +167,15 @@ export default function DesignsScreen({ route, navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return notify('Permission needed', 'Allow photo access');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-    if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
+    if (!result.canceled) openEditor(result.assets[0].uri, 'add');
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return notify('Permission needed', 'Allow camera access');
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-    if (!result.canceled) setPhoto(await compressImage(result.assets[0]));
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.9 });
+    if (!result.canceled) openEditor(result.assets[0].uri, 'add');
   };
 
   const savingRef = useRef(false);
@@ -645,8 +658,8 @@ export default function DesignsScreen({ route, navigation }) {
           <TouchableOpacity style={styles.photoBox} onPress={async () => {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') return;
-            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-            if (!result.canceled) setEditPhoto(await compressImage(result.assets[0]));
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
+            if (!result.canceled) openEditor(result.assets[0].uri, 'edit');
           }}>
             {editPhoto
               ? <Image source={{ uri: editPhoto.uri }} style={styles.photoPreview} />
@@ -925,6 +938,15 @@ export default function DesignsScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Crop / rotate editor — MUST be the last modal so it stacks above the
+          Add/Edit design modals on web (react-native-web stacks by DOM order). */}
+      <ImageEditorModal
+        visible={!!editorUri}
+        imageUri={editorUri}
+        onCancel={closeEditor}
+        onDone={handleEditorDone}
+      />
     </View>
   );
 }

@@ -1,220 +1,257 @@
-# Graph Report - gopiram-saree  (2026-07-02)
+# Graph Report - .  (2026-07-02)
 
 ## Corpus Check
-- 79 files · ~68,557 words
+- 4 files · ~70,533 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 528 nodes · 762 edges · 37 communities (31 shown, 6 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.8)
+- 557 nodes · 756 edges · 48 communities (40 shown, 8 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.83)
 - Token cost: 0 input · 0 output
 
-## Graph Freshness
-- Built from commit: `6e1d2ffa`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
-
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Mobile API Client Modules|Mobile API Client Modules]]
-- [[_COMMUNITY_Authentication & Security Middleware|Authentication & Security Middleware]]
-- [[_COMMUNITY_Catalog Generation & HTML Services|Catalog Generation & HTML Services]]
-- [[_COMMUNITY_Design Management & Uploads|Design Management & Uploads]]
-- [[_COMMUNITY_Mobile Dependencies & Expo Modules|Mobile Dependencies & Expo Modules]]
-- [[_COMMUNITY_Database Core & Schema Management|Database Core & Schema Management]]
-- [[_COMMUNITY_Backend Dependencies & Services|Backend Dependencies & Services]]
-- [[_COMMUNITY_Mobile Assets & Icons Configuration|Mobile Assets & Icons Configuration]]
-- [[_COMMUNITY_File Storage & Paths Configuration|File Storage & Paths Configuration]]
-- [[_COMMUNITY_Tally ERP Sync Integration|Tally ERP Sync Integration]]
-- [[_COMMUNITY_Bulk Import Service|Bulk Import Service]]
-- [[_COMMUNITY_AI Identification Service|AI Identification Service]]
-- [[_COMMUNITY_PDF Export & Report Generator|PDF Export & Report Generator]]
-- [[_COMMUNITY_WhatsApp Messaging Integration|WhatsApp Messaging Integration]]
-- [[_COMMUNITY_Thumbnail Generation Service|Thumbnail Generation Service]]
-- [[_COMMUNITY_Watermark Processing Engine|Watermark Processing Engine]]
-- [[_COMMUNITY_Tally Desktop Agent Core|Tally Desktop Agent Core]]
-- [[_COMMUNITY_Theme & Styling Constants|Theme & Styling Constants]]
-- [[_COMMUNITY_Admin Screen UI Components|Admin Screen UI Components]]
-- [[_COMMUNITY_Order Processing & Cart UI|Order Processing & Cart UI]]
-- [[_COMMUNITY_Community 20|Community 20]]
-- [[_COMMUNITY_Community 21|Community 21]]
-- [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
-- [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 26|Community 26]]
-- [[_COMMUNITY_Community 27|Community 27]]
-- [[_COMMUNITY_Community 28|Community 28]]
-- [[_COMMUNITY_Community 29|Community 29]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Project Documentation (CLAUDE.md)|Project Documentation (CLAUDE.md)]]
+- [[_COMMUNITY_Mobile Package Dependencies|Mobile Package Dependencies]]
+- [[_COMMUNITY_Tally & WhatsApp Send Integration|Tally & WhatsApp Send Integration]]
+- [[_COMMUNITY_Mobile App Shell & Navigation|Mobile App Shell & Navigation]]
+- [[_COMMUNITY_Storage & Bulk Import Pipeline|Storage & Bulk Import Pipeline]]
+- [[_COMMUNITY_Backend Package Dependencies|Backend Package Dependencies]]
+- [[_COMMUNITY_Expo App Config & Icons|Expo App Config & Icons]]
+- [[_COMMUNITY_Catalog Screens & Theme|Catalog Screens & Theme]]
+- [[_COMMUNITY_App Entry & Thumbnail Service|App Entry & Thumbnail Service]]
+- [[_COMMUNITY_PDF Export & Watermarking|PDF Export & Watermarking]]
+- [[_COMMUNITY_Mobile API Client & Screens|Mobile API Client & Screens]]
+- [[_COMMUNITY_Database & Catalog Metadata|Database & Catalog Metadata]]
+- [[_COMMUNITY_Designs & Send Screens|Designs & Send Screens]]
+- [[_COMMUNITY_Authentication & Rate Limiting|Authentication & Rate Limiting]]
+- [[_COMMUNITY_AI Saree Identification|AI Saree Identification]]
+- [[_COMMUNITY_Admin & Orders Screen Utils|Admin & Orders Screen Utils]]
+- [[_COMMUNITY_Railway Deployment Config|Railway Deployment Config]]
+- [[_COMMUNITY_Items & Settings Routes|Items & Settings Routes]]
+- [[_COMMUNITY_Orders & Push Notifications|Orders & Push Notifications]]
+- [[_COMMUNITY_Tally Sync Agent Package|Tally Sync Agent Package]]
+- [[_COMMUNITY_Cloudflare Pages Worker Package|Cloudflare Pages Worker Package]]
+- [[_COMMUNITY_PWA Web Manifest|PWA Web Manifest]]
+- [[_COMMUNITY_Designs Route (Upload)|Designs Route (Upload)]]
+- [[_COMMUNITY_Tally Sync Agent Docs|Tally Sync Agent Docs]]
+- [[_COMMUNITY_Contact Import Script|Contact Import Script]]
+- [[_COMMUNITY_Tally Sync Agent Logic|Tally Sync Agent Logic]]
+- [[_COMMUNITY_Design Share Utilities|Design Share Utilities]]
+- [[_COMMUNITY_Cloudflare Workers Docs|Cloudflare Workers Docs]]
+- [[_COMMUNITY_Contacts Route & Audit Log|Contacts Route & Audit Log]]
+- [[_COMMUNITY_Admin Panel Routes|Admin Panel Routes]]
+- [[_COMMUNITY_Brands Route|Brands Route]]
+- [[_COMMUNITY_PWA Injection Script|PWA Injection Script]]
+- [[_COMMUNITY_QR Scan Screen|QR Scan Screen]]
+- [[_COMMUNITY_Image CropRotate Editor|Image Crop/Rotate Editor]]
+- [[_COMMUNITY_Public Catalog Page|Public Catalog Page]]
+- [[_COMMUNITY_Image Viewer Modal|Image Viewer Modal]]
+- [[_COMMUNITY_Cloudflare Worker Entry|Cloudflare Worker Entry]]
+- [[_COMMUNITY_Push Subscription Route|Push Subscription Route]]
+- [[_COMMUNITY_Stats Route|Stats Route]]
+- [[_COMMUNITY_Tally Sync Push Route|Tally Sync Push Route]]
+- [[_COMMUNITY_Docker Entrypoint|Docker Entrypoint]]
+- [[_COMMUNITY_Fabric Type Constants|Fabric Type Constants]]
+- [[_COMMUNITY_Mobile Expo Notes|Mobile Expo Notes]]
+- [[_COMMUNITY_Graphify Rules|Graphify Rules]]
+- [[_COMMUNITY_Graphify Workflow|Graphify Workflow]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `notify()` - 13 edges
-2. `useUser()` - 11 edges
-3. `colors` - 11 edges
-4. `shadow` - 11 edges
-5. `expo` - 10 edges
-6. `requireAdmin()` - 9 edges
-7. `getImageUrl()` - 9 edges
-8. `web` - 8 edges
-9. `setAuthToken()` - 8 edges
+2. `colors` - 12 edges
+3. `shadow` - 12 edges
+4. `expo` - 10 edges
+5. `useUser()` - 9 edges
+6. `requireAdmin()` - 8 edges
+7. `web` - 8 edges
+8. `setAuthToken()` - 8 edges
+9. `getImageUrl()` - 8 edges
 10. `getThumbUrl()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `viaHttp()` --calls--> `fetch()`  [INFERRED]
-  backend/scripts/import-contacts.js → mobile/broken-violet-21ab/src/index.js
-- `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
-- `buildShareFile()` --calls--> `fetch()`  [INFERRED]
-  mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
-- `buildShareFile()` --calls--> `getWmUrl()`  [EXTRACTED]
-  mobile/src/utils/share.js → mobile/src/api/client.js
 - `sendDesignUpdates()` --calls--> `getWatermarkedPath()`  [EXTRACTED]
   backend/src/services/whatsapp.js → backend/src/services/watermark.js
+- `ItemsScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/ItemsScreen.js → mobile/App.js
+- `MoreScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/MoreScreen.js → mobile/App.js
+- `OrdersScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/OrdersScreen.js → mobile/App.js
+- `ScanScreen()` --calls--> `getImageUrl()`  [EXTRACTED]
+  mobile/src/screens/ScanScreen.js → mobile/src/api/client.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 6 thin omitted)
+## Communities (48 total, 8 thin omitted)
 
-### Community 0 - "Mobile API Client Modules"
+### Community 0 - "Project Documentation (CLAUDE.md)"
 Cohesion: 0.06
-Nodes (74): adminApi, api, authApi, brandsApi, contactsApi, designsApi, fabricsApi, getCatalogUrl() (+66 more)
+Nodes (41): Alert.alert No-Op on Web, src/api/client.js (Axios API Client), app.js (Backend Entry Point), Audit Logging (logActivity middleware), middleware/auth.js (Auth), Backend (Node/Express/SQLite), Bulk Contact Import (import-contacts.js), routes/catalog.js (Public Catalog Page) (+33 more)
 
-### Community 1 - "Authentication & Security Middleware"
-Cohesion: 0.18
-Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
-
-### Community 2 - "Catalog Generation & HTML Services"
-Cohesion: 0.06
-Nodes (34): db, express, path, router, db, express, fs, { getWatermarkedBuffer } (+26 more)
-
-### Community 3 - "Design Management & Uploads"
-Cohesion: 0.06
-Nodes (29): path, TEMP_UPLOADS_DIR, db, express, multer, path, { requireAdmin }, router (+21 more)
-
-### Community 4 - "Mobile Dependencies & Expo Modules"
+### Community 1 - "Mobile Package Dependencies"
 Cohesion: 0.06
 Nodes (31): dependencies, axios, expo, expo-camera, expo-contacts, expo-image-manipulator, expo-image-picker, expo-status-bar (+23 more)
 
-### Community 5 - "Database Core & Schema Management"
-Cohesion: 0.12
-Nodes (13): crypto, { DatabaseSync }, db, fabricCount, itemsInfo, path, tmplExists, userCount (+5 more)
+### Community 2 - "Tally & WhatsApp Send Integration"
+Cohesion: 0.09
+Nodes (26): db, express, { getStockForDesigns }, router, { sendDesignUpdates }, db, express, { getCustomers, getStockBalance, detectMode } (+18 more)
 
-### Community 6 - "Backend Dependencies & Services"
+### Community 3 - "Mobile App Shell & Navigation"
+Cohesion: 0.10
+Nodes (20): authApi, loadStoredToken(), setAuthToken(), App(), headerStyle, headerTitleStyle, Stack, Tab (+12 more)
+
+### Community 4 - "Storage & Bulk Import Pipeline"
+Cohesion: 0.08
+Nodes (21): path, TEMP_UPLOADS_DIR, db, express, { extractDesignsFromPhotos }, multer, router, storage (+13 more)
+
+### Community 5 - "Backend Package Dependencies"
 Cohesion: 0.08
 Nodes (25): dependencies, @anthropic-ai/sdk, @aws-sdk/client-s3, axios, cors, dotenv, express, jimp (+17 more)
 
-### Community 7 - "Mobile Assets & Icons Configuration"
+### Community 6 - "Expo App Config & Icons"
 Cohesion: 0.08
 Nodes (23): backgroundColor, backgroundImage, foregroundImage, monochromeImage, adaptiveIcon, expo, android, icon (+15 more)
 
-### Community 8 - "File Storage & Paths Configuration"
-Cohesion: 0.11
+### Community 7 - "Catalog Screens & Theme"
+Cohesion: 0.15
+Nodes (15): brandsApi, getCatalogUrl(), importApi, itemsApi, ordersApi, statsApi, colors, modalBase (+7 more)
+
+### Community 8 - "App Entry & Thumbnail Service"
+Cohesion: 0.10
 Nodes (16): getThumbBuffer(), inFlight, { Jimp }, path, queue, storage, app, cors (+8 more)
 
-### Community 9 - "Tally ERP Sync Integration"
-Cohesion: 0.21
-Nodes (12): db, express, { getCustomers, getStockBalance, detectMode }, router, axios, detectMode(), getCustomers(), getStockBalance() (+4 more)
+### Community 9 - "PDF Export & Watermarking"
+Cohesion: 0.12
+Nodes (16): db, express, fs, { getWatermarkedBuffer }, path, PDFDocument, router, fonts (+8 more)
 
-### Community 10 - "Bulk Import Service"
+### Community 10 - "Mobile API Client & Screens"
+Cohesion: 0.18
+Nodes (13): api, contactsApi, getCustomCatalogUrl(), getThumbUrl(), identifyApi, itemsApi_stock, tallyApi, whatsappLink() (+5 more)
+
+### Community 11 - "Database & Catalog Metadata"
+Cohesion: 0.12
+Nodes (13): crypto, { DatabaseSync }, db, fabricCount, itemsInfo, path, tmplExists, userCount (+5 more)
+
+### Community 12 - "Designs & Send Screens"
+Cohesion: 0.16
+Nodes (10): fabricsApi, getPdfUrl(), sendApi, workCategoriesApi, DesignsScreen(), styles, PRICE_PRESETS, SendScreen() (+2 more)
+
+### Community 13 - "Authentication & Rate Limiting"
+Cohesion: 0.16
+Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
+
+### Community 14 - "AI Saree Identification"
 Cohesion: 0.15
 Nodes (11): express, { identifyDesign }, multer, router, upload, Anthropic, client, db (+3 more)
 
-### Community 11 - "AI Identification Service"
+### Community 15 - "Admin & Orders Screen Utils"
+Cohesion: 0.21
+Nodes (9): adminApi, settingsApi, AdminScreen(), styles, STATUS_COLORS, STATUS_LABELS, styles, parseServerDate() (+1 more)
+
+### Community 16 - "Railway Deployment Config"
 Cohesion: 0.18
 Nodes (10): build, builder, dockerfilePath, deploy, healthcheckPath, healthcheckTimeout, restartPolicyMaxRetries, restartPolicyType (+2 more)
 
-### Community 12 - "PDF Export & Report Generator"
-Cohesion: 0.18
-Nodes (10): dependencies, axios, dotenv, xml2js, description, main, name, scripts (+2 more)
-
-### Community 13 - "WhatsApp Messaging Integration"
-Cohesion: 0.20
-Nodes (9): devDependencies, wrangler, name, private, scripts, deploy, dev, start (+1 more)
-
-### Community 14 - "Thumbnail Generation Service"
-Cohesion: 0.20
-Nodes (9): background_color, description, display, icons, name, orientation, short_name, start_url (+1 more)
-
-### Community 15 - "Watermark Processing Engine"
-Cohesion: 0.28
-Nodes (6): axios, CLOUD_URL, readTallyCustomers(), readTallyStock(), syncOnce(), xml2js
-
-### Community 16 - "Tally Desktop Agent Core"
-Cohesion: 0.29
-Nodes (6): fs, html, indexPath, path, swDst, swSrc
-
-### Community 17 - "Theme & Styling Constants"
-Cohesion: 0.10
-Nodes (14): contacts, fs, path, seedPath, tokenArg, useHttp, viaHttp(), fetch() (+6 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.11
-Nodes (16): Architecture, Backend, Backend (`backend/src/`), Commands, Data model, Deployment, ⚠️ Deployment gotchas (learned the hard way), Environment Variables (+8 more)
-
-### Community 21 - "Community 21"
-Cohesion: 0.20
-Nodes (9): 1. Install Node.js, 2. Copy this folder, 3. Create the settings file, 4. Turn on Tally's connector (one time, in Tally), 5. Start the agent, Gopiram Tally Sync Agent, Keeping it running automatically (optional but recommended), One-time setup (on the shop PC) (+1 more)
-
-### Community 22 - "Community 22"
-Cohesion: 0.25
-Nodes (7): Best Practices (conditional), Cloudflare Workers, Commands, Docs, Errors, Node.js Compatibility, Product Docs
-
-### Community 23 - "Community 23"
-Cohesion: 0.25
-Nodes (6): requireAuth(), crypto, db, express, { requireAuth, requireAdmin }, router
-
-### Community 24 - "Community 24"
-Cohesion: 0.29
-Nodes (5): crypto, db, express, { requireAdmin }, router
-
-### Community 25 - "Community 25"
+### Community 17 - "Items & Settings Routes"
 Cohesion: 0.18
 Nodes (9): requireAdmin(), db, express, { requireAdmin }, router, db, express, { requireAdmin } (+1 more)
 
-### Community 26 - "Community 26"
-Cohesion: 0.22
-Nodes (8): db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll(), webpush
+### Community 18 - "Orders & Push Notifications"
+Cohesion: 0.20
+Nodes (9): requireAuth(), db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll() (+1 more)
 
-### Community 28 - "Community 28"
+### Community 19 - "Tally Sync Agent Package"
+Cohesion: 0.18
+Nodes (10): dependencies, axios, dotenv, xml2js, description, main, name, scripts (+2 more)
+
+### Community 20 - "Cloudflare Pages Worker Package"
+Cohesion: 0.20
+Nodes (9): devDependencies, wrangler, name, private, scripts, deploy, dev, start (+1 more)
+
+### Community 21 - "PWA Web Manifest"
+Cohesion: 0.20
+Nodes (9): background_color, description, display, icons, name, orientation, short_name, start_url (+1 more)
+
+### Community 22 - "Designs Route (Upload)"
+Cohesion: 0.20
+Nodes (8): db, express, multer, path, { requireAdmin }, router, storage, upload
+
+### Community 23 - "Tally Sync Agent Docs"
+Cohesion: 0.20
+Nodes (9): 1. Install Node.js, 2. Copy this folder, 3. Create the settings file, 4. Turn on Tally's connector (one time, in Tally), 5. Start the agent, Gopiram Tally Sync Agent, Keeping it running automatically (optional but recommended), One-time setup (on the shop PC) (+1 more)
+
+### Community 24 - "Contact Import Script"
+Cohesion: 0.22
+Nodes (6): contacts, fs, path, seedPath, tokenArg, useHttp
+
+### Community 25 - "Tally Sync Agent Logic"
+Cohesion: 0.28
+Nodes (6): axios, CLOUD_URL, readTallyCustomers(), readTallyStock(), syncOnce(), xml2js
+
+### Community 26 - "Design Share Utilities"
+Cohesion: 0.43
+Nodes (7): getWmUrl(), buildShareCard(), buildShareFile(), downloadFiles(), notify(), shareDesignsList(), tryNativeShare()
+
+### Community 27 - "Cloudflare Workers Docs"
+Cohesion: 0.25
+Nodes (7): Best Practices (conditional), Cloudflare Workers, Commands, Docs, Errors, Node.js Compatibility, Product Docs
+
+### Community 28 - "Contacts Route & Audit Log"
 Cohesion: 0.29
 Nodes (5): logActivity(), db, express, { requireAdmin, logActivity }, router
 
-### Community 29 - "Community 29"
+### Community 29 - "Admin Panel Routes"
+Cohesion: 0.29
+Nodes (5): crypto, db, express, { requireAuth, requireAdmin }, router
+
+### Community 30 - "Brands Route"
+Cohesion: 0.29
+Nodes (5): crypto, db, express, { requireAdmin }, router
+
+### Community 31 - "PWA Injection Script"
+Cohesion: 0.29
+Nodes (6): fs, html, indexPath, path, swDst, swSrc
+
+### Community 32 - "QR Scan Screen"
+Cohesion: 0.40
+Nodes (4): designsApi, getImageUrl(), ScanScreen(), styles
+
+### Community 34 - "Public Catalog Page"
+Cohesion: 0.33
+Nodes (4): db, express, path, router
+
+### Community 37 - "Push Subscription Route"
 Cohesion: 0.50
 Nodes (3): db, express, router
 
-### Community 30 - "Community 30"
+### Community 38 - "Stats Route"
 Cohesion: 0.50
 Nodes (3): db, express, router
 
-### Community 35 - "Community 35"
+### Community 39 - "Tally Sync Push Route"
 Cohesion: 0.50
 Nodes (3): db, express, router
 
 ## Knowledge Gaps
-- **308 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+303 more)
+- **304 isolated node(s):** `docker-entrypoint.sh script`, `$schema`, `builder`, `dockerfilePath`, `startCommand` (+299 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `subscribeToPush()` connect `Theme & Styling Constants` to `Mobile API Client Modules`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
-  _308 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Mobile API Client Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.05524752475247525 - nodes in this community are weakly interconnected._
-- **Should `Catalog Generation & HTML Services` be split into smaller, more focused modules?**
-  _Cohesion score 0.06097560975609756 - nodes in this community are weakly interconnected._
-- **Should `Design Management & Uploads` be split into smaller, more focused modules?**
-  _Cohesion score 0.059743954480796585 - nodes in this community are weakly interconnected._
-- **Should `Mobile Dependencies & Expo Modules` be split into smaller, more focused modules?**
+- **Why does `requireAuth()` connect `Orders & Push Notifications` to `App Entry & Thumbnail Service`, `Admin Panel Routes`, `Authentication & Rate Limiting`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+- **Why does `getWatermarkedBuffer()` connect `PDF Export & Watermarking` to `App Entry & Thumbnail Service`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **What connects `docker-entrypoint.sh script`, `$schema`, `builder` to the rest of the system?**
+  _312 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Project Documentation (CLAUDE.md)` be split into smaller, more focused modules?**
+  _Cohesion score 0.05853658536585366 - nodes in this community are weakly interconnected._
+- **Should `Mobile Package Dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
-- **Should `Database Core & Schema Management` be split into smaller, more focused modules?**
-  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
+- **Should `Tally & WhatsApp Send Integration` be split into smaller, more focused modules?**
+  _Cohesion score 0.09462365591397849 - nodes in this community are weakly interconnected._
+- **Should `Mobile App Shell & Navigation` be split into smaller, more focused modules?**
+  _Cohesion score 0.10098522167487685 - nodes in this community are weakly interconnected._

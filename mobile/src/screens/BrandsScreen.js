@@ -173,8 +173,10 @@ export default function BrandsScreen({ navigation }) {
             <TouchableOpacity
               style={styles.resultCard}
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('Items', {
+              onPress={() => navigation.navigate('Designs', {
+                item: { id: d.item_id, name: d.item_name },
                 brand: { id: d.brand_id, name: d.brand_name },
+                focusDesign: d.design_number,
               })}
             >
               {d.photo_path

@@ -121,7 +121,7 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   const designCards = items.flatMap(item =>
     item.designs.map(d => {
       const photoHtml = d.photo_path
-        ? `<img src="/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy"/>`
+        ? `<img class="card-img" src="/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy" onclick="openLightbox('/uploads/wm/${path.basename(d.photo_path)}')"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
         <div class="card" id="card-${d.id}">
@@ -159,7 +159,16 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:16px}
   .card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
   .card img,.no-photo{width:100%;height:180px;object-fit:cover}
+  .card-img{cursor:zoom-in}
   .no-photo{background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px}
+
+  /* Full-screen photo lightbox */
+  .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:200;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:100%;max-height:100%;object-fit:contain;transition:transform .15s ease-out;transform-origin:center center;cursor:zoom-in;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .lightbox img.zoomed{cursor:zoom-out;transition:none}
+  .lightbox-close{position:fixed;top:14px;right:18px;width:44px;height:44px;border-radius:22px;background:rgba(0,0,0,.45);color:#fff;font-size:26px;line-height:44px;text-align:center;border:none;cursor:pointer;z-index:201}
+  .lightbox-hint{position:fixed;bottom:22px;left:0;width:100%;text-align:center;color:rgba(255,255,255,.7);font-size:13px;pointer-events:none}
   .card-body{padding:10px}
   .item-name{font-size:13px;color:#888}
   .design-no{font-weight:700;font-size:15px;margin-top:2px}
@@ -232,6 +241,13 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   <div class="modal" id="modalContent">
     <!-- Replaced dynamically -->
   </div>
+</div>
+
+<!-- Full-screen photo lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+  <img id="lightboxImg" src="" alt="Design photo"/>
+  <div class="lightbox-hint">Tap photo to zoom &bull; Drag to pan</div>
 </div>
 
 <script>
@@ -430,6 +446,71 @@ async function submitOrder() {
 document.getElementById('orderModal').addEventListener('click', function(e) {
   if (e.target === this) closeOrder();
 });
+
+// ---- Full-screen photo lightbox (tap to zoom, drag to pan) ----
+var _lb = { zoomed: false, tx: 0, ty: 0, lastTx: 0, lastTy: 0, startX: 0, startY: 0 };
+var _lbScale = 2.5;
+
+function openLightbox(src) {
+  var img = document.getElementById('lightboxImg');
+  img.src = src;
+  resetLbTransform(img);
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function resetLbTransform(img) {
+  _lb.zoomed = false; _lb.tx = 0; _lb.ty = 0; _lb.lastTx = 0; _lb.lastTy = 0;
+  img.style.transform = '';
+  img.classList.remove('zoomed');
+}
+
+(function () {
+  var img = document.getElementById('lightboxImg');
+  var box = document.getElementById('lightbox');
+  if (!img || !box) return;
+  var active = false, moved = false, sx = 0, sy = 0;
+
+  img.addEventListener('pointerdown', function (e) {
+    active = true; moved = false; sx = e.clientX; sy = e.clientY;
+    _lb.startX = e.clientX - _lb.lastTx; _lb.startY = e.clientY - _lb.lastTy;
+    try { img.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  img.addEventListener('pointermove', function (e) {
+    if (!active) return;
+    if (Math.abs(e.clientX - sx) > 6 || Math.abs(e.clientY - sy) > 6) moved = true;
+    if (_lb.zoomed && moved) {
+      _lb.tx = e.clientX - _lb.startX;
+      _lb.ty = e.clientY - _lb.startY;
+      img.style.transform = 'translate(' + _lb.tx + 'px,' + _lb.ty + 'px) scale(' + _lbScale + ')';
+      e.preventDefault();
+    }
+  });
+
+  img.addEventListener('pointerup', function () {
+    active = false;
+    if (!moved) {
+      if (_lb.zoomed) {
+        resetLbTransform(img);
+      } else {
+        _lb.zoomed = true; _lb.tx = 0; _lb.ty = 0; _lb.lastTx = 0; _lb.lastTy = 0;
+        img.classList.add('zoomed');
+        img.style.transform = 'scale(' + _lbScale + ')';
+      }
+    } else {
+      _lb.lastTx = _lb.tx; _lb.lastTy = _lb.ty;
+    }
+  });
+
+  // Tap on the dark backdrop (not the image) closes the viewer.
+  box.addEventListener('click', function (e) { if (e.target === box) closeLightbox(); });
+})();
 </script>
 </body>
 </html>`;
