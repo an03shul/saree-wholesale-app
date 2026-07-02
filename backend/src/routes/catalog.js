@@ -26,7 +26,6 @@ router.get('/:brandId', (req, res) => {
       return { ...item, designs };
     }).filter(i => i.designs.length > 0);
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
     const shopPhone = process.env.SHOP_WHATSAPP || '';
     const allFabrics = [...new Set(
       db.prepare('SELECT DISTINCT fabric_type FROM designs WHERE fabric_type IS NOT NULL').all().map(r => r.fabric_type)
@@ -36,18 +35,18 @@ router.get('/:brandId', (req, res) => {
     // /uploads/wm/<file>, which lazy-generates and caches the watermark on first
     // request. This keeps the catalog HTML fast (returns in ms) instead of
     // blocking on a serial watermark queue for every design (which timed out).
-    res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, baseUrl, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
+    res.send(buildCatalogHtml({ brand, items: itemsWithDesigns, shopPhone, allFabrics, filters: { fabric, maxRate, minRate } }));
   } catch (err) {
     console.error('Catalog render error:', err.message);
     res.status(500).send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>Catalog temporarily unavailable</h2><p>Please try again in a moment.</p></body></html>');
   }
 });
 
-function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filters }) {
+function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   const designCards = items.flatMap(item =>
     item.designs.map(d => {
       const photoHtml = d.photo_path
-        ? `<img src="${baseUrl}/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy"/>`
+        ? `<img src="/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
         <div class="card">
@@ -141,7 +140,7 @@ function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filter
 </div>
 
 <script>
-var _designId, _baseUrl = '${baseUrl}', _shopPhone = '${shopPhone}';
+var _designId, _shopPhone = '${shopPhone}';
 var _itemName, _designNo, _rate;
 
 function openOrder(designId, itemName, designNo, rate) {
@@ -177,7 +176,7 @@ async function submitOrder() {
   btn.disabled = true;
   btn.textContent = 'Placing order…';
   try {
-    var resp = await fetch(_baseUrl + '/api/orders', {
+    var resp = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ design_id: _designId, customer_name: name, customer_phone: phone || null, quantity: qty, source: 'catalog' })
