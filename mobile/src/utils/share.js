@@ -3,11 +3,26 @@ import { getWmUrl } from '../api/client';
 
 // Web-safe alert. React Native's Alert.alert is a no-op on web, which was
 // silently swallowing share failures on mobile devices — the user saw "nothing happen".
-export const notify = (title, msg) => {
+export const notify = (title, msg, buttonsOrCallback) => {
+  let callback = null;
+  if (typeof buttonsOrCallback === 'function') {
+    callback = buttonsOrCallback;
+  } else if (Array.isArray(buttonsOrCallback) && buttonsOrCallback.length > 0) {
+    const okButton = buttonsOrCallback.find(b => b.onPress);
+    if (okButton) callback = okButton.onPress;
+  }
+
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     window.alert(`${title}\n\n${msg}`);
+    if (callback) callback();
   } else {
-    Alert.alert(title, msg);
+    if (Array.isArray(buttonsOrCallback)) {
+      Alert.alert(title, msg, buttonsOrCallback);
+    } else if (callback) {
+      Alert.alert(title, msg, [{ text: 'OK', onPress: callback }]);
+    } else {
+      Alert.alert(title, msg);
+    }
   }
 };
 

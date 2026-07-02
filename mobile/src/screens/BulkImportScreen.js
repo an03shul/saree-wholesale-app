@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet, Alert,
-  ActivityIndicator, ScrollView, Image,
+  ActivityIndicator, ScrollView, Image, Switch,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +23,12 @@ export default function BulkImportScreen({ navigation }) {
   const [batchPcs, setBatchPcs] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Single-piece Quick mode: 1 pc each, shared details, auto-sequential numbers, no OCR.
+  const [quickMode, setQuickMode] = useState(false);
+  const [startNumber, setStartNumber] = useState('');
+  const [batchFabric, setBatchFabric] = useState('');
+  const [batchWork, setBatchWork] = useState('');
+
   useEffect(() => {
     navigation.setOptions({ title: 'Bulk Add Designs' });
     brandsApi.getAll().then(r => setBrands(r.data)).catch(() => {});
@@ -41,7 +47,7 @@ export default function BulkImportScreen({ navigation }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.7,
-      selectionLimit: 20,
+      selectionLimit: 50,
     });
     if (!result.canceled) {
       const compressed = await Promise.all((result.assets || []).map(compressImage));
@@ -109,6 +115,58 @@ export default function BulkImportScreen({ navigation }) {
     }
   };
 
+  // Single-piece Quick mode: upload all photos, auto-number sequentially, copy
+  // shared details to every design, and save in one go (no OCR, no review).
+  const quickSave = async () => {
+    if (savingRef.current) return;
+    if (!item) return notify('Pick an item', 'Choose the brand and item first.');
+    if (!photos.length) return notify('Pick photos', 'Select the design photos.');
+    if (!startNumber.trim()) return notify('Starting number', 'Enter the design number to start from (e.g. 1001).');
+    const start = parseInt(startNumber, 10);
+    if (isNaN(start)) return notify('Starting number', 'Starting design number must be a number.');
+    if (batchRate === '' || batchRate == null) return notify('Rate', 'Enter the rate that applies to all pieces.');
+
+    const token = await AsyncStorage.getItem('auth_token');
+    if (token) setAuthToken(token);
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      // 1. Upload the photos (skip OCR — fast).
+      const fd = new FormData();
+      fd.append('skip_ocr', 'true');
+      for (let i = 0; i < photos.length; i++) {
+        const res = await fetch(photos[i].uri);
+        const blob = await res.blob();
+        fd.append('photos', new File([blob], `photo_${i}.jpg`, { type: 'image/jpeg' }));
+      }
+      const { data } = await importApi.analyze(fd);
+      // 2. Assign sequential numbers (in selection order) + shared details.
+      const designs = data.drafts.map((d, i) => ({
+        photo_path: d.photo_path,
+        design_number: String(start + i),
+        rate: batchRate,
+        pcs_per_set: '1',
+        fabric_type: batchFabric || null,
+        work_category: batchWork || null,
+        colors: null,
+      }));
+      // 3. Save all at once.
+      const { data: result } = await importApi.save(item.id, designs);
+      const last = start + designs.length - 1;
+      notify(
+        'Saved',
+        `${result.saved} design${result.saved !== 1 ? 's' : ''} added (#${start}–#${last}, 1 pc each).` +
+        (result.skipped?.length ? `\n${result.skipped.length} skipped (design number already exists).` : ''),
+        [{ text: 'OK', onPress: () => { setPhotos([]); setStartNumber(''); } }]
+      );
+    } catch (e) {
+      notify('Error', e.response?.data?.error || e.message || 'Could not save');
+    } finally {
+      setSaving(false);
+      savingRef.current = false;
+    }
+  };
+
   // ---------- STEP 1: pick brand/item + photos ----------
   if (step === 'pick') {
     return (
@@ -116,9 +174,25 @@ export default function BulkImportScreen({ navigation }) {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>⚡ How it works</Text>
           <Text style={styles.infoText}>
-            Pick a brand & item, upload up to 20 photos, and it reads the design number off each
+            Pick a brand & item, upload up to 50 photos, and it reads the design number off each
             tag automatically. Then add rates (and fabric/work if you like) and save them all at once.
           </Text>
+        </View>
+
+        <View style={styles.quickToggleCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.quickToggleTitle}>Single-piece Quick mode</Text>
+            <Text style={styles.quickToggleSub}>
+              For items where every design is 1 saree. Set the details once, auto-number the
+              photos, and save in one tap — no per-photo review.
+            </Text>
+          </View>
+          <Switch
+            value={quickMode}
+            onValueChange={setQuickMode}
+            trackColor={{ false: colors.border, true: colors.gold }}
+            thumbColor={quickMode ? colors.primary : '#f4f3f4'}
+          />
         </View>
 
         <Text style={styles.label}>1. Brand</Text>
@@ -143,9 +217,9 @@ export default function BulkImportScreen({ navigation }) {
           </>
         )}
 
-        <Text style={styles.label}>3. Photos {photos.length > 0 ? `(${photos.length} selected)` : ''}</Text>
+        <Text style={styles.label}>{quickMode ? '3.' : '3.'} Photos {photos.length > 0 ? `(${photos.length} selected)` : ''}</Text>
         <TouchableOpacity style={styles.pickBtn} onPress={pickPhotos}>
-          <Text style={styles.pickBtnText}>{photos.length ? '🖼 Change Photos' : '🖼 Select Photos (up to 20)'}</Text>
+          <Text style={styles.pickBtnText}>{photos.length ? '🖼 Change Photos' : '🖼 Select Photos (up to 50)'}</Text>
         </TouchableOpacity>
         {photos.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 10 }}>
@@ -153,17 +227,43 @@ export default function BulkImportScreen({ navigation }) {
           </ScrollView>
         )}
 
-        <Text style={styles.label}>Optional defaults (applied to all)</Text>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TextInput style={[styles.input, { flex: 1 }]} placeholder="Rate ₹ for all" placeholderTextColor={colors.textSecondary} value={batchRate} onChangeText={setBatchRate} keyboardType="numeric" />
-          <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pcs/set for all" placeholderTextColor={colors.textSecondary} value={batchPcs} onChangeText={setBatchPcs} keyboardType="numeric" />
-        </View>
+        {quickMode ? (
+          <>
+            <Text style={styles.label}>Details for all designs (1 pc each)</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Start design # *" placeholderTextColor={colors.textSecondary} value={startNumber} onChangeText={setStartNumber} keyboardType="numeric" />
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Rate ₹ *" placeholderTextColor={colors.textSecondary} value={batchRate} onChangeText={setBatchRate} keyboardType="numeric" />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Fabric (optional)" placeholderTextColor={colors.textSecondary} value={batchFabric} onChangeText={setBatchFabric} />
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Work (optional)" placeholderTextColor={colors.textSecondary} value={batchWork} onChangeText={setBatchWork} />
+            </View>
+            {startNumber.trim() && photos.length > 0 && !isNaN(parseInt(startNumber, 10)) && (
+              <Text style={styles.quickPreview}>
+                Will create #{parseInt(startNumber, 10)}–#{parseInt(startNumber, 10) + photos.length - 1} · 1 pc each · ₹{batchRate || '—'}
+              </Text>
+            )}
+            <TouchableOpacity style={[styles.primaryBtn, (saving || !item || !photos.length) && styles.btnDisabled]} onPress={quickSave} disabled={saving || !item || !photos.length}>
+              {saving
+                ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator color="#fff" /><Text style={styles.primaryBtnText}>Uploading & saving {photos.length}…</Text></View>
+                : <Text style={styles.primaryBtnText}>⚡ Upload & Save {photos.length || ''} Designs</Text>}
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>Optional defaults (applied to all)</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Rate ₹ for all" placeholderTextColor={colors.textSecondary} value={batchRate} onChangeText={setBatchRate} keyboardType="numeric" />
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pcs/set for all" placeholderTextColor={colors.textSecondary} value={batchPcs} onChangeText={setBatchPcs} keyboardType="numeric" />
+            </View>
 
-        <TouchableOpacity style={[styles.primaryBtn, (analyzing || !item || !photos.length) && styles.btnDisabled]} onPress={analyze} disabled={analyzing || !item || !photos.length}>
-          {analyzing
-            ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator color="#fff" /><Text style={styles.primaryBtnText}>Reading {photos.length} photos…</Text></View>
-            : <Text style={styles.primaryBtnText}>⚡ Read Design Numbers</Text>}
-        </TouchableOpacity>
+            <TouchableOpacity style={[styles.primaryBtn, (analyzing || !item || !photos.length) && styles.btnDisabled]} onPress={analyze} disabled={analyzing || !item || !photos.length}>
+              {analyzing
+                ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><ActivityIndicator color="#fff" /><Text style={styles.primaryBtnText}>Reading {photos.length} photos…</Text></View>
+                : <Text style={styles.primaryBtnText}>⚡ Read Design Numbers</Text>}
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
     );
   }
@@ -221,6 +321,10 @@ const styles = StyleSheet.create({
   infoCard: { backgroundColor: colors.goldLight, borderRadius: 14, padding: 14, marginBottom: 16 },
   infoTitle: { fontSize: 14, fontWeight: '800', color: colors.primary, marginBottom: 4 },
   infoText: { fontSize: 13, color: colors.textPrimary, lineHeight: 19 },
+  quickToggleCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: colors.gold, ...shadow.small },
+  quickToggleTitle: { fontSize: 15, fontWeight: '800', color: colors.primary },
+  quickToggleSub: { fontSize: 12, color: colors.textSecondary, marginTop: 3, lineHeight: 17 },
+  quickPreview: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 12, textAlign: 'center' },
   label: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 6 },
   chip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 22, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, ...shadow.small },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

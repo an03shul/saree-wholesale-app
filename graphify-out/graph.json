@@ -4125,7 +4125,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/BulkImportScreen.js",
-      "source_location": "L219",
+      "source_location": "L319",
       "_origin": "ast",
       "id": "screens_bulkimportscreen_styles",
       "community": 0,
@@ -4575,7 +4575,7 @@
       "label": "confirmAction()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L17",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "utils_share_confirmaction",
       "community": 0,
@@ -4585,7 +4585,7 @@
       "label": "buildShareCard()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L29",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "utils_share_buildsharecard",
       "community": 0,
@@ -4595,7 +4595,7 @@
       "label": "buildShareFile()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L107",
+      "source_location": "L122",
       "_origin": "ast",
       "id": "utils_share_buildsharefile",
       "community": 0,
@@ -4605,7 +4605,7 @@
       "label": "tryNativeShare()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L122",
+      "source_location": "L137",
       "_origin": "ast",
       "id": "utils_share_trynativeshare",
       "community": 0,
@@ -4615,7 +4615,7 @@
       "label": "downloadFiles()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L134",
+      "source_location": "L149",
       "_origin": "ast",
       "id": "utils_share_downloadfiles",
       "community": 0,
@@ -4625,7 +4625,7 @@
       "label": "shareDesignsList()",
       "file_type": "code",
       "source_file": "mobile/src/utils/share.js",
-      "source_location": "L149",
+      "source_location": "L164",
       "_origin": "ast",
       "id": "utils_share_sharedesignslist",
       "community": 0,
@@ -5629,9 +5629,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_contacts",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_contacts"
     },
     {
       "relation": "contains",
@@ -5639,9 +5639,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_fs",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_fs"
     },
     {
       "relation": "contains",
@@ -5649,9 +5649,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_path",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_path"
     },
     {
       "relation": "contains",
@@ -5659,9 +5659,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_seedpath",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_seedpath"
     },
     {
       "relation": "contains",
@@ -5669,9 +5669,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_tokenarg",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_tokenarg"
     },
     {
       "relation": "contains",
@@ -5679,9 +5679,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L22",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_usehttp",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_usehttp"
     },
     {
       "relation": "contains",
@@ -5689,9 +5689,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L39",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_viadb",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_viadb"
     },
     {
       "relation": "contains",
@@ -5699,9 +5699,9 @@
       "source_file": "backend/scripts/import-contacts.js",
       "source_location": "L26",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_import_contacts",
-      "target": "scripts_import_contacts_viahttp",
-      "confidence_score": 1.0
+      "target": "scripts_import_contacts_viahttp"
     },
     {
       "relation": "calls",
@@ -6395,9 +6395,9 @@
       "source_file": "backend/src/routes/contacts.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_contacts",
-      "target": "middleware_auth",
-      "confidence_score": 1.0
+      "target": "middleware_auth"
     },
     {
       "relation": "imports_from",
@@ -6549,9 +6549,9 @@
       "source_file": "backend/src/routes/contacts.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_contacts",
-      "target": "middleware_auth_requireadmin",
-      "confidence_score": 1.0
+      "target": "middleware_auth_requireadmin"
     },
     {
       "relation": "imports",
@@ -6615,9 +6615,9 @@
       "source_file": "backend/src/routes/contacts.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_contacts",
-      "target": "middleware_auth_logactivity",
-      "confidence_score": 1.0
+      "target": "middleware_auth_logactivity"
     },
     {
       "relation": "contains",
@@ -6887,9 +6887,9 @@
       "source_file": "backend/src/routes/contacts.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_contacts",
-      "target": "routes_contacts_contactlabel",
-      "confidence_score": 1.0
+      "target": "routes_contacts_contactlabel"
     },
     {
       "relation": "contains",
@@ -6917,9 +6917,9 @@
       "source_file": "backend/src/routes/contacts.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_contacts",
-      "target": "routes_contacts_requireadmin_logactivity",
-      "confidence_score": 1.0
+      "target": "routes_contacts_requireadmin_logactivity"
     },
     {
       "relation": "contains",
@@ -10655,9 +10655,9 @@
       "source_file": "mobile/src/screens/BrandsScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_brandsscreen",
-      "target": "api_client_designsapi",
-      "confidence_score": 1.0
+      "target": "api_client_designsapi"
     },
     {
       "relation": "imports",
@@ -11007,9 +11007,9 @@
       "source_file": "mobile/src/screens/BrandsScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_brandsscreen",
-      "target": "api_client_getthumburl",
-      "confidence_score": 1.0
+      "target": "api_client_getthumburl"
     },
     {
       "relation": "imports",
@@ -12203,9 +12203,9 @@
       "source_file": "mobile/src/screens/SendScreen.js",
       "source_location": "L22",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_sendscreen",
-      "target": "screens_sendscreen_contactpicker",
-      "confidence_score": 1.0
+      "target": "screens_sendscreen_contactpicker"
     },
     {
       "relation": "contains",
@@ -12753,9 +12753,9 @@
       "source_file": "CLAUDE.md",
       "source_location": "L110",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "claude_claude_md",
-      "target": "claude_search_contacts_import_audit_logging",
-      "confidence_score": 1.0
+      "target": "claude_search_contacts_import_audit_logging"
     },
     {
       "relation": "contains",
@@ -12833,9 +12833,9 @@
       "source_file": "CLAUDE.md",
       "source_location": "L120",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "claude_search_contacts_import_audit_logging",
-      "target": "claude_role_permissions_staff_vs_admin",
-      "confidence_score": 1.0
+      "target": "claude_role_permissions_staff_vs_admin"
     },
     {
       "relation": "contains",
@@ -13009,5 +13009,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "87b0ffa58669e43a9fa7db3e961fcb5763ebc14f"
+  "built_at_commit": "5afd91ed871c4b643ba55ed1513bc8d0dc8527b5"
 }

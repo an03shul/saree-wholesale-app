@@ -8,9 +8,11 @@ const { extractDesignsFromPhotos } = require('../services/bulkImport');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
-// POST /api/import/analyze — upload up to 20 photos, AI-extract draft fields for each.
+// POST /api/import/analyze — upload up to 50 photos, AI-extract draft fields for each.
 // Photos are stored immediately so they can be attached on save without re-upload.
-router.post('/analyze', requireAdmin, upload.array('photos', 20), async (req, res) => {
+// Pass skip_ocr=true (single-piece Quick mode) to just upload and return photo paths
+// with no OCR — the client assigns sequential numbers + shared details itself.
+router.post('/analyze', requireAdmin, upload.array('photos', 50), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
 
   // Save each photo to storage; keep the buffer for OCR
@@ -19,6 +21,17 @@ router.post('/analyze', requireAdmin, upload.array('photos', 20), async (req, re
     const filename = storage.generateKey(f.originalname);
     await storage.putFile(filename, f.buffer);
     photos.push({ filename, buffer: f.buffer });
+  }
+
+  // Quick mode: skip OCR entirely, return the uploaded photo paths in order.
+  if (req.body.skip_ocr === 'true' || req.body.skip_ocr === true) {
+    return res.json({
+      drafts: photos.map(p => ({
+        photo_path: p.filename,
+        design_number: null, colors: null, fabric_type: null,
+        work_category: null, confidence: 'skip',
+      })),
+    });
   }
 
   try {

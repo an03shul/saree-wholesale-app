@@ -402,6 +402,96 @@
       "norm_label": "restartpolicymaxretries"
     },
     {
+      "label": "import-contacts.js",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_import_contacts",
+      "community": 17,
+      "norm_label": "import-contacts.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_fs",
+      "community": 17,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_path",
+      "community": 17,
+      "norm_label": "path"
+    },
+    {
+      "label": "seedPath",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_seedpath",
+      "community": 17,
+      "norm_label": "seedpath"
+    },
+    {
+      "label": "contacts",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_contacts",
+      "community": 17,
+      "norm_label": "contacts"
+    },
+    {
+      "label": "useHttp",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_usehttp",
+      "community": 17,
+      "norm_label": "usehttp"
+    },
+    {
+      "label": "tokenArg",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_tokenarg",
+      "community": 17,
+      "norm_label": "tokenarg"
+    },
+    {
+      "label": "viaHttp()",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_viahttp",
+      "community": 17,
+      "norm_label": "viahttp()"
+    },
+    {
+      "label": "viaDb()",
+      "file_type": "code",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "scripts_import_contacts_viadb",
+      "community": 17,
+      "norm_label": "viadb()"
+    },
+    {
       "label": "app.js",
       "file_type": "code",
       "source_file": "backend/src/app.js",
@@ -738,7 +828,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "middleware_auth_logactivity",
-      "community": 1,
+      "community": 28,
       "norm_label": "logactivity()"
     },
     {
@@ -1060,6 +1150,26 @@
       "id": "routes_contacts_db",
       "community": 28,
       "norm_label": "db"
+    },
+    {
+      "label": "{ requireAdmin, logActivity }",
+      "file_type": "code",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "routes_contacts_requireadmin_logactivity",
+      "community": 28,
+      "norm_label": "{ requireadmin, logactivity }"
+    },
+    {
+      "label": "contactLabel()",
+      "file_type": "code",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "routes_contacts_contactlabel",
+      "community": 28,
+      "norm_label": "contactlabel()"
     },
     {
       "label": "designs.js",
@@ -3695,7 +3805,7 @@
       "label": "sendApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L94",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "api_client_sendapi",
       "community": 0,
@@ -3705,7 +3815,7 @@
       "label": "statsApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L101",
+      "source_location": "L103",
       "_origin": "ast",
       "id": "api_client_statsapi",
       "community": 0,
@@ -3715,7 +3825,7 @@
       "label": "settingsApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L105",
+      "source_location": "L107",
       "_origin": "ast",
       "id": "api_client_settingsapi",
       "community": 0,
@@ -3725,7 +3835,7 @@
       "label": "tallyApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L110",
+      "source_location": "L112",
       "_origin": "ast",
       "id": "api_client_tallyapi",
       "community": 0,
@@ -3735,7 +3845,7 @@
       "label": "identifyApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L117",
+      "source_location": "L119",
       "_origin": "ast",
       "id": "api_client_identifyapi",
       "community": 0,
@@ -3745,7 +3855,7 @@
       "label": "importApi",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L121",
+      "source_location": "L123",
       "_origin": "ast",
       "id": "api_client_importapi",
       "community": 0,
@@ -3755,7 +3865,7 @@
       "label": "getCatalogUrl()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L127",
+      "source_location": "L129",
       "_origin": "ast",
       "id": "api_client_getcatalogurl",
       "community": 0,
@@ -3765,7 +3875,7 @@
       "label": "whatsappLink()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L133",
+      "source_location": "L135",
       "_origin": "ast",
       "id": "api_client_whatsapplink",
       "community": 0,
@@ -3775,7 +3885,7 @@
       "label": "getPdfUrl()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L138",
+      "source_location": "L140",
       "_origin": "ast",
       "id": "api_client_getpdfurl",
       "community": 0,
@@ -3785,7 +3895,7 @@
       "label": "getImageUrl()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L142",
+      "source_location": "L144",
       "_origin": "ast",
       "id": "api_client_getimageurl",
       "community": 0,
@@ -3795,7 +3905,7 @@
       "label": "getThumbUrl()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L144",
+      "source_location": "L146",
       "_origin": "ast",
       "id": "api_client_getthumburl",
       "community": 0,
@@ -3805,7 +3915,7 @@
       "label": "getWmUrl()",
       "file_type": "code",
       "source_file": "mobile/src/api/client.js",
-      "source_location": "L146",
+      "source_location": "L148",
       "_origin": "ast",
       "id": "api_client_getwmurl",
       "community": 0,
@@ -3868,7 +3978,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_config",
-      "community": 17,
+      "community": 0,
       "norm_label": "config.js"
     },
     {
@@ -3985,7 +4095,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/BrandsScreen.js",
-      "source_location": "L246",
+      "source_location": "L330",
       "_origin": "ast",
       "id": "screens_brandsscreen_styles",
       "community": 0,
@@ -4015,7 +4125,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/BulkImportScreen.js",
-      "source_location": "L219",
+      "source_location": "L319",
       "_origin": "ast",
       "id": "screens_bulkimportscreen_styles",
       "community": 0,
@@ -4045,7 +4155,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/ContactsScreen.js",
-      "source_location": "L324",
+      "source_location": "L371",
       "_origin": "ast",
       "id": "screens_contactsscreen_styles",
       "community": 0,
@@ -4135,7 +4245,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/ItemsScreen.js",
-      "source_location": "L286",
+      "source_location": "L283",
       "_origin": "ast",
       "id": "screens_itemsscreen_styles",
       "community": 0,
@@ -4332,10 +4442,20 @@
       "norm_label": "price_presets"
     },
     {
+      "label": "ContactPicker()",
+      "file_type": "code",
+      "source_file": "mobile/src/screens/SendScreen.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "screens_sendscreen_contactpicker",
+      "community": 0,
+      "norm_label": "contactpicker()"
+    },
+    {
       "label": "SendScreen()",
       "file_type": "code",
       "source_file": "mobile/src/screens/SendScreen.js",
-      "source_location": "L19",
+      "source_location": "L85",
       "_origin": "ast",
       "id": "screens_sendscreen_sendscreen",
       "community": 0,
@@ -4345,7 +4465,7 @@
       "label": "styles",
       "file_type": "code",
       "source_file": "mobile/src/screens/SendScreen.js",
-      "source_location": "L631",
+      "source_location": "L641",
       "_origin": "ast",
       "id": "screens_sendscreen_styles",
       "community": 0,
@@ -4398,7 +4518,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "utils_pushsubscription",
-      "community": 17,
+      "community": 0,
       "norm_label": "pushsubscription.js"
     },
     {
@@ -4408,7 +4528,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "utils_pushsubscription_urlbase64touint8array",
-      "community": 17,
+      "community": 0,
       "norm_label": "urlbase64touint8array()"
     },
     {
@@ -4418,7 +4538,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "utils_pushsubscription_subscribetopush",
-      "community": 17,
+      "community": 0,
       "norm_label": "subscribetopush()"
     },
     {
@@ -4428,7 +4548,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "utils_pushsubscription_getnotificationpermission",
-      "community": 17,
+      "community": 0,
       "norm_label": "getnotificationpermission()"
     },
     {
@@ -4892,10 +5012,30 @@
       "norm_label": "\u26a0\ufe0f deployment gotchas (learned the hard way)"
     },
     {
-      "label": "Graphify Knowledge Graph",
+      "label": "Search, contacts import & audit logging",
       "file_type": "document",
       "source_file": "CLAUDE.md",
       "source_location": "L110",
+      "_origin": "ast",
+      "id": "claude_search_contacts_import_audit_logging",
+      "community": 20,
+      "norm_label": "search, contacts import & audit logging"
+    },
+    {
+      "label": "Role permissions (staff vs admin)",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L120",
+      "_origin": "ast",
+      "id": "claude_role_permissions_staff_vs_admin",
+      "community": 20,
+      "norm_label": "role permissions (staff vs admin)"
+    },
+    {
+      "label": "Graphify Knowledge Graph",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L125",
       "_origin": "ast",
       "id": "claude_graphify_knowledge_graph",
       "community": 20,
@@ -4905,7 +5045,7 @@
       "label": "Expo Version Note",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L116",
+      "source_location": "L131",
       "_origin": "ast",
       "id": "claude_expo_version_note",
       "community": 20,
@@ -5359,9 +5499,9 @@
       "source_file": "backend/package.json",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "backend_package_dependencies",
-      "target": "backend_package_dependencies_web_push",
-      "confidence_score": 1.0
+      "target": "backend_package_dependencies_web_push"
     },
     {
       "relation": "contains",
@@ -5484,6 +5624,97 @@
       "target": "backend_railway_deploy_startcommand"
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_contacts"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_seedpath"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_tokenarg"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_usehttp"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_viadb"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_import_contacts",
+      "target": "scripts_import_contacts_viahttp"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "backend/scripts/import-contacts.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "scripts_import_contacts_viahttp",
+      "target": "src_index_fetch"
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -5545,9 +5776,9 @@
       "source_file": "backend/src/app.js",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app",
-      "target": "services_watermark",
-      "confidence_score": 1.0
+      "target": "services_watermark"
     },
     {
       "relation": "imports",
@@ -5556,9 +5787,9 @@
       "source_file": "backend/src/app.js",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app",
-      "target": "services_watermark_getwatermarkedbuffer",
-      "confidence_score": 1.0
+      "target": "services_watermark_getwatermarkedbuffer"
     },
     {
       "relation": "contains",
@@ -5616,9 +5847,9 @@
       "source_file": "backend/src/app.js",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app",
-      "target": "src_app_getwatermarkedbuffer",
-      "confidence_score": 1.0
+      "target": "src_app_getwatermarkedbuffer"
     },
     {
       "relation": "contains",
@@ -5941,9 +6172,9 @@
       "source_file": "backend/src/routes/push.js",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_push",
-      "target": "db_database",
-      "confidence_score": 1.0
+      "target": "db_database"
     },
     {
       "relation": "imports_from",
@@ -6029,9 +6260,9 @@
       "source_file": "backend/src/services/pushNotify.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_pushnotify",
-      "target": "db_database",
-      "confidence_score": 1.0
+      "target": "db_database"
     },
     {
       "relation": "imports_from",
@@ -6161,6 +6392,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "routes_contacts",
+      "target": "middleware_auth"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "backend/src/routes/designs.js",
       "source_location": "L3",
       "weight": 1.0,
@@ -6274,9 +6516,9 @@
       "source_file": "backend/src/routes/orders.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_orders",
-      "target": "middleware_auth_requireauth",
-      "confidence_score": 1.0
+      "target": "middleware_auth_requireauth"
     },
     {
       "relation": "imports",
@@ -6298,6 +6540,17 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "routes_brands",
+      "target": "middleware_auth_requireadmin"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "routes_contacts",
       "target": "middleware_auth_requireadmin"
     },
     {
@@ -6354,6 +6607,17 @@
       "confidence_score": 1.0,
       "source": "routes_settings",
       "target": "middleware_auth_requireadmin"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "routes_contacts",
+      "target": "middleware_auth_logactivity"
     },
     {
       "relation": "contains",
@@ -6581,9 +6845,9 @@
       "source_file": "backend/src/routes/catalog.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_catalog",
-      "target": "routes_catalog_path",
-      "confidence_score": 1.0
+      "target": "routes_catalog_path"
     },
     {
       "relation": "contains",
@@ -6621,6 +6885,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "routes_contacts",
+      "target": "routes_contacts_contactlabel"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/routes/contacts.js",
       "source_location": "L3",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -6636,6 +6910,16 @@
       "confidence_score": 1.0,
       "source": "routes_contacts",
       "target": "routes_contacts_express"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/src/routes/contacts.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "routes_contacts",
+      "target": "routes_contacts_requireadmin_logactivity"
     },
     {
       "relation": "contains",
@@ -7019,9 +7303,9 @@
       "source_file": "backend/src/routes/orders.js",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_orders",
-      "target": "routes_orders_notifyall",
-      "confidence_score": 1.0
+      "target": "routes_orders_notifyall"
     },
     {
       "relation": "contains",
@@ -7029,9 +7313,9 @@
       "source_file": "backend/src/routes/orders.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_orders",
-      "target": "routes_orders_requireauth_requireadmin",
-      "confidence_score": 1.0
+      "target": "routes_orders_requireauth_requireadmin"
     },
     {
       "relation": "contains",
@@ -7050,9 +7334,9 @@
       "source_file": "backend/src/routes/orders.js",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_orders",
-      "target": "services_pushnotify",
-      "confidence_score": 1.0
+      "target": "services_pushnotify"
     },
     {
       "relation": "imports",
@@ -7061,9 +7345,9 @@
       "source_file": "backend/src/routes/orders.js",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_orders",
-      "target": "services_pushnotify_notifyall",
-      "confidence_score": 1.0
+      "target": "services_pushnotify_notifyall"
     },
     {
       "relation": "contains",
@@ -7173,9 +7457,9 @@
       "source_file": "backend/src/routes/push.js",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_push",
-      "target": "routes_push_db",
-      "confidence_score": 1.0
+      "target": "routes_push_db"
     },
     {
       "relation": "contains",
@@ -7183,9 +7467,9 @@
       "source_file": "backend/src/routes/push.js",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_push",
-      "target": "routes_push_express",
-      "confidence_score": 1.0
+      "target": "routes_push_express"
     },
     {
       "relation": "contains",
@@ -7193,9 +7477,9 @@
       "source_file": "backend/src/routes/push.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_push",
-      "target": "routes_push_router",
-      "confidence_score": 1.0
+      "target": "routes_push_router"
     },
     {
       "relation": "contains",
@@ -7643,9 +7927,9 @@
       "source_file": "backend/src/services/pushNotify.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_pushnotify",
-      "target": "services_pushnotify_db",
-      "confidence_score": 1.0
+      "target": "services_pushnotify_db"
     },
     {
       "relation": "contains",
@@ -7653,9 +7937,9 @@
       "source_file": "backend/src/services/pushNotify.js",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_pushnotify",
-      "target": "services_pushnotify_notifyall",
-      "confidence_score": 1.0
+      "target": "services_pushnotify_notifyall"
     },
     {
       "relation": "contains",
@@ -7663,9 +7947,9 @@
       "source_file": "backend/src/services/pushNotify.js",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_pushnotify",
-      "target": "services_pushnotify_webpush",
-      "confidence_score": 1.0
+      "target": "services_pushnotify_webpush"
     },
     {
       "relation": "contains",
@@ -8729,9 +9013,9 @@
       "source_file": "mobile/App.js",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mobile_app_js_mobile_app",
-      "target": "utils_pushsubscription",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription"
     },
     {
       "relation": "imports",
@@ -8740,9 +9024,9 @@
       "source_file": "mobile/App.js",
       "source_location": "L23",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "mobile_app_js_mobile_app",
-      "target": "utils_pushsubscription_subscribetopush",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_subscribetopush"
     },
     {
       "relation": "imports",
@@ -9693,9 +9977,9 @@
       "source_file": "mobile/scripts/inject-pwa.js",
       "source_location": "L50",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_inject_pwa",
-      "target": "scripts_inject_pwa_swdst",
-      "confidence_score": 1.0
+      "target": "scripts_inject_pwa_swdst"
     },
     {
       "relation": "contains",
@@ -9703,9 +9987,9 @@
       "source_file": "mobile/scripts/inject-pwa.js",
       "source_location": "L49",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_inject_pwa",
-      "target": "scripts_inject_pwa_swsrc",
-      "confidence_score": 1.0
+      "target": "scripts_inject_pwa_swsrc"
     },
     {
       "relation": "contains",
@@ -9823,9 +10107,9 @@
       "source_file": "mobile/src/api/client.js",
       "source_location": "L146",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_client",
-      "target": "api_client_getwmurl",
-      "confidence_score": 1.0
+      "target": "api_client_getwmurl"
     },
     {
       "relation": "contains",
@@ -10063,9 +10347,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "api_client",
-      "confidence_score": 1.0
+      "target": "api_client"
     },
     {
       "relation": "imports_from",
@@ -10107,9 +10391,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "api_client",
-      "confidence_score": 1.0
+      "target": "api_client"
     },
     {
       "relation": "calls",
@@ -10173,9 +10457,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "api_client_setauthtoken",
-      "confidence_score": 1.0
+      "target": "api_client_setauthtoken"
     },
     {
       "relation": "imports",
@@ -10206,9 +10490,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "api_client_authapi",
-      "confidence_score": 1.0
+      "target": "api_client_authapi"
     },
     {
       "relation": "imports",
@@ -10294,9 +10578,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "api_client_brandsapi",
-      "confidence_score": 1.0
+      "target": "api_client_brandsapi"
     },
     {
       "relation": "imports",
@@ -10305,9 +10589,9 @@
       "source_file": "mobile/src/screens/ItemsScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_itemsscreen",
-      "target": "api_client_brandsapi",
-      "confidence_score": 1.0
+      "target": "api_client_brandsapi"
     },
     {
       "relation": "imports",
@@ -10338,9 +10622,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "api_client_itemsapi",
-      "confidence_score": 1.0
+      "target": "api_client_itemsapi"
     },
     {
       "relation": "imports",
@@ -10363,6 +10647,17 @@
       "confidence_score": 1.0,
       "source": "screens_sendscreen",
       "target": "api_client_itemsapi"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "mobile/src/screens/BrandsScreen.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "screens_brandsscreen",
+      "target": "api_client_designsapi"
     },
     {
       "relation": "imports",
@@ -10569,9 +10864,9 @@
       "source_file": "mobile/src/screens/ItemsScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_itemsscreen",
-      "target": "api_client_getcatalogurl",
-      "confidence_score": 1.0
+      "target": "api_client_getcatalogurl"
     },
     {
       "relation": "imports",
@@ -10591,9 +10886,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "api_client_whatsapplink",
-      "confidence_score": 1.0
+      "target": "api_client_whatsapplink"
     },
     {
       "relation": "imports",
@@ -10709,6 +11004,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "mobile/src/screens/BrandsScreen.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "screens_brandsscreen",
+      "target": "api_client_getthumburl"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "mobile/src/screens/BulkImportScreen.js",
       "source_location": "L8",
       "weight": 1.0,
@@ -10767,9 +11073,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "api_client_getwmurl",
-      "confidence_score": 1.0
+      "target": "api_client_getwmurl"
     },
     {
       "relation": "imports",
@@ -10778,9 +11084,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "api_client_getwmurl",
-      "confidence_score": 1.0
+      "target": "api_client_getwmurl"
     },
     {
       "relation": "calls",
@@ -10799,9 +11105,9 @@
       "source_file": "mobile/src/components/ImageViewerModal.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_imageviewermodal",
-      "target": "components_imageviewermodal_clamp",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal_clamp"
     },
     {
       "relation": "contains",
@@ -10809,9 +11115,9 @@
       "source_file": "mobile/src/components/ImageViewerModal.js",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_imageviewermodal",
-      "target": "components_imageviewermodal_imageviewermodal",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal_imageviewermodal"
     },
     {
       "relation": "contains",
@@ -10819,9 +11125,9 @@
       "source_file": "mobile/src/components/ImageViewerModal.js",
       "source_location": "L108",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_imageviewermodal",
-      "target": "components_imageviewermodal_styles",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal_styles"
     },
     {
       "relation": "contains",
@@ -10829,9 +11135,9 @@
       "source_file": "mobile/src/components/ImageViewerModal.js",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_imageviewermodal",
-      "target": "components_imageviewermodal_touchdistance",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal_touchdistance"
     },
     {
       "relation": "imports_from",
@@ -10840,9 +11146,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "components_imageviewermodal",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal"
     },
     {
       "relation": "imports",
@@ -10851,9 +11157,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "components_imageviewermodal_imageviewermodal",
-      "confidence_score": 1.0
+      "target": "components_imageviewermodal_imageviewermodal"
     },
     {
       "relation": "imports_from",
@@ -10862,9 +11168,9 @@
       "source_file": "mobile/src/utils/pushSubscription.js",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_pushsubscription",
-      "target": "src_config",
-      "confidence_score": 1.0
+      "target": "src_config"
     },
     {
       "relation": "contains",
@@ -11263,9 +11569,9 @@
       "source_file": "mobile/src/screens/AdminScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_adminscreen",
-      "target": "utils_date",
-      "confidence_score": 1.0
+      "target": "utils_date"
     },
     {
       "relation": "imports",
@@ -11274,9 +11580,9 @@
       "source_file": "mobile/src/screens/AdminScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_adminscreen",
-      "target": "utils_date_parseserverdate",
-      "confidence_score": 1.0
+      "target": "utils_date_parseserverdate"
     },
     {
       "relation": "imports_from",
@@ -11285,9 +11591,9 @@
       "source_file": "mobile/src/screens/AdminScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_adminscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11296,9 +11602,9 @@
       "source_file": "mobile/src/screens/AdminScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_adminscreen",
-      "target": "utils_share_confirmaction",
-      "confidence_score": 1.0
+      "target": "utils_share_confirmaction"
     },
     {
       "relation": "imports",
@@ -11307,9 +11613,9 @@
       "source_file": "mobile/src/screens/AdminScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_adminscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11338,9 +11644,9 @@
       "source_file": "mobile/src/screens/BrandsScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_brandsscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11349,9 +11655,9 @@
       "source_file": "mobile/src/screens/BrandsScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_brandsscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11402,9 +11708,9 @@
       "source_file": "mobile/src/screens/BulkImportScreen.js",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_bulkimportscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11413,9 +11719,9 @@
       "source_file": "mobile/src/screens/BulkImportScreen.js",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_bulkimportscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11444,9 +11750,9 @@
       "source_file": "mobile/src/screens/ContactsScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_contactsscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11455,9 +11761,9 @@
       "source_file": "mobile/src/screens/ContactsScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_contactsscreen",
-      "target": "utils_share_confirmaction",
-      "confidence_score": 1.0
+      "target": "utils_share_confirmaction"
     },
     {
       "relation": "imports",
@@ -11466,9 +11772,9 @@
       "source_file": "mobile/src/screens/ContactsScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_contactsscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11519,9 +11825,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11530,9 +11836,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "imports",
@@ -11541,9 +11847,9 @@
       "source_file": "mobile/src/screens/DesignsScreen.js",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_designsscreen",
-      "target": "utils_share_sharedesignslist",
-      "confidence_score": 1.0
+      "target": "utils_share_sharedesignslist"
     },
     {
       "relation": "contains",
@@ -11572,9 +11878,9 @@
       "source_file": "mobile/src/screens/IdentifyScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_identifyscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11583,9 +11889,9 @@
       "source_file": "mobile/src/screens/IdentifyScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_identifyscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11614,9 +11920,9 @@
       "source_file": "mobile/src/screens/ItemsScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_itemsscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11625,9 +11931,9 @@
       "source_file": "mobile/src/screens/ItemsScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_itemsscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11696,9 +12002,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "utils_pushsubscription",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription"
     },
     {
       "relation": "imports",
@@ -11707,9 +12013,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "utils_pushsubscription_getnotificationpermission",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_getnotificationpermission"
     },
     {
       "relation": "imports",
@@ -11718,9 +12024,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "utils_pushsubscription_subscribetopush",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_subscribetopush"
     },
     {
       "relation": "imports_from",
@@ -11729,9 +12035,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11740,9 +12046,9 @@
       "source_file": "mobile/src/screens/MoreScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_morescreen",
-      "target": "utils_share_confirmaction",
-      "confidence_score": 1.0
+      "target": "utils_share_confirmaction"
     },
     {
       "relation": "contains",
@@ -11791,9 +12097,9 @@
       "source_file": "mobile/src/screens/OrdersScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_ordersscreen",
-      "target": "utils_date",
-      "confidence_score": 1.0
+      "target": "utils_date"
     },
     {
       "relation": "imports",
@@ -11802,9 +12108,9 @@
       "source_file": "mobile/src/screens/OrdersScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_ordersscreen",
-      "target": "utils_date_parseserverdate",
-      "confidence_score": 1.0
+      "target": "utils_date_parseserverdate"
     },
     {
       "relation": "imports_from",
@@ -11813,9 +12119,9 @@
       "source_file": "mobile/src/screens/OrdersScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_ordersscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11824,9 +12130,9 @@
       "source_file": "mobile/src/screens/OrdersScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_ordersscreen",
-      "target": "utils_share_confirmaction",
-      "confidence_score": 1.0
+      "target": "utils_share_confirmaction"
     },
     {
       "relation": "imports",
@@ -11835,9 +12141,9 @@
       "source_file": "mobile/src/screens/OrdersScreen.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_ordersscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -11876,9 +12182,9 @@
       "source_file": "mobile/src/screens/ScanScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_scanscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11887,9 +12193,19 @@
       "source_file": "mobile/src/screens/ScanScreen.js",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_scanscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "mobile/src/screens/SendScreen.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "screens_sendscreen",
+      "target": "screens_sendscreen_contactpicker"
     },
     {
       "relation": "contains",
@@ -11928,9 +12244,9 @@
       "source_file": "mobile/src/screens/SendScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_sendscreen",
-      "target": "utils_share",
-      "confidence_score": 1.0
+      "target": "utils_share"
     },
     {
       "relation": "imports",
@@ -11939,9 +12255,9 @@
       "source_file": "mobile/src/screens/SendScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_sendscreen",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "imports",
@@ -11950,9 +12266,9 @@
       "source_file": "mobile/src/screens/SendScreen.js",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "screens_sendscreen",
-      "target": "utils_share_sharedesignslist",
-      "confidence_score": 1.0
+      "target": "utils_share_sharedesignslist"
     },
     {
       "relation": "contains",
@@ -11960,9 +12276,9 @@
       "source_file": "mobile/src/utils/date.js",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_date",
-      "target": "utils_date_parseserverdate",
-      "confidence_score": 1.0
+      "target": "utils_date_parseserverdate"
     },
     {
       "relation": "contains",
@@ -11980,9 +12296,9 @@
       "source_file": "mobile/src/utils/pushSubscription.js",
       "source_location": "L38",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_pushsubscription",
-      "target": "utils_pushsubscription_getnotificationpermission",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_getnotificationpermission"
     },
     {
       "relation": "contains",
@@ -11990,9 +12306,9 @@
       "source_file": "mobile/src/utils/pushSubscription.js",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_pushsubscription",
-      "target": "utils_pushsubscription_subscribetopush",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_subscribetopush"
     },
     {
       "relation": "contains",
@@ -12000,9 +12316,9 @@
       "source_file": "mobile/src/utils/pushSubscription.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_pushsubscription",
-      "target": "utils_pushsubscription_urlbase64touint8array",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_urlbase64touint8array"
     },
     {
       "relation": "calls",
@@ -12011,9 +12327,9 @@
       "source_file": "mobile/src/utils/pushSubscription.js",
       "source_location": "L24",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_pushsubscription_subscribetopush",
-      "target": "utils_pushsubscription_urlbase64touint8array",
-      "confidence_score": 1.0
+      "target": "utils_pushsubscription_urlbase64touint8array"
     },
     {
       "relation": "contains",
@@ -12021,9 +12337,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L29",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_buildsharecard",
-      "confidence_score": 1.0
+      "target": "utils_share_buildsharecard"
     },
     {
       "relation": "contains",
@@ -12031,9 +12347,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L107",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_buildsharefile",
-      "confidence_score": 1.0
+      "target": "utils_share_buildsharefile"
     },
     {
       "relation": "contains",
@@ -12041,9 +12357,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_confirmaction",
-      "confidence_score": 1.0
+      "target": "utils_share_confirmaction"
     },
     {
       "relation": "contains",
@@ -12051,9 +12367,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L134",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_downloadfiles",
-      "confidence_score": 1.0
+      "target": "utils_share_downloadfiles"
     },
     {
       "relation": "contains",
@@ -12061,9 +12377,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "contains",
@@ -12071,9 +12387,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L149",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_sharedesignslist",
-      "confidence_score": 1.0
+      "target": "utils_share_sharedesignslist"
     },
     {
       "relation": "contains",
@@ -12081,9 +12397,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L122",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share",
-      "target": "utils_share_trynativeshare",
-      "confidence_score": 1.0
+      "target": "utils_share_trynativeshare"
     },
     {
       "relation": "calls",
@@ -12092,9 +12408,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L152",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share_sharedesignslist",
-      "target": "utils_share_notify",
-      "confidence_score": 1.0
+      "target": "utils_share_notify"
     },
     {
       "relation": "calls",
@@ -12103,9 +12419,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L112",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share_buildsharefile",
-      "target": "utils_share_buildsharecard",
-      "confidence_score": 1.0
+      "target": "utils_share_buildsharecard"
     },
     {
       "relation": "calls",
@@ -12114,9 +12430,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L171",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share_sharedesignslist",
-      "target": "utils_share_trynativeshare",
-      "confidence_score": 1.0
+      "target": "utils_share_trynativeshare"
     },
     {
       "relation": "calls",
@@ -12125,9 +12441,9 @@
       "source_file": "mobile/src/utils/share.js",
       "source_location": "L173",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "utils_share_sharedesignslist",
-      "target": "utils_share_downloadfiles",
-      "confidence_score": 1.0
+      "target": "utils_share_downloadfiles"
     },
     {
       "relation": "contains",
@@ -12435,6 +12751,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
+      "source_location": "L110",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "claude_claude_md",
+      "target": "claude_search_contacts_import_audit_logging"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
       "source_location": "L13",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -12497,9 +12823,19 @@
       "source_file": "CLAUDE.md",
       "source_location": "L101",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "claude_deployment",
-      "target": "claude_deployment_gotchas_learned_the_hard_way",
-      "confidence_score": 1.0
+      "target": "claude_deployment_gotchas_learned_the_hard_way"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L120",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "claude_search_contacts_import_audit_logging",
+      "target": "claude_role_permissions_staff_vs_admin"
     },
     {
       "relation": "contains",
@@ -12673,5 +13009,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e86a15ed219c2a80ba75306ff8a2373bf080a506"
+  "built_at_commit": "5afd91ed871c4b643ba55ed1513bc8d0dc8527b5"
 }
