@@ -54,9 +54,8 @@ async function identifyDesign(mysteryBuffer, mysteryMime = 'image/jpeg') {
   }).flat();
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-8',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 1024,
-    thinking: { type: 'adaptive' },
     messages: [
       {
         role: 'user',
