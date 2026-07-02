@@ -11,10 +11,10 @@ const MENU_ITEMS = [
   { key: 'Scan',     label: 'Scan QR Code',   icon: '📷', desc: 'Scan a design QR to look it up' },
   { key: 'Contacts', label: 'Contacts',        icon: '👥', desc: 'Manage WhatsApp contacts & groups' },
   { key: 'Identify', label: 'Identify Piece',  icon: '🔍', desc: 'Use AI to identify a saree design' },
+  { key: 'BulkImport', label: 'Bulk Add Designs', icon: '⚡', desc: 'Upload many photos — AI fills the details' },
 ];
 
 const ADMIN_ITEMS = [
-  { key: 'BulkImport', label: 'Bulk Add Designs', icon: '⚡', desc: 'Upload many photos — AI fills the details' },
   { key: 'Admin',    label: 'Admin Panel',     icon: '⚙️', desc: 'Users, activity log, templates' },
 ];
 

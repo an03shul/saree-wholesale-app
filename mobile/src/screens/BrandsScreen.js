@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Alert, ActivityIndicator, Modal, Share, RefreshControl, Image
+  StyleSheet, Alert, ActivityIndicator, Modal, Share, RefreshControl, Image, Keyboard
 } from 'react-native';
 import { brandsApi, designsApi, getCatalogUrl, getThumbUrl, statsApi } from '../api/client';
 import { notify } from '../utils/share';
@@ -131,15 +131,22 @@ export default function BrandsScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.searchWrap}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍  Search design # / item / brand — stock & price"
-          placeholderTextColor={colors.textSecondary}
-          value={designQuery}
-          onChangeText={searchDesigns}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
+        <View style={styles.searchRow}>
+          {isSearching && (
+            <TouchableOpacity style={styles.backSearchBtn} onPress={() => { setDesignQuery(''); setDesignResults([]); setSearching(false); Keyboard.dismiss(); }}>
+              <Text style={styles.backSearchText}>←</Text>
+            </TouchableOpacity>
+          )}
+          <TextInput
+            style={[styles.searchInput, { flex: 1 }]}
+            placeholder="🔍  Search design # / item / brand — stock & price"
+            placeholderTextColor={colors.textSecondary}
+            value={designQuery}
+            onChangeText={searchDesigns}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        </View>
       </View>
 
       {isSearching ? (
@@ -330,6 +337,23 @@ export default function BrandsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backSearchBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadow.small,
+  },
+  backSearchText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   searchInput: {
     backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border,
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.textPrimary, ...shadow.small,

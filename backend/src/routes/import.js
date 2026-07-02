@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const db = require('../db/database');
-const { requireAdmin } = require('../middleware/auth');
+// No requireAdmin import needed
 const storage = require('../services/storage');
 const { extractDesignsFromPhotos } = require('../services/bulkImport');
 
@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 
 // Photos are stored immediately so they can be attached on save without re-upload.
 // Pass skip_ocr=true (single-piece Quick mode) to just upload and return photo paths
 // with no OCR — the client assigns sequential numbers + shared details itself.
-router.post('/analyze', requireAdmin, upload.array('photos', 50), async (req, res) => {
+router.post('/analyze', upload.array('photos', 50), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
 
   // Save each photo to storage; keep the buffer for OCR
@@ -50,7 +50,7 @@ router.post('/analyze', requireAdmin, upload.array('photos', 50), async (req, re
 
 // POST /api/import/save — bulk-create designs under an item from confirmed drafts.
 // Each draft already has a photo_path (uploaded during /analyze).
-router.post('/save', requireAdmin, express.json(), (req, res) => {
+router.post('/save', express.json(), (req, res) => {
   const { item_id, designs } = req.body;
   if (!item_id) return res.status(400).json({ error: 'item_id is required' });
   if (!Array.isArray(designs) || !designs.length) return res.status(400).json({ error: 'No designs to save' });

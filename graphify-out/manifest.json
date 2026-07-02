@@ -75,8 +75,8 @@
     "semantic_hash": "300a6eb50ed7b9724be42c20fcc3422d"
   },
   "backend/src/routes/import.js": {
-    "mtime": 1782976099.0237353,
-    "ast_hash": "f30cd54e17c97e00263d648433736d21",
+    "mtime": 1782980439.381744,
+    "ast_hash": "260d77527fa33c887e6d0e122b445547",
     "semantic_hash": ""
   },
   "backend/src/routes/items.js": {
@@ -230,8 +230,8 @@
     "semantic_hash": ""
   },
   "mobile/src/screens/BrandsScreen.js": {
-    "mtime": 1782968889.411247,
-    "ast_hash": "29d8cea59cbb314edb79d4fdfd065e8d",
+    "mtime": 1782980466.3086472,
+    "ast_hash": "ba92b7ef6d365dd813af586ecf940464",
     "semantic_hash": ""
   },
   "mobile/src/screens/BulkImportScreen.js": {
@@ -265,8 +265,8 @@
     "semantic_hash": "b2e3108fb9a73a45c3537e0c26e62bde"
   },
   "mobile/src/screens/MoreScreen.js": {
-    "mtime": 1782905884.75709,
-    "ast_hash": "5f95ff184d78fe190ca6e4365ddfea6a",
+    "mtime": 1782980450.4822104,
+    "ast_hash": "3807f8fba30ff64c8af2345d2dab8334",
     "semantic_hash": ""
   },
   "mobile/src/screens/OrdersScreen.js": {
