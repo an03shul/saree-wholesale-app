@@ -141,10 +141,14 @@ function buildCatalogHtml({ brand, items, baseUrl, shopPhone, allFabrics, filter
 </div>
 
 <script>
-var _designId, _baseUrl = '${baseUrl}';
+var _designId, _baseUrl = '${baseUrl}', _shopPhone = '${shopPhone}';
+var _itemName, _designNo, _rate;
 
 function openOrder(designId, itemName, designNo, rate) {
   _designId = designId;
+  _itemName = itemName;
+  _designNo = designNo;
+  _rate = rate;
   document.getElementById('modalContent').innerHTML = \`
     <h3>Order — Design \${designNo}</h3>
     <p class="sub">\${itemName} · ₹\${rate}</p>
@@ -179,14 +183,36 @@ async function submitOrder() {
       body: JSON.stringify({ design_id: _designId, customer_name: name, customer_phone: phone || null, quantity: qty, source: 'catalog' })
     });
     if (!resp.ok) throw new Error('failed');
-    document.getElementById('modalContent').innerHTML = \`
-      <div class="success">
-        <div class="tick">✅</div>
-        <h3>Order Placed!</h3>
-        <p>Thank you, \${name}. We'll contact you\${phone ? ' on WhatsApp' : ''} shortly.</p>
-      </div>
-    \`;
-    setTimeout(closeOrder, 3000);
+    
+    if (_shopPhone) {
+      document.getElementById('modalContent').innerHTML = \`
+        <div class="success">
+          <div class="tick">✅</div>
+          <h3>Order Confirmed!</h3>
+          <p>Opening WhatsApp to send order details...</p>
+        </div>
+      \`;
+      var text = "Hello! I would like to place an order from your catalog:\\n\\n" +
+                 "• *Item*: " + _itemName + "\\n" +
+                 "• *Design*: #" + _designNo + "\\n" +
+                 "• *Rate*: ₹" + _rate + "\\n" +
+                 "• *Quantity*: " + qty + " set(s)\\n" +
+                 "• *My Name*: " + name + (phone ? " (" + phone + ")" : "");
+      
+      var waUrl = "https://wa.me/" + _shopPhone + "?text=" + encodeURIComponent(text);
+      setTimeout(function() {
+        window.location.href = waUrl;
+      }, 1500);
+    } else {
+      document.getElementById('modalContent').innerHTML = \`
+        <div class="success">
+          <div class="tick">✅</div>
+          <h3>Order Placed!</h3>
+          <p>Thank you, \${name}. We'll contact you\${phone ? ' on WhatsApp' : ''} shortly.</p>
+        </div>
+      \`;
+      setTimeout(closeOrder, 3000);
+    }
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Confirm Order';
