@@ -117,10 +117,25 @@ activity_log               (audit trail)
 
 **Audit logging.** The `logActivity(action, getDetails)` middleware (in `middleware/auth.js`) writes to `activity_log`, viewable in **Admin Panel → Logs** (admin-only). It is wired onto the contacts routes: **Added / Edited / Deleted contact** and **Imported contacts**, each with the contact `name · phone` in `details`. The DELETE route looks up the contact and returns it in the response body (`{ success, deleted }`) so the middleware — which reads `res.json`'s body *after* the row is gone — can still name what was removed. Add more audit entries the same way: attach `logActivity(...)` as route middleware and return anything it needs in the response body.
 
-### Role permissions (staff vs admin)
-- **Staff can:** add items, add designs, add/edit/**delete** contacts (contacts have no admin gate on either the API or the UI).
-- **Admin only:** create/edit/delete brands, edit/delete items, edit/delete/stock-toggle designs, delete orders, bulk contact import, everything under `/api/admin/*`, and viewing the activity log. These are enforced with `requireAdmin` on the backend **and** `isAdmin` gates in the UI.
+### Role permissions (admin / staff / staff2)
+There are three roles (the `users.role` CHECK allows `'admin','staff','staff2'`; the third was added via a table-rebuild migration in `db/database.js` since SQLite can't ALTER a CHECK). Admin creates users and picks the role in **Admin Panel → Staff**.
+- **Staff can:** add items, add designs, add/edit/**delete** contacts (contacts have no admin gate on either the API or the UI). Full app (Catalog, Orders, Tasks, Send, More).
+- **staff2 (limited):** a locked-down role. Mobile shows only 3 tabs — **Rates** (`RatesScreen`, the home search bar only — price + stock, no catalog browsing), **Tasks** (own assigned tasks), **Orders** (view + change status; the add-order FAB is hidden via `canAddOrders`). No Send/More/Admin. Logout is a header button (`HeaderLogoutButton` in `App.js`) since there's no More tab. Routed by `Staff2App` in `App.js` keyed on `user.role === 'staff2'`.
+- **Both staff & staff2 are single-session** — `routes/auth.js` login deletes prior sessions for any non-admin role (`if (user.role !== 'admin')`).
+- **Admin only:** create/edit/delete brands, edit/delete items, edit/delete/stock-toggle designs, delete orders, bulk contact import, everything under `/api/admin/*`, viewing the activity log, and **assigning/deleting tasks**. Enforced with `requireAdmin` on the backend **and** `isAdmin` gates in the UI.
 - **Known gap:** the backend `POST` routes for brands/items/designs are *not* `requireAdmin` — only the mobile UI hides those add buttons (brand-add is UI-gated; item/design add is intentionally open to staff). A staff user could still create brands via the raw API. Add `requireAdmin` to those POSTs if you want defense in depth.
+
+### Tasks (assignment)
+`tasks` table + `routes/tasks.js` (mounted at `/api/tasks`, login-gated). Admin assigns a task by tagging one or more staff/staff2 users (the mobile create modal in `TasksScreen.js` multi-selects users — with a **Select all** shortcut — and POSTs one task **per** tagged user, so each assignee gets their own row). `GET /api/tasks` returns all tasks for admin (with assignee name + any linked design/order), or only `assigned_to = me` for staff/staff2; results are ordered pending-first then by soonest `due_date`. Endpoints:
+- `POST /` — create (admin). Fires a **targeted** push to the assignee via `pushNotify.notifyUser` (see below), not the whole shop.
+- `PUT /:id` — edit / reassign (admin). Re-notifies if the assignee changed.
+- `POST /:id/complete` — mark done with an optional `completion_note`. Allowed for admin **or the assignee**.
+- `PATCH /:id/reopen` — back to pending, clears the completion record. Admin or assignee.
+- `DELETE /:id` — admin.
+
+Task rows carry `due_date` (day-granular; the card shows Overdue/Due-today/Due-<date> badges computed client-side), optional `design_id` / `order_id` links (shown as chips), and a `completion_note`. Assign/edit/delete are written to `activity_log`. The **Tasks** tab is visible to all roles (admin sees the assign FAB + everyone's tasks with completed-by/at; staff/staff2 see only their own). A `TasksBadgeProvider` in `App.js` polls the pending count (30s) and drives the bottom-tab badge; `TasksScreen` calls its `refresh()` after every mutation.
+
+**Targeted push.** `push_subscriptions` has a `user_id` column (set in `routes/push.js` `/subscribe` by resolving the Bearer token — the route is public-mounted so it reads the token manually). `services/pushNotify.js` exposes `notifyAll` (everyone) and `notifyUser(userId, payload)` (that user's devices only); task assignments use `notifyUser`. All no-op without VAPID keys.
 
 ## Graphify Knowledge Graph
 

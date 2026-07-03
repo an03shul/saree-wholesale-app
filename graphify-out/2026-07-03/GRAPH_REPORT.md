@@ -1,13 +1,18 @@
-# Graph Report - .  (2026-07-02)
+# Graph Report - gopiram-saree  (2026-07-03)
 
 ## Corpus Check
-- 4 files · ~70,533 words
+- 78 files · ~71,083 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 557 nodes · 756 edges · 48 communities (40 shown, 8 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.83)
+- 570 nodes · 816 edges · 48 communities (42 shown, 6 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `2ebf5567`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Project Documentation (CLAUDE.md)|Project Documentation (CLAUDE.md)]]
@@ -55,39 +60,40 @@
 - [[_COMMUNITY_Mobile Expo Notes|Mobile Expo Notes]]
 - [[_COMMUNITY_Graphify Rules|Graphify Rules]]
 - [[_COMMUNITY_Graphify Workflow|Graphify Workflow]]
+- [[_COMMUNITY_Worker Config|Worker Config]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `notify()` - 13 edges
 2. `colors` - 12 edges
 3. `shadow` - 12 edges
-4. `expo` - 10 edges
-5. `useUser()` - 9 edges
-6. `requireAdmin()` - 8 edges
-7. `web` - 8 edges
-8. `setAuthToken()` - 8 edges
-9. `getImageUrl()` - 8 edges
+4. `useUser()` - 11 edges
+5. `expo` - 10 edges
+6. `getImageUrl()` - 9 edges
+7. `requireAdmin()` - 8 edges
+8. `web` - 8 edges
+9. `setAuthToken()` - 8 edges
 10. `getThumbUrl()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `sendDesignUpdates()` --calls--> `getWatermarkedPath()`  [EXTRACTED]
-  backend/src/services/whatsapp.js → backend/src/services/watermark.js
-- `ItemsScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/ItemsScreen.js → mobile/App.js
-- `MoreScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/MoreScreen.js → mobile/App.js
-- `OrdersScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/OrdersScreen.js → mobile/App.js
-- `ScanScreen()` --calls--> `getImageUrl()`  [EXTRACTED]
-  mobile/src/screens/ScanScreen.js → mobile/src/api/client.js
+- `viaHttp()` --calls--> `fetch()`  [INFERRED]
+  backend/scripts/import-contacts.js → mobile/broken-violet-21ab/src/index.js
+- `subscribeToPush()` --calls--> `fetch()`  [INFERRED]
+  mobile/src/utils/pushSubscription.js → mobile/broken-violet-21ab/src/index.js
+- `DesignsScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/DesignsScreen.js → mobile/App.js
+- `buildShareFile()` --calls--> `fetch()`  [INFERRED]
+  mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
+- `buildShareFile()` --calls--> `getWmUrl()`  [EXTRACTED]
+  mobile/src/utils/share.js → mobile/src/api/client.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (48 total, 8 thin omitted)
+## Communities (48 total, 6 thin omitted)
 
 ### Community 0 - "Project Documentation (CLAUDE.md)"
-Cohesion: 0.06
-Nodes (41): Alert.alert No-Op on Web, src/api/client.js (Axios API Client), app.js (Backend Entry Point), Audit Logging (logActivity middleware), middleware/auth.js (Auth), Backend (Node/Express/SQLite), Bulk Contact Import (import-contacts.js), routes/catalog.js (Public Catalog Page) (+33 more)
+Cohesion: 0.21
+Nodes (12): Alert.alert No-Op on Web, src/api/client.js (Axios API Client), Backend, Commands, Expo SDK 56, Gopiram Saree System, Graphify Knowledge Graph, AI Identify (routes/identify.js + services/identify.js) (+4 more)
 
 ### Community 1 - "Mobile Package Dependencies"
 Cohesion: 0.06
@@ -99,11 +105,11 @@ Nodes (26): db, express, { getStockForDesigns }, router, { sendDesignUpdates }, 
 
 ### Community 3 - "Mobile App Shell & Navigation"
 Cohesion: 0.10
-Nodes (20): authApi, loadStoredToken(), setAuthToken(), App(), headerStyle, headerTitleStyle, Stack, Tab (+12 more)
+Nodes (18): App(), headerStyle, headerTitleStyle, Stack, Tab, UserContext, useUser(), AdminScreen() (+10 more)
 
 ### Community 4 - "Storage & Bulk Import Pipeline"
-Cohesion: 0.08
-Nodes (21): path, TEMP_UPLOADS_DIR, db, express, { extractDesignsFromPhotos }, multer, router, storage (+13 more)
+Cohesion: 0.06
+Nodes (29): path, TEMP_UPLOADS_DIR, db, express, multer, path, { requireAdmin }, router (+21 more)
 
 ### Community 5 - "Backend Package Dependencies"
 Cohesion: 0.08
@@ -115,30 +121,30 @@ Nodes (23): backgroundColor, backgroundImage, foregroundImage, monochromeImage, 
 
 ### Community 7 - "Catalog Screens & Theme"
 Cohesion: 0.15
-Nodes (15): brandsApi, getCatalogUrl(), importApi, itemsApi, ordersApi, statsApi, colors, modalBase (+7 more)
+Nodes (13): brandsApi, getCatalogUrl(), ordersApi, statsApi, ImageEditorModal(), styles, colors, modalBase (+5 more)
 
 ### Community 8 - "App Entry & Thumbnail Service"
-Cohesion: 0.10
-Nodes (16): getThumbBuffer(), inFlight, { Jimp }, path, queue, storage, app, cors (+8 more)
+Cohesion: 0.06
+Nodes (32): db, express, fs, { getWatermarkedBuffer }, path, PDFDocument, router, getThumbBuffer() (+24 more)
 
 ### Community 9 - "PDF Export & Watermarking"
-Cohesion: 0.12
-Nodes (16): db, express, fs, { getWatermarkedBuffer }, path, PDFDocument, router, fonts (+8 more)
+Cohesion: 0.20
+Nodes (8): Architecture, Backend (`backend/src/`), Environment Variables, Expo Version Note, Mobile (`mobile/src/`), Project Overview, Role permissions (staff vs admin), Search, contacts import & audit logging
 
 ### Community 10 - "Mobile API Client & Screens"
-Cohesion: 0.18
-Nodes (13): api, contactsApi, getCustomCatalogUrl(), getThumbUrl(), identifyApi, itemsApi_stock, tallyApi, whatsappLink() (+5 more)
+Cohesion: 0.15
+Nodes (17): adminApi, api, authApi, contactsApi, getCustomCatalogUrl(), itemsApi_stock, loadStoredToken(), setAuthToken() (+9 more)
 
 ### Community 11 - "Database & Catalog Metadata"
 Cohesion: 0.12
 Nodes (13): crypto, { DatabaseSync }, db, fabricCount, itemsInfo, path, tmplExists, userCount (+5 more)
 
 ### Community 12 - "Designs & Send Screens"
-Cohesion: 0.16
-Nodes (10): fabricsApi, getPdfUrl(), sendApi, workCategoriesApi, DesignsScreen(), styles, PRICE_PRESETS, SendScreen() (+2 more)
+Cohesion: 0.14
+Nodes (18): fabricsApi, getPdfUrl(), getWmUrl(), importApi, itemsApi, sendApi, workCategoriesApi, BulkImportScreen() (+10 more)
 
 ### Community 13 - "Authentication & Rate Limiting"
-Cohesion: 0.16
+Cohesion: 0.18
 Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
 
 ### Community 14 - "AI Saree Identification"
@@ -146,8 +152,8 @@ Cohesion: 0.15
 Nodes (11): express, { identifyDesign }, multer, router, upload, Anthropic, client, db (+3 more)
 
 ### Community 15 - "Admin & Orders Screen Utils"
-Cohesion: 0.21
-Nodes (9): adminApi, settingsApi, AdminScreen(), styles, STATUS_COLORS, STATUS_LABELS, styles, parseServerDate() (+1 more)
+Cohesion: 0.20
+Nodes (8): getThumbUrl(), identifyApi, IdentifyScreen(), styles, STATUS_COLORS, STATUS_LABELS, styles, parseServerDate()
 
 ### Community 16 - "Railway Deployment Config"
 Cohesion: 0.18
@@ -158,8 +164,8 @@ Cohesion: 0.18
 Nodes (9): requireAdmin(), db, express, { requireAdmin }, router, db, express, { requireAdmin } (+1 more)
 
 ### Community 18 - "Orders & Push Notifications"
-Cohesion: 0.20
-Nodes (9): requireAuth(), db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll() (+1 more)
+Cohesion: 0.22
+Nodes (8): db, express, { notifyAll }, { requireAuth, requireAdmin }, router, db, notifyAll(), webpush
 
 ### Community 19 - "Tally Sync Agent Package"
 Cohesion: 0.18
@@ -174,24 +180,24 @@ Cohesion: 0.20
 Nodes (9): background_color, description, display, icons, name, orientation, short_name, start_url (+1 more)
 
 ### Community 22 - "Designs Route (Upload)"
-Cohesion: 0.20
-Nodes (8): db, express, multer, path, { requireAdmin }, router, storage, upload
+Cohesion: 0.29
+Nodes (8): app.js (Backend Entry Point), Deployment, ⚠️ Deployment gotchas (learned the hard way), Litestream (DB Backup + R2 Credentials), Cloudflare Pages Auto-Build Clobbers Production, No functions/ Directory in Pages Project, Cloudflare R2 (Object Storage), services/storage.js (Storage Abstraction)
 
 ### Community 23 - "Tally Sync Agent Docs"
 Cohesion: 0.20
 Nodes (9): 1. Install Node.js, 2. Copy this folder, 3. Create the settings file, 4. Turn on Tally's connector (one time, in Tally), 5. Start the agent, Gopiram Tally Sync Agent, Keeping it running automatically (optional but recommended), One-time setup (on the shop PC) (+1 more)
 
 ### Community 24 - "Contact Import Script"
-Cohesion: 0.22
-Nodes (6): contacts, fs, path, seedPath, tokenArg, useHttp
+Cohesion: 0.12
+Nodes (11): contacts, fs, path, seedPath, tokenArg, useHttp, viaHttp(), fetch() (+3 more)
 
 ### Community 25 - "Tally Sync Agent Logic"
 Cohesion: 0.28
 Nodes (6): axios, CLOUD_URL, readTallyCustomers(), readTallyStock(), syncOnce(), xml2js
 
 ### Community 26 - "Design Share Utilities"
-Cohesion: 0.43
-Nodes (7): getWmUrl(), buildShareCard(), buildShareFile(), downloadFiles(), notify(), shareDesignsList(), tryNativeShare()
+Cohesion: 0.29
+Nodes (7): Bulk Contact Import (import-contacts.js), Contact List Search (client-side filter), Data model, Design Search (GET /api/designs/search), routes/tally.js (Tally XML LAN query), routes/tallySync.js (Windows sync agent push), Tally Integration
 
 ### Community 27 - "Cloudflare Workers Docs"
 Cohesion: 0.25
@@ -202,8 +208,8 @@ Cohesion: 0.29
 Nodes (5): logActivity(), db, express, { requireAdmin, logActivity }, router
 
 ### Community 29 - "Admin Panel Routes"
-Cohesion: 0.29
-Nodes (5): crypto, db, express, { requireAuth, requireAdmin }, router
+Cohesion: 0.25
+Nodes (6): requireAuth(), crypto, db, express, { requireAuth, requireAdmin }, router
 
 ### Community 30 - "Brands Route"
 Cohesion: 0.29
@@ -214,12 +220,20 @@ Cohesion: 0.29
 Nodes (6): fs, html, indexPath, path, swDst, swSrc
 
 ### Community 32 - "QR Scan Screen"
-Cohesion: 0.40
-Nodes (4): designsApi, getImageUrl(), ScanScreen(), styles
+Cohesion: 0.33
+Nodes (5): designsApi, getImageUrl(), DesignsScreen(), ScanScreen(), styles
+
+### Community 33 - "Image Crop/Rotate Editor"
+Cohesion: 0.38
+Nodes (7): routes/catalog.js (Public Catalog Page), Image Pipeline, Escape Client-Side Template Literals, services/thumbnail.js, services/watermark.js, Watermark Serial Queue, services/whatsapp.js (Meta Business API)
 
 ### Community 34 - "Public Catalog Page"
 Cohesion: 0.33
 Nodes (4): db, express, path, router
+
+### Community 36 - "Cloudflare Worker Entry"
+Cohesion: 0.33
+Nodes (6): Audit Logging (logActivity middleware), middleware/auth.js (Auth), Role Permissions (staff vs admin), Known Gap: Unprotected POST Routes, routes/auth.js (Login), Staff Single-Session Policy
 
 ### Community 37 - "Push Subscription Route"
 Cohesion: 0.50
@@ -233,25 +247,29 @@ Nodes (3): db, express, router
 Cohesion: 0.50
 Nodes (3): db, express, router
 
+### Community 47 - "Worker Config"
+Cohesion: 0.50
+Nodes (4): db/database.js (SQLite DatabaseSync), No Migration Framework (ALTER TABLE try/catch), parseServerDate (mobile/src/utils/date.js), SQLite CURRENT_TIMESTAMP UTC Parsing
+
 ## Knowledge Gaps
-- **304 isolated node(s):** `docker-entrypoint.sh script`, `$schema`, `builder`, `dockerfilePath`, `startCommand` (+299 more)
+- **311 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+306 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `requireAuth()` connect `Orders & Push Notifications` to `App Entry & Thumbnail Service`, `Admin Panel Routes`, `Authentication & Rate Limiting`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `getWatermarkedBuffer()` connect `PDF Export & Watermarking` to `App Entry & Thumbnail Service`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **What connects `docker-entrypoint.sh script`, `$schema`, `builder` to the rest of the system?**
-  _312 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Project Documentation (CLAUDE.md)` be split into smaller, more focused modules?**
-  _Cohesion score 0.05853658536585366 - nodes in this community are weakly interconnected._
+- **Why does `fetch()` connect `Contact Import Script` to `Mobile App Shell & Navigation`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `subscribeToPush()` connect `Mobile App Shell & Navigation` to `Contact Import Script`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
+  _319 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Mobile Package Dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
 - **Should `Tally & WhatsApp Send Integration` be split into smaller, more focused modules?**
   _Cohesion score 0.09462365591397849 - nodes in this community are weakly interconnected._
 - **Should `Mobile App Shell & Navigation` be split into smaller, more focused modules?**
-  _Cohesion score 0.10098522167487685 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10052910052910052 - nodes in this community are weakly interconnected._
+- **Should `Storage & Bulk Import Pipeline` be split into smaller, more focused modules?**
+  _Cohesion score 0.059743954480796585 - nodes in this community are weakly interconnected._

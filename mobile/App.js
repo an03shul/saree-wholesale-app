@@ -4,7 +4,7 @@ export const useUser = () => useContext(UserContext);
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Text, ActivityIndicator, View, Image } from 'react-native';
+import { Text, ActivityIndicator, View, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import BrandsScreen from './src/screens/BrandsScreen';
@@ -20,8 +20,53 @@ import OrdersScreen from './src/screens/OrdersScreen';
 import MoreScreen from './src/screens/MoreScreen';
 import BulkImportScreen from './src/screens/BulkImportScreen';
 import CreateFormScreen from './src/screens/CreateFormScreen';
-import { authApi, setAuthToken, loadStoredToken } from './src/api/client';
+import TasksScreen from './src/screens/TasksScreen';
+import RatesScreen from './src/screens/RatesScreen';
+import { authApi, setAuthToken, loadStoredToken, tasksApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
+import { confirmAction } from './src/utils/share';
+
+// Shares the count of pending tasks (for the tab badge) and a refresh() the
+// Tasks screen calls after any change. Polls every 30s so a newly assigned task
+// shows up without reopening the app.
+const TasksBadgeContext = createContext({ pending: 0, refresh: () => {} });
+export const useTasksBadge = () => useContext(TasksBadgeContext);
+
+function TasksBadgeProvider({ children }) {
+  const [pending, setPending] = useState(0);
+  const refresh = React.useCallback(async () => {
+    try {
+      const { data } = await tasksApi.getAll();
+      setPending(data.filter(t => t.status === 'pending').length);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 30000);
+    return () => clearInterval(id);
+  }, [refresh]);
+  return <TasksBadgeContext.Provider value={{ pending, refresh }}>{children}</TasksBadgeContext.Provider>;
+}
+
+// Shared logout flow (used by the header button for staff2, who have no More tab).
+async function doLogout(onLogout) {
+  try { await authApi.logout(); } catch {}
+  await AsyncStorage.removeItem('auth_token');
+  await AsyncStorage.removeItem('auth_user');
+  setAuthToken(null);
+  onLogout();
+}
+
+function HeaderLogoutButton({ onLogout }) {
+  return (
+    <TouchableOpacity
+      onPress={() => confirmAction('Log Out', 'Are you sure?', () => doLogout(onLogout), 'Log Out')}
+      style={{ marginRight: 14, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.18)' }}
+    >
+      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Log Out</Text>
+    </TouchableOpacity>
+  );
+}
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -71,7 +116,9 @@ function MoreStack({ user, onLogout }) {
 }
 
 function MainApp({ user, onLogout }) {
-  const icons = { Catalog: '🧵', Orders: '📋', Send: '📤', More: '☰' };
+  const icons = { Catalog: '🧵', Orders: '📋', Tasks: '✅', Send: '📤', More: '☰' };
+  const { pending } = useTasksBadge();
+  const taskBadge = pending > 0 ? pending : undefined;
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <NavigationContainer>
@@ -86,10 +133,42 @@ function MainApp({ user, onLogout }) {
         >
           <Tab.Screen name="Catalog" component={CatalogStack} />
           <Tab.Screen name="Orders" component={OrdersScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Orders & Inquiries' }} />
+          <Tab.Screen name="Tasks" component={TasksScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: user.role === 'admin' ? 'Tasks' : 'My Tasks', tabBarBadge: taskBadge }} />
           <Tab.Screen name="Send" component={SendScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Send Updates' }} />
           <Tab.Screen name="More">
             {() => <MoreStack user={user} onLogout={onLogout} />}
           </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+      <BrandFooter />
+    </View>
+  );
+}
+
+// Limited navigator for the 'staff2' role — rates (search only), tasks and
+// order inquiries. No catalog browsing, sending, or admin tools. A header
+// Log Out button replaces the More tab.
+function Staff2App({ user, onLogout }) {
+  const icons = { Rates: '🏷️', Tasks: '✅', Orders: '📋' };
+  const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
+  const baseOpts = { headerShown: true, headerStyle, headerTintColor, headerTitleStyle, headerRight };
+  const { pending } = useTasksBadge();
+  const taskBadge = pending > 0 ? pending : undefined;
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>,
+            tabBarActiveTintColor: '#8B1A2B',
+            tabBarInactiveTintColor: '#B0A0A5',
+            tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#EDE7E2' },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen name="Rates" component={RatesScreen} options={{ ...baseOpts, title: 'Rates' }} />
+          <Tab.Screen name="Tasks" component={TasksScreen} options={{ ...baseOpts, title: 'My Tasks', tabBarBadge: taskBadge }} />
+          <Tab.Screen name="Orders" component={OrdersScreen} options={{ ...baseOpts, title: 'Order Inquiries' }} />
         </Tab.Navigator>
       </NavigationContainer>
       <BrandFooter />
@@ -147,7 +226,11 @@ export default function App() {
   );
   return (
     <UserContext.Provider value={user}>
-      <MainApp user={user} onLogout={handleLogout} />
+      <TasksBadgeProvider>
+        {user.role === 'staff2'
+          ? <Staff2App user={user} onLogout={handleLogout} />
+          : <MainApp user={user} onLogout={handleLogout} />}
+      </TasksBadgeProvider>
     </UserContext.Provider>
   );
 }

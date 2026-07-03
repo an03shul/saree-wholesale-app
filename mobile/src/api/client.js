@@ -86,6 +86,16 @@ export const ordersApi = {
   delete: (id) => api.delete(`/api/orders/${id}`),
 };
 
+export const tasksApi = {
+  getAll: () => api.get('/api/tasks'),
+  create: (data) => api.post('/api/tasks', data),
+  update: (id, data) => api.put(`/api/tasks/${id}`, data),
+  // mark done with an optional { completion_note }
+  complete: (id, payload) => api.post(`/api/tasks/${id}/complete`, payload),
+  reopen: (id) => api.patch(`/api/tasks/${id}/reopen`),
+  delete: (id) => api.delete(`/api/tasks/${id}`),
+};
+
 export const contactsApi = {
   getAll: () => api.get('/api/contacts'),
   create: (data) => api.post('/api/contacts', data),

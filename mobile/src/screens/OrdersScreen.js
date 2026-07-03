@@ -21,6 +21,8 @@ const STATUS_LABELS = ['pending', 'confirmed', 'dispatched', 'cancelled'];
 export default function OrdersScreen({ navigation }) {
   const user = useUser();
   const isAdmin = user?.role === 'admin';
+  // staff2 is view + update-status only — no creating orders.
+  const canAddOrders = user?.role !== 'staff2';
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -217,9 +219,11 @@ export default function OrdersScreen({ navigation }) {
         }}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      {canAddOrders && (
+        <TouchableOpacity style={styles.fab} onPress={openAddModal}>
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Add Order Modal */}
       <Modal visible={addModal} transparent animationType="slide">

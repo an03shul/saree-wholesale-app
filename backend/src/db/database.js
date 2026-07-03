@@ -66,7 +66,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     pin_hash TEXT NOT NULL,
-    role TEXT CHECK(role IN ('admin','staff')) DEFAULT 'staff',
+    role TEXT CHECK(role IN ('admin','staff','staff2')) DEFAULT 'staff',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -85,7 +85,61 @@ db.exec(`
     details TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    assigned_to INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    assigned_by_name TEXT,
+    status TEXT DEFAULT 'pending',
+    due_date DATETIME,
+    design_id INTEGER REFERENCES designs(id) ON DELETE SET NULL,
+    order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+    completion_note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+  );
 `);
+
+// tasks columns added after the feature shipped (idempotent for existing DBs).
+try { db.exec('ALTER TABLE tasks ADD COLUMN due_date DATETIME'); } catch {}
+try { db.exec('ALTER TABLE tasks ADD COLUMN design_id INTEGER REFERENCES designs(id) ON DELETE SET NULL'); } catch {}
+try { db.exec('ALTER TABLE tasks ADD COLUMN order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL'); } catch {}
+try { db.exec('ALTER TABLE tasks ADD COLUMN completion_note TEXT'); } catch {}
+
+// Expand users.role CHECK to allow the limited 'staff2' role on databases that
+// were created before it existed. SQLite can't ALTER a CHECK constraint, so the
+// table is rebuilt. Guard on the schema text so this runs at most once, and skip
+// it for fresh DBs (whose CREATE above already includes 'staff2'). foreign_keys
+// is turned off and legacy_alter_table on so the RENAME doesn't rewrite the
+// sessions/activity_log/tasks foreign keys to point at the temp table.
+try {
+  const usersInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+  if (usersInfo && usersInfo.sql && usersInfo.sql.includes('CHECK') && !usersInfo.sql.includes("'staff2'")) {
+    db.exec('PRAGMA foreign_keys = OFF');
+    db.exec('PRAGMA legacy_alter_table = ON');
+    db.exec(`
+      ALTER TABLE users RENAME TO users_old;
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        pin_hash TEXT NOT NULL,
+        role TEXT CHECK(role IN ('admin','staff','staff2')) DEFAULT 'staff',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO users SELECT * FROM users_old;
+      DROP TABLE users_old;
+    `);
+    db.exec('PRAGMA legacy_alter_table = OFF');
+    db.exec('PRAGMA foreign_keys = ON');
+    console.log("Migrated users table to allow 'staff2' role");
+  }
+} catch (e) {
+  console.error('users role migration failed:', e.message);
+  try { db.exec('PRAGMA legacy_alter_table = OFF'); db.exec('PRAGMA foreign_keys = ON'); } catch {}
+}
 
 // Migrations for existing DBs
 try { db.exec('ALTER TABLE items ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE'); } catch {}
@@ -143,10 +197,14 @@ try {
       endpoint TEXT UNIQUE NOT NULL,
       p256dh TEXT NOT NULL,
       auth TEXT NOT NULL,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 } catch {}
+// Associate each subscription with a user so task assignments notify only the
+// assignee's devices instead of everyone (idempotent for existing DBs).
+try { db.exec('ALTER TABLE push_subscriptions ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE'); } catch {}
 // Default WhatsApp caption template
 const tmplExists = db.prepare("SELECT key FROM settings WHERE key='whatsapp_template'").get();
 if (!tmplExists) {

@@ -24,8 +24,9 @@ router.post('/users', (req, res) => {
   if (String(pin).length < 4) return res.status(400).json({ error: 'PIN must be at least 4 digits' });
 
   try {
+    const safeRole = ['admin', 'staff', 'staff2'].includes(role) ? role : 'staff';
     const result = db.prepare('INSERT INTO users (username, pin_hash, role) VALUES (?,?,?)')
-      .run(username.trim().toLowerCase(), hashPin(pin), role === 'admin' ? 'admin' : 'staff');
+      .run(username.trim().toLowerCase(), hashPin(pin), safeRole);
     db.prepare('INSERT INTO activity_log (user_id, username, action, details) VALUES (?,?,?,?)')
       .run(req.user.id, req.user.username, 'Added user', `username: ${username}, role: ${role || 'staff'}`);
     res.status(201).json({ id: result.lastInsertRowid, username, role: role || 'staff' });

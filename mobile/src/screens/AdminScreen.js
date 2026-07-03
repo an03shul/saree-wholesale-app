@@ -255,13 +255,16 @@ export default function AdminScreen({ user, onLogout }) {
             <TextInput style={styles.input} placeholder="PIN (min 4 digits)" value={form.pin}
               onChangeText={v => setForm(f => ({ ...f, pin: v }))} keyboardType="number-pad" secureTextEntry maxLength={8} />
             <View style={styles.roleRow}>
-              {['staff', 'admin'].map(r => (
+              {['staff', 'staff2', 'admin'].map(r => (
                 <TouchableOpacity key={r} style={[styles.roleBtn, form.role === r && styles.roleBtnActive]}
                   onPress={() => setForm(f => ({ ...f, role: r }))}>
                   <Text style={form.role === r ? { color: '#fff' } : {}}>{r}</Text>
                 </TouchableOpacity>
               ))}
             </View>
+            {form.role === 'staff2' && (
+              <Text style={styles.roleHint}>staff2 can only see rates, tasks & order inquiries.</Text>
+            )}
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.btnSecondary} onPress={() => setAddModal(false)}><Text>Cancel</Text></TouchableOpacity>
               <TouchableOpacity style={styles.btnPrimary} onPress={addUser}><Text style={{ color: '#fff' }}>Add</Text></TouchableOpacity>
@@ -337,7 +340,8 @@ const styles = StyleSheet.create({
   modal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, color: '#2c1810' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 12 },
-  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  roleHint: { fontSize: 12, color: '#888', marginBottom: 16, fontStyle: 'italic' },
   roleBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#ddd' },
   roleBtnActive: { backgroundColor: '#c0392b', borderColor: '#c0392b' },
   btnRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },

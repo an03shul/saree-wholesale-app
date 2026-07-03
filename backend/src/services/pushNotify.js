@@ -9,9 +9,7 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-async function notifyAll(payload) {
-  if (!process.env.VAPID_PUBLIC_KEY) return;
-  const subs = db.prepare('SELECT * FROM push_subscriptions').all();
+async function sendToSubs(subs, payload) {
   const dead = [];
   for (const sub of subs) {
     try {
@@ -30,4 +28,18 @@ async function notifyAll(payload) {
   }
 }
 
-module.exports = { notifyAll };
+// Notify every subscribed device.
+async function notifyAll(payload) {
+  if (!process.env.VAPID_PUBLIC_KEY) return;
+  await sendToSubs(db.prepare('SELECT * FROM push_subscriptions').all(), payload);
+}
+
+// Notify only the given user's devices (used for task assignments so we don't
+// spam the whole shop). No-op if the user has no registered subscriptions.
+async function notifyUser(userId, payload) {
+  if (!process.env.VAPID_PUBLIC_KEY || !userId) return;
+  const subs = db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').all(userId);
+  await sendToSubs(subs, payload);
+}
+
+module.exports = { notifyAll, notifyUser };
