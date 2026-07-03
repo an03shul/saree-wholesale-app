@@ -23,31 +23,38 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/orders — create new order/inquiry
 router.post('/', (req, res) => {
-  const { 
+  const {
     design_id, customer_name, customer_phone, quantity, note, source,
-    design_number, item_name, brand_name
+    design_number, item_name, brand_name, design_ids
   } = req.body;
-  
+
   if (!customer_name) return res.status(400).json({ error: 'customer_name is required' });
   const validSources = ['design_card', 'orders_tab', 'catalog', 'custom_form'];
   const src = validSources.includes(source) ? source : 'orders_tab';
-  
+
+  // Normalize design_ids to a clean comma-separated string of ints (or null)
+  const normalizedDesignIds = (Array.isArray(design_ids) ? design_ids : String(design_ids || '').split(','))
+    .map(id => parseInt(String(id).trim(), 10))
+    .filter(n => !isNaN(n))
+    .join(',') || null;
+
   const result = db.prepare(`
     INSERT INTO orders (
       design_id, customer_name, customer_phone, quantity, note, status, source,
-      design_number, item_name, brand_name
-    ) VALUES (?,?,?,?,?,?,?,?,?,?)
+      design_number, item_name, brand_name, design_ids
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
   `).run(
-    design_id || null, 
-    customer_name.trim(), 
-    customer_phone?.trim() || null, 
-    quantity || 1, 
-    note?.trim() || null, 
-    'pending', 
+    design_id || null,
+    customer_name.trim(),
+    customer_phone?.trim() || null,
+    quantity || 1,
+    note?.trim() || null,
+    'pending',
     src,
     design_number || null,
     item_name || null,
-    brand_name || null
+    brand_name || null,
+    normalizedDesignIds
   );
 
   // Notify all subscribed devices — fire and forget, never block the response

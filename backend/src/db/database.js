@@ -99,6 +99,8 @@ try { db.exec('ALTER TABLE orders ADD COLUMN design_number TEXT'); } catch {}
 try { db.exec('ALTER TABLE orders ADD COLUMN item_name TEXT'); } catch {}
 try { db.exec('ALTER TABLE orders ADD COLUMN brand_name TEXT'); } catch {}
 try { db.exec("ALTER TABLE orders ADD COLUMN source TEXT DEFAULT 'orders_tab'"); } catch {}
+// Comma-separated design ids for multi-design (custom-form) orders
+try { db.exec('ALTER TABLE orders ADD COLUMN design_ids TEXT'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_cache REAL'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_updated_at DATETIME'); } catch {}
 

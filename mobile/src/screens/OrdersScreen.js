@@ -28,6 +28,8 @@ export default function OrdersScreen({ navigation }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [addModal, setAddModal] = useState(false);
   const [statusModal, setStatusModal] = useState(null); // order object
+  const [modalDesigns, setModalDesigns] = useState([]);
+  const [modalDesignsLoading, setModalDesignsLoading] = useState(false);
   const [form, setForm] = useState({ customer_name: '', customer_phone: '', quantity: '1', note: '' });
   const [selectedDesign, setSelectedDesign] = useState(null);
   const [designSearch, setDesignSearch] = useState('');
@@ -50,6 +52,26 @@ export default function OrdersScreen({ navigation }) {
     const unsub = navigation.addListener('focus', load);
     return unsub;
   }, [navigation, load]);
+
+  // Custom-form orders reference multiple designs. Newer orders store them in the
+  // `design_ids` column; older ones only have the ids inside the saved catalog
+  // link (…?ids=1,2,3) in the note. Prefer the column, fall back to the link.
+  const extractDesignIds = (order) => {
+    const parse = (str) => String(str || '').split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n));
+    if (order?.design_ids) return parse(order.design_ids);
+    const m = (order?.note || '').match(/[?&]ids=([\d,]+)/);
+    return m ? parse(m[1]) : [];
+  };
+
+  useEffect(() => {
+    const ids = statusModal?.source === 'custom_form' ? extractDesignIds(statusModal) : [];
+    if (ids.length === 0) { setModalDesigns([]); return; }
+    setModalDesignsLoading(true);
+    designsApi.getByIds(ids)
+      .then(({ data }) => setModalDesigns(data))
+      .catch(() => setModalDesigns([]))
+      .finally(() => setModalDesignsLoading(false));
+  }, [statusModal]);
 
   const createOrder = async () => {
     if (!form.customer_name.trim()) return notify('Required', 'Enter customer name');
@@ -119,7 +141,8 @@ export default function OrdersScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
+      <View style={styles.filterBarWrap}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 4, gap: 4, alignItems: 'center' }}>
         {['all', 'pending', 'confirmed', 'dispatched', 'cancelled'].map(s => {
           const active = statusFilter === s;
           const sc = s === 'all' ? { bg: colors.primary, text: '#fff' } : STATUS_COLORS[s];
@@ -136,9 +159,11 @@ export default function OrdersScreen({ navigation }) {
           );
         })}
       </ScrollView>
+      </View>
       <FlatList
         data={filteredOrders}
         keyExtractor={o => String(o.id)}
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
         ListHeaderComponent={
@@ -267,7 +292,40 @@ export default function OrdersScreen({ navigation }) {
         <View style={modalBase.overlay}>
           <View style={modalBase.sheet}>
             <Text style={modalBase.title}>Update Status</Text>
-            <Text style={{ color: colors.textSecondary, marginBottom: 20 }}>{statusModal?.customer_name}</Text>
+            <Text style={{ color: colors.textSecondary, marginBottom: 16 }}>{statusModal?.customer_name}</Text>
+
+            {statusModal?.source === 'custom_form' && (
+              <View style={styles.designsSection}>
+                <Text style={styles.designsSectionTitle}>
+                  Designs{modalDesigns.length > 0 ? ` (${modalDesigns.length})` : ''}
+                </Text>
+                {modalDesignsLoading ? (
+                  <ActivityIndicator color={colors.primary} style={{ paddingVertical: 16 }} />
+                ) : modalDesigns.length === 0 ? (
+                  <Text style={styles.designsEmpty}>Could not load designs for this inquiry.</Text>
+                ) : (
+                  <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator={false}>
+                    {modalDesigns.map(d => (
+                      <View key={d.id} style={styles.modalDesignRow}>
+                        {d.photo_path ? (
+                          <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.modalDesignThumb} />
+                        ) : (
+                          <View style={[styles.modalDesignThumb, styles.thumbPlaceholder]}>
+                            <Text style={{ fontSize: 18 }}>🛍️</Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.modalDesignName}>Design {d.design_number}</Text>
+                          <Text style={styles.modalDesignSub} numberOfLines={1}>{d.item_name} · {d.brand_name}</Text>
+                          {d.rate != null ? <Text style={styles.modalDesignRate}>₹{d.rate}</Text> : null}
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+
             {STATUS_LABELS.map(s => {
               const sc = STATUS_COLORS[s];
               const active = statusModal?.status === s;
@@ -295,7 +353,7 @@ export default function OrdersScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  filterBar: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
+  filterBarWrap: { flexGrow: 0, flexShrink: 0, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   filterChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
     backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
@@ -323,6 +381,18 @@ const styles = StyleSheet.create({
   note: { fontSize: 12, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start' },
   statusText: { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  designsSection: { marginBottom: 16 },
+  designsSectionTitle: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 },
+  designsEmpty: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic', paddingVertical: 8 },
+  modalDesignRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.background, borderRadius: 12, padding: 10, marginBottom: 8,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  modalDesignThumb: { width: 52, height: 52, borderRadius: 8 },
+  modalDesignName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  modalDesignSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  modalDesignRate: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 3 },
   statusOption: { padding: 16, borderRadius: 12, marginBottom: 8 },
   statusOptionActive: { borderWidth: 2, borderColor: 'transparent' },
   statusOptionText: { fontSize: 15, fontWeight: '700' },

@@ -68,6 +68,7 @@ export const designsApi = {
   getForItem: (itemId) => api.get(`/api/designs/item/${itemId}`),
   search: (q) => api.get('/api/designs/search', { params: { q } }),
   getOne: (id) => api.get(`/api/designs/${id}`),
+  getByIds: (ids) => api.get('/api/designs/batch', { params: { ids: (ids || []).join(',') } }),
   create: (itemId, formData) => api.post(`/api/designs/item/${itemId}`, formData, { timeout: 30000 }),
   update: (id, formData) => api.put(`/api/designs/${id}`, formData, { timeout: 30000 }),
   delete: (id) => api.delete(`/api/designs/${id}`),

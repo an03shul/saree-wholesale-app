@@ -120,8 +120,10 @@ router.get('/:brandId', (req, res) => {
 function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   const designCards = items.flatMap(item =>
     item.designs.map(d => {
+      const wmSrc = d.photo_path ? `/uploads/wm/${path.basename(d.photo_path)}` : '';
+      const thumbSrc = d.photo_path ? `/thumb/${path.basename(d.photo_path)}` : '';
       const photoHtml = d.photo_path
-        ? `<img class="card-img" src="/uploads/wm/${path.basename(d.photo_path)}" alt="Design ${d.design_number}" loading="lazy" onclick="openLightbox('/uploads/wm/${path.basename(d.photo_path)}')"/>`
+        ? `<img class="card-img" src="${wmSrc}" alt="Design ${d.design_number}" loading="lazy" onclick="openLightbox('${wmSrc}')"/>`
         : `<div class="no-photo">No Photo</div>`;
       return `
         <div class="card" id="card-${d.id}">
@@ -131,7 +133,7 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
             <div class="design-no">Design ${d.design_number}</div>
             <div class="rate">₹${d.rate}</div>
             <div class="meta">${d.pcs_per_set} pcs/set${d.fabric_type ? ` • ${d.fabric_type}` : ''}${d.colors ? `<br>${d.colors}` : ''}</div>
-            <button class="order-btn" id="btn-${d.id}" onclick="toggleCart(${d.id},'${item.name.replace(/'/g,"\\'")}','${d.design_number}',${d.rate})">Add to Order</button>
+            <button class="order-btn" id="btn-${d.id}" onclick="toggleCart(${d.id},'${item.name.replace(/'/g,"\\'")}','${d.design_number}',${d.rate},'${thumbSrc}')">Add to Order</button>
           </div>
         </div>`;
     })
@@ -189,6 +191,8 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
   .cart-list{max-height:200px;overflow-y:auto;margin-bottom:20px;border:1px solid #eee;border-radius:10px;padding:4px 12px;background:#fafafa}
   .cart-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;gap:10px}
   .cart-item:last-child{border-bottom:none}
+  .cart-item-img{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee}
+  .cart-item-img.no-thumb{display:flex;align-items:center;justify-content:center;font-size:20px}
   .cart-item-info{flex:1;min-width:0}
   .cart-item-title{font-weight:700;font-size:13.5px;color:#2c1810;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cart-item-sub{font-size:12px;color:#c0392b;font-weight:600;margin-top:2px}
@@ -254,7 +258,7 @@ function buildCatalogHtml({ brand, items, shopPhone, allFabrics, filters }) {
 var _shopPhone = '${shopPhone}';
 var _cart = {}; // designId -> { id, itemName, designNo, rate, qty }
 
-function toggleCart(designId, itemName, designNo, rate) {
+function toggleCart(designId, itemName, designNo, rate, thumb) {
   var btn = document.getElementById('btn-' + designId);
   if (_cart[designId]) {
     delete _cart[designId];
@@ -266,6 +270,7 @@ function toggleCart(designId, itemName, designNo, rate) {
       itemName: itemName,
       designNo: designNo,
       rate: rate,
+      thumb: thumb || '',
       qty: 1
     };
     btn.classList.add('added');
@@ -314,8 +319,12 @@ function openCart() {
   var itemsHtml = '';
   keys.forEach(function(key) {
     var item = _cart[key];
+    var thumbHtml = item.thumb
+      ? \`<img class="cart-item-img" src="\${item.thumb}" alt=""/>\`
+      : \`<div class="cart-item-img no-thumb">🛍️</div>\`;
     itemsHtml += \`
       <div class="cart-item">
+        \${thumbHtml}
         <div class="cart-item-info">
           <div class="cart-item-title">\${item.itemName} (Design #\${item.designNo})</div>
           <div class="cart-item-sub">₹\${item.rate}</div>

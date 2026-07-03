@@ -36,6 +36,30 @@ router.get('/search', (req, res) => {
   res.json(designs);
 });
 
+// GET /api/designs/batch?ids=1,2,3 — multiple designs with item + brand info.
+// Used to render the designs behind a custom-form order/inquiry. Preserves the
+// order of the requested ids and silently skips any that no longer exist.
+router.get('/batch', (req, res) => {
+  const ids = String(req.query.ids || '')
+    .split(',')
+    .map(id => parseInt(id.trim(), 10))
+    .filter(id => !isNaN(id));
+  if (ids.length === 0) return res.json([]);
+
+  const placeholders = ids.map(() => '?').join(',');
+  const designs = db.prepare(`
+    SELECT d.*, i.name AS item_name, b.id AS brand_id, b.name AS brand_name
+    FROM designs d
+    JOIN items i ON i.id = d.item_id
+    JOIN brands b ON b.id = i.brand_id
+    WHERE d.id IN (${placeholders})
+  `).all(...ids);
+
+  // Re-order to match the requested id sequence
+  const byId = new Map(designs.map(d => [d.id, d]));
+  res.json(ids.map(id => byId.get(id)).filter(Boolean));
+});
+
 // GET /api/designs/:id — single design with item + brand info (used by QR scanner)
 router.get('/:id', (req, res) => {
   const design = db.prepare(`

@@ -159,6 +159,7 @@ export default function CreateFormScreen() {
           brand_name: 'Custom Form',
           quantity: selectedDesigns.length,
           source: 'custom_form',
+          design_ids: ids,
         });
         notify('Saved', 'Inquiry saved successfully under Orders.');
       } catch (e) {
