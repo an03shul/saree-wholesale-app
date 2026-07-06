@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireAuth } = require('../middleware/auth');
 
 // Get all items (optionally filter by brand)
 router.get('/', (req, res) => {
@@ -33,7 +33,7 @@ router.put('/:id', requireAdmin, (req, res) => {
   res.json({ id: req.params.id, name, description, brand_id });
 });
 
-router.patch('/:id/stock', requireAdmin, (req, res) => {
+router.patch('/:id/stock', requireAuth, (req, res) => {
   const item = db.prepare('SELECT in_stock FROM items WHERE id = ?').get(req.params.id);
   if (!item) return res.status(404).json({ error: 'Item not found' });
   const newVal = item.in_stock ? 0 : 1;

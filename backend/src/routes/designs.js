@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireAuth } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const db = require('../db/database');
@@ -115,7 +115,7 @@ router.put('/:id', requireAdmin, upload.single('photo'), async (req, res) => {
   res.json({ id: req.params.id, design_number, photo_path, rate, colors, fabric_type, pcs_per_set, work_category, item_id: item_id || existing.item_id });
 });
 
-router.patch('/:id/stock', requireAdmin, (req, res) => {
+router.patch('/:id/stock', requireAuth, (req, res) => {
   const design = db.prepare('SELECT in_stock FROM designs WHERE id = ?').get(req.params.id);
   if (!design) return res.status(404).json({ error: 'Design not found' });
   const newVal = design.in_stock ? 0 : 1;
