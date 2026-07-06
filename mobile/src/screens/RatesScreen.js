@@ -4,11 +4,13 @@ import {
   StyleSheet, Image, Keyboard,
 } from 'react-native';
 import { designsApi, getThumbUrl } from '../api/client';
+import { useUser } from '../../App';
 import { colors, shadow } from '../constants/theme';
 
 // Staff2 "Rates" tab — the main-screen search bar only. Look up a design by
 // number / item / brand to see its price and stock. No catalog browsing.
 export default function RatesScreen() {
+  const user = useUser();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -35,6 +37,11 @@ export default function RatesScreen() {
 
   return (
     <View style={styles.container}>
+      {user?.username && (
+        <Text style={styles.greeting}>
+          Hey, <Text style={styles.greetingName}>{user.username.charAt(0).toUpperCase() + user.username.slice(1)}</Text>! 👋
+        </Text>
+      )}
       <View style={styles.searchWrap}>
         <View style={styles.searchRow}>
           {isSearching && (
@@ -106,6 +113,8 @@ export default function RatesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  greeting: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, paddingHorizontal: 16, paddingTop: 14 },
+  greetingName: { color: colors.gold, fontWeight: '800' },
   searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   backSearchBtn: {

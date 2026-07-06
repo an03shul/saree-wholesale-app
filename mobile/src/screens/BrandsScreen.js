@@ -204,6 +204,11 @@ export default function BrandsScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
         ListHeaderComponent={
           <>
+            {user?.username && (
+              <Text style={styles.greeting}>
+                Hey, <Text style={styles.greetingName}>{user.username.charAt(0).toUpperCase() + user.username.slice(1)}</Text>! 👋
+              </Text>
+            )}
             {stats && (
               <View style={styles.statsBanner}>
                 <View style={styles.statItem}>
@@ -376,6 +381,8 @@ const styles = StyleSheet.create({
   stockPillOut: { backgroundColor: '#FEE9E9' },
   stockPillText: { fontSize: 11, fontWeight: '800' },
   listHeader: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
+  greeting: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 16 },
+  greetingName: { color: colors.gold, fontWeight: '800' },
   card: {
     backgroundColor: colors.card,
     borderRadius: 16,
