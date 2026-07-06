@@ -12,6 +12,7 @@ export default function ItemsScreen({ route, navigation }) {
   const { brand } = route.params;
   const user = useUser();
   const isAdmin = user?.role === 'admin';
+  const canToggleStock = user?.role === 'admin' || user?.role === 'staff';
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,7 +175,7 @@ export default function ItemsScreen({ route, navigation }) {
                 : <Text style={styles.descPlaceholder}>Tap to view designs</Text>
               }
             </View>
-            {isAdmin ? (
+            {canToggleStock ? (
               <View style={styles.stockToggle}>
                 <Text style={[styles.stockLabel, { color: item.in_stock ? '#2E7D32' : colors.danger }]}>
                   {item.in_stock ? 'In Stock' : 'Out'}

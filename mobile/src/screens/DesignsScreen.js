@@ -18,6 +18,7 @@ export default function DesignsScreen({ route, navigation }) {
   const { item, brand, focusDesign } = route.params;
   const user = useUser();
   const isAdmin = user?.role === 'admin';
+  const canToggleStock = user?.role === 'admin' || user?.role === 'staff';
 
   const [designs, setDesigns] = useState([]);
   const [tallyStock, setTallyStock] = useState({}); // { [design_id]: stock_count }
@@ -500,7 +501,7 @@ export default function DesignsScreen({ route, navigation }) {
                     </TouchableOpacity>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                    {isAdmin ? (
+                    {canToggleStock ? (
                       <View style={styles.stockToggle}>
                         <Text style={[styles.stockLabel, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>
                           {d.in_stock ? 'In Stock' : 'Out'}
