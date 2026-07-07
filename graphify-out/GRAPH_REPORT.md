@@ -5,12 +5,12 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 649 nodes · 925 edges · 57 communities (51 shown, 6 thin omitted)
+- 649 nodes · 926 edges · 59 communities (52 shown, 7 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `81a1c782`
+- Built from commit: `bbc76031`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -60,9 +60,11 @@
 - [[_COMMUNITY_Mobile Expo Notes|Mobile Expo Notes]]
 - [[_COMMUNITY_Graphify Rules|Graphify Rules]]
 - [[_COMMUNITY_Graphify Workflow|Graphify Workflow]]
+- [[_COMMUNITY_Mobile CLAUDE Notes|Mobile CLAUDE Notes]]
 - [[_COMMUNITY_Worker Config|Worker Config]]
 - [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Community 51|Community 51]]
+- [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 55|Community 55]]
 - [[_COMMUNITY_Community 56|Community 56]]
 
@@ -85,15 +87,15 @@
   mobile/src/utils/share.js → mobile/broken-violet-21ab/src/index.js
 - `DesignsScreen()` --calls--> `useUser()`  [EXTRACTED]
   mobile/src/screens/DesignsScreen.js → mobile/App.js
-- `MoreScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/MoreScreen.js → mobile/App.js
-- `TasksScreen()` --calls--> `useUser()`  [EXTRACTED]
-  mobile/src/screens/TasksScreen.js → mobile/App.js
+- `ItemsScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/ItemsScreen.js → mobile/App.js
+- `OrdersScreen()` --calls--> `useUser()`  [EXTRACTED]
+  mobile/src/screens/OrdersScreen.js → mobile/App.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (57 total, 6 thin omitted)
+## Communities (59 total, 7 thin omitted)
 
 ### Community 0 - "Project Documentation (CLAUDE.md)"
 Cohesion: 0.21
@@ -108,12 +110,12 @@ Cohesion: 0.09
 Nodes (26): db, express, { getStockForDesigns }, router, { sendDesignUpdates }, db, express, { getCustomers, getStockBalance, detectMode } (+18 more)
 
 ### Community 3 - "Mobile App Shell & Navigation"
-Cohesion: 0.11
-Nodes (22): api, contactsApi, fabricsApi, getCustomCatalogUrl(), getPdfUrl(), getThumbUrl(), itemsApi_stock, sendApi (+14 more)
+Cohesion: 0.12
+Nodes (21): api, contactsApi, fabricsApi, getCustomCatalogUrl(), getPdfUrl(), getThumbUrl(), identifyApi, itemsApi_stock (+13 more)
 
 ### Community 4 - "Storage & Bulk Import Pipeline"
-Cohesion: 0.05
-Nodes (32): path, TEMP_UPLOADS_DIR, express, { identifyDesign }, multer, router, upload, db (+24 more)
+Cohesion: 0.06
+Nodes (29): path, TEMP_UPLOADS_DIR, db, express, multer, path, { requireAdmin }, router (+21 more)
 
 ### Community 5 - "Backend Package Dependencies"
 Cohesion: 0.08
@@ -128,8 +130,8 @@ Cohesion: 0.09
 Nodes (21): dependencies, axios, lucide-react, react, react-dom, react-router-dom, devDependencies, oxlint (+13 more)
 
 ### Community 8 - "App Entry & Thumbnail Service"
-Cohesion: 0.14
-Nodes (20): brandsApi, getCatalogUrl(), ordersApi, colors, modalBase, shadow, useUser(), BrandsScreen() (+12 more)
+Cohesion: 0.11
+Nodes (17): adminApi, settingsApi, tasksApi, modalBase, HeaderLogoutButton(), AdminScreen(), styles, OrdersScreen() (+9 more)
 
 ### Community 9 - "PDF Export & Watermarking"
 Cohesion: 0.25
@@ -144,16 +146,16 @@ Cohesion: 0.12
 Nodes (13): crypto, { DatabaseSync }, db, fabricCount, itemsInfo, path, tmplExists, userCount (+5 more)
 
 ### Community 12 - "Designs & Send Screens"
-Cohesion: 0.08
-Nodes (27): adminApi, authApi, loadStoredToken(), setAuthToken(), settingsApi, App(), doLogout(), HeaderLogoutButton() (+19 more)
+Cohesion: 0.11
+Nodes (17): authApi, loadStoredToken(), setAuthToken(), App(), doLogout(), headerStyle, headerTitleStyle, MainApp() (+9 more)
 
 ### Community 13 - "Authentication & Rate Limiting"
 Cohesion: 0.18
 Nodes (10): checkRateLimit(), clearAttempts(), db, loginAttempts, recordFailedAttempt(), crypto, db, express (+2 more)
 
 ### Community 14 - "AI Saree Identification"
-Cohesion: 0.20
-Nodes (8): db, express, multer, path, { requireAdmin }, router, storage, upload
+Cohesion: 0.15
+Nodes (11): express, { identifyDesign }, multer, router, upload, Anthropic, client, db (+3 more)
 
 ### Community 15 - "Admin & Orders Screen Utils"
 Cohesion: 0.33
@@ -236,16 +238,16 @@ Cohesion: 0.16
 Nodes (7): db, express, path, router, db, express, router
 
 ### Community 35 - "Image Viewer Modal"
-Cohesion: 0.13
-Nodes (10): importApi, itemsApi, ImageEditorModal(), styles, ImageViewerModal(), styles, BulkImportScreen(), styles (+2 more)
+Cohesion: 0.17
+Nodes (12): designsApi, getImageUrl(), ImageEditorModal(), styles, colors, shadow, DesignsScreen(), styles (+4 more)
 
 ### Community 36 - "Cloudflare Worker Entry"
 Cohesion: 0.33
 Nodes (6): Audit Logging (logActivity middleware), middleware/auth.js (Auth), Role Permissions (staff vs admin), Known Gap: Unprotected POST Routes, routes/auth.js (Login), Staff Single-Session Policy
 
 ### Community 37 - "Push Subscription Route"
-Cohesion: 0.26
-Nodes (10): getWmUrl(), identifyApi, IdentifyScreen(), styles, buildShareCard(), buildShareFile(), downloadFiles(), notify() (+2 more)
+Cohesion: 0.43
+Nodes (7): getWmUrl(), buildShareCard(), buildShareFile(), downloadFiles(), notify(), shareDesignsList(), tryNativeShare()
 
 ### Community 38 - "Stats Route"
 Cohesion: 0.50
@@ -255,6 +257,10 @@ Nodes (3): db, express, router
 Cohesion: 0.50
 Nodes (3): db, express, router
 
+### Community 45 - "Mobile CLAUDE Notes"
+Cohesion: 0.20
+Nodes (9): brandsApi, importApi, itemsApi, ordersApi, BulkImportScreen(), styles, ItemsScreen(), styles (+1 more)
+
 ### Community 47 - "Worker Config"
 Cohesion: 0.50
 Nodes (4): db/database.js (SQLite DatabaseSync), No Migration Framework (ALTER TABLE try/catch), parseServerDate (mobile/src/utils/date.js), SQLite CURRENT_TIMESTAMP UTC Parsing
@@ -263,9 +269,9 @@ Nodes (4): db/database.js (SQLite DatabaseSync), No Migration Framework (ALTER T
 Cohesion: 0.50
 Nodes (3): Expanding the Oxlint configuration, React Compiler, React + Vite
 
-### Community 55 - "Community 55"
-Cohesion: 0.33
-Nodes (5): designsApi, getImageUrl(), DesignsScreen(), ScanScreen(), styles
+### Community 53 - "Community 53"
+Cohesion: 0.22
+Nodes (9): getCatalogUrl(), statsApi, useUser(), BrandsScreen(), styles, ADMIN_ITEMS, MENU_ITEMS, MoreScreen() (+1 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.29
@@ -274,14 +280,14 @@ Nodes (5): db, express, { notifyUser }, { requireAuth, requireAdmin }, router
 ## Knowledge Gaps
 - **352 isolated node(s):** `docker-entrypoint.sh script`, `name`, `version`, `main`, `start` (+347 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `fetch()` connect `Contact Import Script` to `Push Subscription Route`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `subscribeToPush()` connect `Contact Import Script` to `Designs & Send Screens`?**
+- **Why does `subscribeToPush()` connect `Contact Import Script` to `Designs & Send Screens`, `Community 53`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `docker-entrypoint.sh script`, `name`, `version` to the rest of the system?**
   _360 weakly-connected nodes found - possible documentation gaps or missing edges._
@@ -290,6 +296,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Tally & WhatsApp Send Integration` be split into smaller, more focused modules?**
   _Cohesion score 0.09462365591397849 - nodes in this community are weakly interconnected._
 - **Should `Mobile App Shell & Navigation` be split into smaller, more focused modules?**
-  _Cohesion score 0.10846560846560846 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1168091168091168 - nodes in this community are weakly interconnected._
 - **Should `Storage & Bulk Import Pipeline` be split into smaller, more focused modules?**
-  _Cohesion score 0.0545876887340302 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.059743954480796585 - nodes in this community are weakly interconnected._
