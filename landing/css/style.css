@@ -275,8 +275,21 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.1; }
   transform-style: preserve-3d; will-change: transform;
   transition: transform .3s ease, box-shadow .3s ease;
 }
+.storefront-card { cursor: pointer; text-decoration: none; }
 .storefront-card img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .5s ease; }
 .storefront-card img.loaded { opacity: 1; }
+/* Tappable "Get Directions" pill — the card is a link to Google Maps directions */
+.storefront-overlay {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 2;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 11px 22px; border-radius: 999px;
+  background: rgba(255,255,255,.95); color: var(--maroon);
+  font-family: var(--sans); font-weight: 600; font-size: 15px; letter-spacing: .01em;
+  box-shadow: 0 8px 22px rgba(0,0,0,.32); white-space: nowrap;
+  transition: background .2s ease, transform .2s ease;
+}
+.storefront-card:hover .storefront-overlay { background: #fff; transform: translateX(-50%) translateY(-2px); }
+.storefront-pin { font-size: 17px; line-height: 1; }
 /* Moving glass highlight for the "3D display case" feel */
 .storefront-shine {
   position: absolute; inset: 0; pointer-events: none;
