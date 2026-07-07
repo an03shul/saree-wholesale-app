@@ -47,17 +47,16 @@ html = html.replace(
     f'  <link rel="icon" href="{logo_uri}" />\n'
     f'  <link rel="apple-touch-icon" href="{logo_uri}" />')
 
-# Embed the storefront photo (if present) so the standalone stays self-contained.
-shop = HERE / "images" / "shopfront.png"
+# Embed the storefront illustration (if present) so the standalone stays
+# self-contained. Drop the external <source> and inline the jpg into the <img>.
+shop = HERE / "images" / "shopfront.jpg"
+html = re.sub(r'\n\s*<source srcset="/images/shopfront\.webp"[^>]*>', "", html)
 if shop.exists():
-    shop_small = pathlib.Path(tempfile.gettempdir()) / "gopiram_shopfront.png"
-    subprocess.run(["sips", "-Z", "820", str(shop), "--out", str(shop_small)], check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    shop_uri = "data:image/png;base64," + base64.b64encode(shop_small.read_bytes()).decode()
-    html = html.replace('src="/images/shopfront.png"', f'src="{shop_uri}"')
-    print("Embedded storefront photo.")
+    shop_uri = "data:image/jpeg;base64," + base64.b64encode(shop.read_bytes()).decode()
+    html = html.replace('src="/images/shopfront.jpg"', f'src="{shop_uri}"')
+    print("Embedded storefront illustration.")
 else:
-    print("No images/shopfront.png yet — storefront shows the maroon placeholder.")
+    print("No images/shopfront.jpg yet — storefront shows the maroon placeholder.")
 
 out = HERE / "gopiram-landing.standalone.html"
 out.write_text(html)

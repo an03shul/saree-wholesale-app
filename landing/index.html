@@ -158,21 +158,24 @@
       <p class="visit-hours">Open all days · 11:00 AM – 9:00 PM</p>
     </div>
 
-    <!-- Interactive 3D storefront card — tilts toward the cursor on desktop.
-         Drop your storefront render at /images/shopfront.png and it appears
-         (until then a maroon card shows in its place). -->
+    <!-- Interactive 3D "find us" card — an illustrated map (shopfront.webp/.jpg),
+         tilts toward the cursor on desktop and links to Google Maps directions.
+         Swap the images in /images/ to update it; a maroon card shows if absent. -->
     <div class="storefront reveal">
       <div class="storefront-stage">
         <a class="storefront-card"
            href="https://www.google.com/maps/dir/?api=1&destination=26.1948327,78.1557818"
            target="_blank" rel="noopener"
            aria-label="Get directions to Gopiram Sarees, Naya Bazaar, Gwalior">
-          <img src="/images/shopfront.png" alt="Gopiram Sarees storefront, Naya Bazaar, Gwalior" loading="lazy" />
+          <picture>
+            <source srcset="/images/shopfront.webp" type="image/webp" />
+            <img src="/images/shopfront.jpg" alt="Illustrated map showing Gopiram Sarees on Naya Bazaar Road, Gwalior" loading="lazy" />
+          </picture>
           <span class="storefront-shine"></span>
           <span class="storefront-overlay"><span class="storefront-pin">📍</span>Get Directions</span>
         </a>
       </div>
-      <p class="storefront-cap">Step into our showroom · tap for directions</p>
+      <p class="storefront-cap">Find us on Naya Bazaar Road · tap for directions</p>
     </div>
 
     <!-- Aerial / satellite map. Swap the src with your exact "Embed a map" link
