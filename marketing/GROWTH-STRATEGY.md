@@ -18,7 +18,7 @@
 > **You win branded search and lose discovery search.**
 > People who already know "Gopiram" find you easily. People searching *"wholesale saree market Gwalior"* — new retailers who've never heard your name — almost never see you. **That untapped discovery traffic is the entire growth opportunity.**
 
-A secondary issue: **name fragmentation.** You appear as *Gopiram Sarees*, *Gopiram And Sons* (@gopiramandsons on Instagram), and people type *"gopiram", "gopi enterprises"*. Every variant splits your search equity. One consistent public name across Google, the website, and Instagram consolidates it.
+A secondary issue: **name fragmentation.** People search *"gopiram sarees", "gopiram and sons", "gopiram", "gopi enterprises"* — and there's a **separate** business/Instagram (@gopiramandsons) that your GBP screenshot even surfaced, which is NOT you (your Instagram is **@gopiramsarees**). Every variant splits your search equity, and a similarly-named neighbour risks siphoning your searches. One consistent public name — **Gopiram Sarees** — across Google, the website, and Instagram (@gopiramsarees) consolidates it. ⚠️ Also check your GBP isn't linking to the wrong (@gopiramandsons) social account.
 
 ---
 
@@ -105,7 +105,7 @@ You already have `gopiramsarees.in` (landing) + `app.gopiramsarees.in` (live cat
 
 ## 6. Pillar 4 — Instagram consistency
 
-- Rename the handle context so it clearly reads **Gopiram Sarees** (bio, name field) even if the @handle stays `@gopiramandsons` — reduces the name confusion showing in your search terms.
+- Your handle is **@gopiramsarees** — make sure the profile **Name** field and bio read "Gopiram Sarees | गोपीराम साड़ी" clearly, and that your GBP links to *this* account (not the separate @gopiramandsons) — reduces the name confusion showing in your search terms.
 - Bio: category + location + WhatsApp link (single link → WhatsApp or the catalog).
 - Cross-post the same product photos you put on GBP — no extra work, double the surface.
 - Add the Instagram + website links into the GBP profile and vice-versa (the `sameAs` web of trust).

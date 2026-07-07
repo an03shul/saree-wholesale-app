@@ -207,4 +207,4 @@ Wholesale fancy • designer • silk sarees 🌸
 📍 Naya Bazaar, Lashkar, Gwalior
 📲 WhatsApp for live catalogue 👇
 ```
-*Set the profile **Name** field to "Gopiram Sarees" even if the @handle stays @gopiramandsons. Link → WhatsApp (wa.me/918982861210) or the catalogue.*
+*Set the profile **Name** field to "Gopiram Sarees" (@gopiramsarees). Link → WhatsApp (wa.me/918982861210) or the catalogue.*
