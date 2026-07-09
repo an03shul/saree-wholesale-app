@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAdmin, requireAuth } = require('../middleware/auth');
+const { requireAdmin, requireAuth, requireRole } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const db = require('../db/database');
@@ -121,6 +121,17 @@ router.patch('/:id/stock', requireAuth, (req, res) => {
   const newVal = design.in_stock ? 0 : 1;
   db.prepare('UPDATE designs SET in_stock = ? WHERE id = ?').run(newVal, req.params.id);
   res.json({ in_stock: newVal });
+});
+
+// Rate-only edit for accountants (and admin). Deliberately narrow — accountants
+// shouldn't get the full design editor.
+router.patch('/:id/rate', requireRole('admin', 'accountant'), (req, res) => {
+  const rate = parseFloat(req.body.rate);
+  if (!(rate >= 0)) return res.status(400).json({ error: 'Valid rate required' });
+  const design = db.prepare('SELECT id FROM designs WHERE id = ?').get(req.params.id);
+  if (!design) return res.status(404).json({ error: 'Design not found' });
+  db.prepare('UPDATE designs SET rate = ? WHERE id = ?').run(rate, req.params.id);
+  res.json({ id: Number(req.params.id), rate });
 });
 
 router.delete('/:id', requireAdmin, async (req, res) => {

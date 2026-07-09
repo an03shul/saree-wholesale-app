@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gopiram Sarees — Staff App Guide</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#555; --line:#c9c9c9; --accent:#8a1538; --soft:#f4eef0; }
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; background:#fff; color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; line-height:1.5; }
+  .page { width:210mm; min-height:297mm; margin:0 auto; padding:9mm 12mm 8mm; }
+  h1 { font-size:22px; margin:0; color:var(--accent); font-weight:700; letter-spacing:.2px; }
+  .sub { font-size:12.5px; color:var(--muted); margin:2px 0 0; }
+  h2 { font-size:14px; margin:0 0 6px; color:#fff; background:var(--accent);
+    padding:5px 9px; border-radius:5px; font-weight:600; }
+  h3 { font-size:12.5px; margin:6px 0 2px; color:var(--accent); font-weight:700; }
+  .top { display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:2.5px solid var(--accent); padding-bottom:8px; margin-bottom:10px; }
+  .why { background:var(--soft); border:1px solid var(--line); border-radius:6px;
+    padding:6px 11px; margin-bottom:8px; }
+  .why b { color:var(--accent); }
+  .why ul { margin:5px 0 0; padding-left:17px; }
+  .why li { font-size:11.5px; margin:2px 0; }
+  .cols { display:flex; gap:11px; }
+  .card { flex:1; border:1px solid var(--line); border-radius:7px; padding:0 0 9px;
+    overflow:hidden; }
+  .card .body { padding:2px 11px 0; }
+  ol,ul { margin:3px 0; padding-left:18px; }
+  li { font-size:11.5px; margin:2px 0; }
+  .tab { display:inline-block; background:#eee; border:1px solid var(--line);
+    border-radius:4px; padding:0 5px; font-size:10.5px; font-weight:600; color:#333; }
+  .step { font-weight:700; color:var(--accent); }
+  .rules { margin-top:8px; border:1.5px dashed var(--accent); border-radius:7px;
+    padding:6px 12px; background:#fbf7f8; }
+  .rules ul { padding-left:18px; }
+  .rules li { font-size:11.5px; margin:3px 0; }
+  .foot { margin-top:10px; font-size:10.5px; color:var(--muted); text-align:center;
+    border-top:1px solid var(--line); padding-top:6px; }
+  .roles-hd { display:flex; gap:11px; margin-bottom:4px; }
+  .roles-hd > div { flex:1; }
+  @media print {
+    .page { margin:0; padding:7mm 10mm; width:auto; min-height:auto; }
+    @page { size:A4; margin:0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top">
+    <div>
+      <h1>Gopiram Sarees — App Guide</h1>
+      <p class="sub">Staff ke liye simple guide · Har din ka kaam ab app se, WhatsApp se nahi</p>
+    </div>
+    <div style="text-align:right; font-size:11px; color:var(--muted);">
+      Login: <b>app.gopiramsarees.in</b><br>Apna Username + PIN
+    </div>
+  </div>
+
+  <div class="why">
+    <b>App kyun? (WhatsApp se behtar):</b>
+    <ul>
+      <li>Har photo pe <b>apni shop ki branding</b> — koi doosra chura ke apne naam se nahi bech sakta.</li>
+      <li>Ek saree <b>ek click me bahut customers / groups</b> ko — copy-paste nahi.</li>
+      <li>Kisi bhi saree ka <b>rate aur stock turant</b> — baar-baar poochna nahi.</li>
+      <li>Order aur kaam ka <b>pura record</b> app me — kuch bhoolta nahi, chat me dhoondhna nahi.</li>
+    </ul>
+  </div>
+
+  <div class="roles-hd">
+    <div><h2>A · Full Staff (poora app)</h2></div>
+    <div><h2>B · Staff2 (limited — sirf 3 tab)</h2></div>
+  </div>
+
+  <div class="cols">
+
+    <!-- FULL STAFF -->
+    <div class="card">
+      <div class="body">
+        <p style="font-size:11px;color:var(--muted);margin:6px 0 2px;">
+          Neeche 5 tab dikhenge: <span class="tab">Catalog</span> <span class="tab">Orders</span>
+          <span class="tab">My Tasks</span> <span class="tab">Send</span> <span class="tab">More</span></p>
+
+        <h3>1. Login</h3>
+        <ol>
+          <li>App kholo → <b>Username</b> daalo → <b>PIN</b> daalo → <span class="step">Sign In</span>.</li>
+        </ol>
+
+        <h3>2. Customer ko saree bhejna (Send)</h3>
+        <ol>
+          <li>Neeche <span class="tab">Send</span> tab dabao.</li>
+          <li>Saree chuno — <b>By Item</b> ya upar search box se dhoondho.</li>
+          <li><span class="step">Select Recipient</span> → customer ya group chuno (naam/number se search).</li>
+          <li>Photo branding ke saath + caption apne aap ready → <span class="step">Send</span>.</li>
+        </ol>
+
+        <h3>3. Rate / Stock check</h3>
+        <ol>
+          <li>Home screen ke <b>search box</b> me design number ya naam type karo.</li>
+          <li><b>Price + stock</b> (in stock / out) turant dikh jaayega.</li>
+        </ol>
+
+        <h3>4. Catalog dekhna / add karna</h3>
+        <ol>
+          <li><span class="tab">Catalog</span> → Brand → Item → Design.</li>
+          <li>Naya item/design add karne ke liye <span class="step">+</span> button.</li>
+        </ol>
+
+        <h3>5. Naya Order / Inquiry</h3>
+        <ol>
+          <li><span class="tab">Orders</span> → <span class="step">New Order / Inquiry</span>.</li>
+          <li>Design search karo → <b>Customer name</b>, phone, quantity, notes bharo → save.</li>
+          <li>Status badalne ke liye order pe tap → <span class="step">Update Status</span>.</li>
+        </ol>
+
+        <h3>6. Mera kaam (Tasks)</h3>
+        <ol>
+          <li><span class="tab">My Tasks</span> → apna kaam dekho (Overdue / Due today badge).</li>
+          <li>Ho jaaye to <span class="step">Complete Task</span> (note likh sakte ho).</li>
+        </ol>
+
+        <h3>7. Contacts (More tab)</h3>
+        <ol>
+          <li><span class="tab">More</span> → <b>Contacts</b> → naya customer add / edit.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- STAFF2 -->
+    <div class="card">
+      <div class="body">
+        <p style="font-size:11px;color:var(--muted);margin:6px 0 2px;">
+          Neeche sirf 3 tab dikhenge: <span class="tab">Rates</span>
+          <span class="tab">My Tasks</span> <span class="tab">Orders</span></p>
+
+        <h3>1. Login</h3>
+        <ol>
+          <li>App kholo → <b>Username</b> + <b>PIN</b> → <span class="step">Sign In</span>.</li>
+        </ol>
+
+        <h3>2. Rate / Stock dekhna (Rates)</h3>
+        <ol>
+          <li><span class="tab">Rates</span> tab kholo.</li>
+          <li>Search box me <b>design number / item / brand</b> type karo.</li>
+          <li><b>Price + stock</b> dikh jaayega. (Yahan sirf dekhna hai — catalog browse nahi.)</li>
+        </ol>
+
+        <h3>3. Mera kaam (My Tasks)</h3>
+        <ol>
+          <li><span class="tab">My Tasks</span> → apne assign kiye gaye kaam dekho.</li>
+          <li>Overdue / Due today badge dhyan se dekho.</li>
+          <li>Ho jaaye to <span class="step">Complete Task</span> dabao (note optional).</li>
+        </ol>
+
+        <h3>4. Orders</h3>
+        <ol>
+          <li><span class="tab">Orders</span> tab me sab orders dikhenge.</li>
+          <li>Order pe tap → <span class="step">Update Status</span> se status badlo.</li>
+          <li><b>Note:</b> Naya order banane ka button nahi hai — sirf dekhna + status.</li>
+        </ol>
+
+        <div style="margin-top:12px; background:var(--soft); border-radius:6px; padding:8px 10px;">
+          <b style="font-size:11.5px; color:var(--accent);">Staff2 ka kaam short me:</b>
+          <p style="font-size:11px; margin:4px 0 0;">Rate batao · apna task pura karo · order ka
+          status update karo. Bas itna.</p>
+        </div>
+
+        <div style="margin-top:12px;">
+          <h3>Rozana ka aasaan tareeka (sabke liye)</h3>
+          <ul>
+            <li>Subah: apna <b>My Tasks</b> ek baar dekh lo.</li>
+            <li>Customer pooche rate: WhatsApp me type nahi — app me <b>search</b> karo.</li>
+            <li>Naya saree aaya: <b>photo app se bhejo</b> (branding lag jaayegi).</li>
+            <li>Order mila: turant <b>Orders</b> me daal do.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rules">
+    <b style="color:var(--accent); font-size:12.5px;">Golden Rules — yaad rakhna</b>
+    <ul>
+      <li><b>Photo hamesha app se bhejo</b>, gallery se WhatsApp pe direct nahi — warna branding nahi lagegi.</li>
+      <li>Ek device pe hi login rahega (staff ke liye). Naye phone pe login karoge to purana apne aap logout.</li>
+      <li>Apna <b>PIN kisi ko mat batao</b>.</li>
+      <li>Rate ya stock ka <b>doubt ho to app pe check karo</b> — memory/andaaza nahi.</li>
+      <li>Kaam pura ho to <b>task Complete zaroor karo</b>, taaki malik ko pata rahe.</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    Gopiram Sarees · Koi dikkat ho to malik ko batayein · Yeh guide counter ke paas chipka dein
+  </div>
+
+</div>
+</body>
+</html>

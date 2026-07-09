@@ -102,6 +102,8 @@ app.use('/api/identify',require('./routes/identify'));
 app.use('/api/import',  require('./routes/import'));
 app.use('/api/admin',   require('./routes/admin'));
 app.use('/api/tasks',   require('./routes/tasks'));
+app.use('/api/files',   require('./routes/files'));
+app.use('/api/manufacturer', require('./routes/manufacturer'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/stats',    require('./routes/stats'));
 

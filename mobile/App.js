@@ -22,6 +22,8 @@ import BulkImportScreen from './src/screens/BulkImportScreen';
 import CreateFormScreen from './src/screens/CreateFormScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
+import FilesScreen from './src/screens/FilesScreen';
+import { DispatchScreen, StockScreen, SalesScreen } from './src/screens/ManufacturerScreens';
 import { authApi, setAuthToken, loadStoredToken, tasksApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
 import { confirmAction } from './src/utils/share';
@@ -108,6 +110,9 @@ function MoreStack({ user, onLogout }) {
       <Stack.Screen name="Identify" component={IdentifyScreen} options={{ title: 'Identify Piece' }} />
       <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: 'Bulk Add Designs' }} />
       <Stack.Screen name="CreateForm" component={CreateFormScreen} options={{ title: 'Create Order Form' }} />
+      <Stack.Screen name="Documents" options={{ title: 'Documents' }}>
+        {() => <FilesScreen types={['invoice', 'orderform', 'discount']} emptyText="Invoices, order forms & discounts appear here" />}
+      </Stack.Screen>
       <Stack.Screen name="Admin" options={{ headerShown: false }}>
         {() => <AdminScreen user={user} onLogout={onLogout} />}
       </Stack.Screen>
@@ -176,6 +181,69 @@ function Staff2App({ user, onLogout }) {
   );
 }
 
+// Limited navigator for the 'accountant' role — edit design rates and upload
+// discount docs. No catalog, orders, tasks, or admin.
+function AccountantApp({ user, onLogout }) {
+  const icons = { Rates: '🏷️', Discounts: '🧾', Invoices: '📄' };
+  const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
+  const baseOpts = { headerShown: true, headerStyle, headerTintColor, headerTitleStyle, headerRight };
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>,
+            tabBarActiveTintColor: '#8B1A2B',
+            tabBarInactiveTintColor: '#B0A0A5',
+            tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#EDE7E2' },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen name="Rates" component={RatesScreen} options={{ ...baseOpts, title: 'Edit Rates' }} />
+          <Tab.Screen name="Discounts" options={{ ...baseOpts, title: 'Discounts' }}>
+            {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag emptyText="Upload a discount doc from a manufacturer" />}
+          </Tab.Screen>
+          <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
+            {() => <FilesScreen types={['invoice', 'orderform']} emptyText="Manufacturer invoices & order forms appear here" />}
+          </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+      <BrandFooter />
+    </View>
+  );
+}
+
+// Limited navigator for the 'manufacturer' (Surat) role — upload dispatch photos
+// + invoices/order-forms for their brand, and see its stock & sales. Read-only otherwise.
+function ManufacturerApp({ user, onLogout }) {
+  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦', Sales: '🧾' };
+  const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
+  const baseOpts = { headerShown: true, headerStyle, headerTintColor, headerTitleStyle, headerRight };
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>,
+            tabBarActiveTintColor: '#8B1A2B',
+            tabBarInactiveTintColor: '#B0A0A5',
+            tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#EDE7E2' },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen name="Dispatch" component={DispatchScreen} options={{ ...baseOpts, title: 'Dispatch Photo' }} />
+          <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
+            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} emptyText="Upload your invoices & order forms" />}
+          </Tab.Screen>
+          <Tab.Screen name="Stock" component={StockScreen} options={{ ...baseOpts, title: 'My Stock' }} />
+          <Tab.Screen name="Sales" component={SalesScreen} options={{ ...baseOpts, title: 'My Sales' }} />
+        </Tab.Navigator>
+      </NavigationContainer>
+      <BrandFooter />
+    </View>
+  );
+}
+
 function BrandFooter() {
   return (
     <View style={{ backgroundColor: '#8B1A2B', paddingVertical: 4, alignItems: 'center' }}>
@@ -229,6 +297,10 @@ export default function App() {
       <TasksBadgeProvider>
         {user.role === 'staff2'
           ? <Staff2App user={user} onLogout={handleLogout} />
+          : user.role === 'accountant'
+          ? <AccountantApp user={user} onLogout={handleLogout} />
+          : user.role === 'manufacturer'
+          ? <ManufacturerApp user={user} onLogout={handleLogout} />
           : <MainApp user={user} onLogout={handleLogout} />}
       </TasksBadgeProvider>
     </UserContext.Provider>

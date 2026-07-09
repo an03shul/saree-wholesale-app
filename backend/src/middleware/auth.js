@@ -34,7 +34,7 @@ function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Not logged in' });
   const expiryCutoff = new Date(Date.now() - SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const session = db.prepare(`
-    SELECT s.token, s.created_at, u.id, u.username, u.role
+    SELECT s.token, s.created_at, u.id, u.username, u.role, u.brand_id
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token = ? AND s.created_at > ?
   `).get(token, expiryCutoff);
@@ -43,13 +43,21 @@ function requireAuth(req, res, next) {
     db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
     return res.status(401).json({ error: 'Session expired, please log in again' });
   }
-  req.user = { id: session.id, username: session.username, role: session.role };
+  req.user = { id: session.id, username: session.username, role: session.role, brand_id: session.brand_id };
   next();
 }
 
 function requireAdmin(req, res, next) {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
   next();
+}
+
+// Allow any of the given roles (admin is NOT implied — pass it explicitly if wanted).
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!roles.includes(req.user?.role)) return res.status(403).json({ error: 'Not allowed' });
+    next();
+  };
 }
 
 function logActivity(action, getDetails) {
@@ -67,4 +75,4 @@ function logActivity(action, getDetails) {
   };
 }
 
-module.exports = { requireAuth, requireAdmin, logActivity, checkRateLimit, recordFailedAttempt, clearAttempts };
+module.exports = { requireAuth, requireAdmin, requireRole, logActivity, checkRateLimit, recordFailedAttempt, clearAttempts };

@@ -35,6 +35,7 @@ function contentTypeFor(key) {
   if (ext === '.png') return 'image/png';
   if (ext === '.webp') return 'image/webp';
   if (ext === '.gif') return 'image/gif';
+  if (ext === '.pdf') return 'application/pdf';
   return 'image/jpeg';
 }
 

@@ -66,7 +66,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     pin_hash TEXT NOT NULL,
-    role TEXT CHECK(role IN ('admin','staff','staff2')) DEFAULT 'staff',
+    role TEXT CHECK(role IN ('admin','staff','staff2','accountant','manufacturer')) DEFAULT 'staff',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -117,7 +117,7 @@ try { db.exec('ALTER TABLE tasks ADD COLUMN completion_note TEXT'); } catch {}
 // sessions/activity_log/tasks foreign keys to point at the temp table.
 try {
   const usersInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
-  if (usersInfo && usersInfo.sql && usersInfo.sql.includes('CHECK') && !usersInfo.sql.includes("'staff2'")) {
+  if (usersInfo && usersInfo.sql && usersInfo.sql.includes('CHECK') && !usersInfo.sql.includes("'accountant'")) {
     db.exec('PRAGMA foreign_keys = OFF');
     db.exec('PRAGMA legacy_alter_table = ON');
     db.exec(`
@@ -126,20 +126,37 @@ try {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
         pin_hash TEXT NOT NULL,
-        role TEXT CHECK(role IN ('admin','staff','staff2')) DEFAULT 'staff',
+        role TEXT CHECK(role IN ('admin','staff','staff2','accountant','manufacturer')) DEFAULT 'staff',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
-      INSERT INTO users SELECT * FROM users_old;
+      INSERT INTO users (id, username, pin_hash, role, created_at) SELECT id, username, pin_hash, role, created_at FROM users_old;
       DROP TABLE users_old;
     `);
     db.exec('PRAGMA legacy_alter_table = OFF');
     db.exec('PRAGMA foreign_keys = ON');
-    console.log("Migrated users table to allow 'staff2' role");
+    console.log("Migrated users table to allow accountant/manufacturer roles");
   }
 } catch (e) {
   console.error('users role migration failed:', e.message);
   try { db.exec('PRAGMA legacy_alter_table = OFF'); db.exec('PRAGMA foreign_keys = ON'); } catch {}
 }
+
+// Manufacturer accounts are tied to one brand (their stock/sales + uploads scope to it).
+try { db.exec('ALTER TABLE users ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE SET NULL'); } catch {}
+
+// Uploaded documents: accountant discount notes + manufacturer invoices/order-forms.
+// Served via an auth-gated route (not public /uploads) since they're financial.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL CHECK(type IN ('discount','invoice','orderform')),
+    brand_id INTEGER REFERENCES brands(id) ON DELETE SET NULL,
+    label TEXT,
+    path TEXT NOT NULL,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 
 // Migrations for existing DBs
 try { db.exec('ALTER TABLE items ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE'); } catch {}

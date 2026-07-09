@@ -16,6 +16,7 @@ const MENU_ITEMS = [
 ];
 
 const ADMIN_ITEMS = [
+  { key: 'Documents', label: 'Documents',      icon: '📄', desc: 'Invoices, order forms & discounts' },
   { key: 'Admin',    label: 'Admin Panel',     icon: '⚙️', desc: 'Users, activity log, templates' },
 ];
 

@@ -73,7 +73,24 @@ export const designsApi = {
   update: (id, formData) => api.put(`/api/designs/${id}`, formData, { timeout: 30000 }),
   delete: (id) => api.delete(`/api/designs/${id}`),
   toggleStock: (id) => api.patch(`/api/designs/${id}/stock`),
+  updateRate: (id, rate) => api.patch(`/api/designs/${id}/rate`, { rate }),
 };
+
+export const filesApi = {
+  list: (params) => api.get('/api/files', { params }),
+  upload: (formData) => api.post('/api/files', formData, { timeout: 30000 }),
+  delete: (id) => api.delete(`/api/files/${id}`),
+};
+
+export const manufacturerApi = {
+  dispatchPhoto: (formData) => api.post('/api/manufacturer/dispatch-photo', formData, { timeout: 30000 }),
+  stock: () => api.get('/api/manufacturer/stock'),
+  sales: () => api.get('/api/manufacturer/sales'),
+};
+// Download URL carries the token as a query param (requireAuth honors ?token),
+// so a plain new-tab/Linking open works without an auth header.
+export const getFileDownloadUrl = (id) =>
+  `${BASE_URL}/api/files/${id}/download?token=${api.defaults.headers.common['Authorization']?.replace('Bearer ', '') || ''}`;
 
 export const itemsApi_stock = {
   toggleStock: (id) => api.patch(`/api/items/${id}/stock`),

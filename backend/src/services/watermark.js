@@ -3,10 +3,12 @@ const { Jimp, loadFont, measureText } = require('jimp');
 const fonts = require('jimp/fonts');
 const storage = require('./storage');
 
-// Bakes "Powered by Nayvert AI" into the bottom-right of a web-sized copy of a
-// photo, for customer-facing sharing (catalog, PDF, WhatsApp). Cached in storage.
+// Bakes the Gopiram Saree logo into the top-left corner of a web-sized copy of
+// a photo, plus a "Powered by Nayvert AI" credit in the bottom-right, for
+// customer-facing sharing (catalog, PDF, WhatsApp). Cached in storage.
 const WM_TEXT = 'Powered by Nayvert AI';
 const MAX_WIDTH = 1080;
+const LOGO_PATH = path.join(__dirname, '..', 'assets', 'logo.png');
 
 let fontWhite = null;
 let fontBlack = null;
@@ -14,6 +16,16 @@ async function getFonts() {
   if (!fontWhite) fontWhite = await loadFont(fonts.SANS_32_WHITE);
   if (!fontBlack) fontBlack = await loadFont(fonts.SANS_32_BLACK);
   return { fontWhite, fontBlack };
+}
+
+// The brand logo is loaded once and reused (cloned per-render) to avoid disk IO.
+let logo = null;
+async function getLogo() {
+  if (!logo) {
+    try { logo = await Jimp.read(LOGO_PATH); }
+    catch { logo = false; } // missing/unreadable → skip header, don't crash
+  }
+  return logo || null;
 }
 
 let queue = Promise.resolve();
@@ -25,6 +37,23 @@ async function generate(filename) {
   const { fontWhite: white, fontBlack: black } = await getFonts();
   const img = await Jimp.read(orig);
   if (img.width > MAX_WIDTH) img.resize({ w: MAX_WIDTH });
+
+  // Overlay the brand logo in the top-left corner (keeps the photo's original
+  // shape/size). A soft translucent chip sits behind it so the logo stays
+  // legible on dark sarees.
+  const brand = await getLogo();
+  if (brand) {
+    const margin = Math.round(img.width * 0.025);
+    const targetW = Math.round(img.width * 0.26);
+    const targetH = Math.round(brand.height * (targetW / brand.width));
+    const mark = brand.clone().resize({ w: targetW, h: targetH });
+
+    const chipPad = Math.round(targetW * 0.08);
+    const chip = new Jimp({ width: targetW + chipPad * 2, height: targetH + chipPad * 2, color: 0xffffffff });
+    chip.opacity(0.72);
+    img.composite(chip, margin, margin);
+    img.composite(mark, margin + chipPad, margin + chipPad);
+  }
 
   const tw = measureText(white, WM_TEXT);
   const pad = 14, lineH = 34;

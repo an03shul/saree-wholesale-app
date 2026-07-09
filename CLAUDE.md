@@ -97,6 +97,7 @@ activity_log               (audit trail)
 - Backend: Railway with Docker (`backend/Dockerfile`, config in `backend/railway.json`). Auto-deploys on push to `main` via Railway's GitHub integration — **but Railway watches the `nayvert` remote (`nayvertai-ctrl/saree-wholesale-app`), NOT `origin` (`an03shul/saree-wholesale-app`). To deploy the backend you must `git push nayvert main`; pushing only to `origin` deploys nothing** (this silently cost 25 minutes once — see gotcha 7). The Docker build (litestream download + `apt install` + `npm ci`) plus the Litestream DB restore on boot takes **several minutes** — `git push` does not mean the API is live yet. Health check: `GET /api/health`. Database backed up continuously to Cloudflare R2 via Litestream (`litestream.yml`). Images also stored in R2.
 - Mobile web: `npx expo export -p web && node scripts/inject-pwa.js` → deploy with `npx wrangler pages deploy dist --project-name gopiram-app`. Live at `gopiram-app.pages.dev` and custom domain `app.gopiramsarees.in`.
 - Default admin: username `admin`, PIN `1234` (auto-created on first run if no users exist).
+- **One-command deploy: `./scripts/deploy.sh`** — wraps all of the above and the gotchas below. Pushes `main` to **both** remotes (so Railway actually rebuilds), builds the mobile web PWA, waits for the broken Cloudflare auto-build to settle, then re-deploys `mobile/dist` to reclaim Pages production. Flags: `--backend` (push both remotes only), `--web` (build + Pages reclaim only), `--no-push` (redeploy web without pushing). Prefer this over running the raw commands.
 
 ### ⚠️ Deployment gotchas (learned the hard way)
 
@@ -147,3 +148,71 @@ This project uses graphify. See `.agents/rules/graphify.md` for full rules (trig
 ## Expo Version Note
 
 The mobile app uses Expo SDK 56 (React Native 0.85.3, React 19). Always check [https://docs.expo.dev/versions/v56.0.0/](https://docs.expo.dev/versions/v56.0.0/) before using Expo APIs — the API surface changes significantly between SDK versions.
+
+---
+
+## Working Guidelines
+
+Behavioral guidelines to reduce common LLM coding mistakes (from [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills)). These apply alongside the project-specific instructions above.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

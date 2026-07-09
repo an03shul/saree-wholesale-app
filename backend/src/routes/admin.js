@@ -11,9 +11,14 @@ function hashPin(pin) {
 // All admin routes require auth + admin role
 router.use(requireAuth, requireAdmin);
 
+const ROLES = ['admin', 'staff', 'staff2', 'accountant', 'manufacturer'];
+
 // GET /api/admin/users
 router.get('/users', (req, res) => {
-  const users = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at').all();
+  const users = db.prepare(`
+    SELECT u.id, u.username, u.role, u.brand_id, b.name AS brand_name, u.created_at
+    FROM users u LEFT JOIN brands b ON b.id = u.brand_id ORDER BY u.created_at
+  `).all();
   res.json(users);
 });
 
@@ -24,12 +29,14 @@ router.post('/users', (req, res) => {
   if (String(pin).length < 4) return res.status(400).json({ error: 'PIN must be at least 4 digits' });
 
   try {
-    const safeRole = ['admin', 'staff', 'staff2'].includes(role) ? role : 'staff';
-    const result = db.prepare('INSERT INTO users (username, pin_hash, role) VALUES (?,?,?)')
-      .run(username.trim().toLowerCase(), hashPin(pin), safeRole);
+    const safeRole = ROLES.includes(role) ? role : 'staff';
+    // brand_id only meaningful for manufacturers (they're scoped to one brand).
+    const brand_id = safeRole === 'manufacturer' && req.body.brand_id ? Number(req.body.brand_id) : null;
+    const result = db.prepare('INSERT INTO users (username, pin_hash, role, brand_id) VALUES (?,?,?,?)')
+      .run(username.trim().toLowerCase(), hashPin(pin), safeRole, brand_id);
     db.prepare('INSERT INTO activity_log (user_id, username, action, details) VALUES (?,?,?,?)')
-      .run(req.user.id, req.user.username, 'Added user', `username: ${username}, role: ${role || 'staff'}`);
-    res.status(201).json({ id: result.lastInsertRowid, username, role: role || 'staff' });
+      .run(req.user.id, req.user.username, 'Added user', `username: ${username}, role: ${safeRole}`);
+    res.status(201).json({ id: result.lastInsertRowid, username, role: safeRole, brand_id });
   } catch (e) {
     if (e.message?.includes('UNIQUE')) return res.status(400).json({ error: 'Username already exists' });
     throw e;

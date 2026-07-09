@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Image, Keyboard,
+  StyleSheet, Image, Keyboard, Modal,
 } from 'react-native';
 import { designsApi, getThumbUrl } from '../api/client';
+import { notify } from '../utils/share';
 import { useUser } from '../../App';
-import { colors, shadow } from '../constants/theme';
+import { colors, shadow, modalBase } from '../constants/theme';
 
 // Staff2 "Rates" tab — the main-screen search bar only. Look up a design by
 // number / item / brand to see its price and stock. No catalog browsing.
@@ -15,6 +16,25 @@ export default function RatesScreen() {
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef(null);
+  const canEditRate = user?.role === 'accountant' || user?.role === 'admin';
+  const [editTarget, setEditTarget] = useState(null); // design being re-rated
+  const [newRate, setNewRate] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const saveRate = async () => {
+    const rate = parseFloat(newRate);
+    if (!(rate >= 0)) return notify('Invalid', 'Enter a valid rate');
+    setSaving(true);
+    try {
+      await designsApi.updateRate(editTarget.id, rate);
+      setResults(rs => rs.map(d => d.id === editTarget.id ? { ...d, rate } : d));
+      setEditTarget(null);
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Could not update rate');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const search = (q) => {
     setQuery(q);
@@ -90,7 +110,13 @@ export default function RatesScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.resultDesign} numberOfLines={1}>Design {d.design_number}</Text>
                 <Text style={styles.resultSub} numberOfLines={1}>{d.brand_name} · {d.item_name}</Text>
-                <Text style={styles.resultRate}>₹{d.rate}</Text>
+                {canEditRate ? (
+                  <TouchableOpacity onPress={() => { setEditTarget(d); setNewRate(String(d.rate ?? '')); }}>
+                    <Text style={styles.resultRateEdit}>₹{d.rate}  ✏️</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.resultRate}>₹{d.rate}</Text>
+                )}
               </View>
               <View style={[styles.stockPill, d.in_stock ? styles.stockPillIn : styles.stockPillOut]}>
                 <Text style={[styles.stockPillText, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>
@@ -107,6 +133,25 @@ export default function RatesScreen() {
           <Text style={styles.emptySubtitle}>Type a design number, item, or brand{'\n'}to check its price and stock</Text>
         </View>
       )}
+
+      <Modal visible={!!editTarget} transparent animationType="slide">
+        <View style={modalBase.overlay}>
+          <View style={modalBase.sheet}>
+            <Text style={modalBase.title}>Update Rate</Text>
+            {editTarget && <Text style={{ color: colors.textSecondary, marginBottom: 14 }}>Design {editTarget.design_number} · {editTarget.brand_name}</Text>}
+            <TextInput style={modalBase.input} placeholder="Rate (₹)" placeholderTextColor={colors.textSecondary}
+              value={newRate} onChangeText={setNewRate} keyboardType="decimal-pad" autoFocus />
+            <View style={modalBase.row}>
+              <TouchableOpacity style={modalBase.btnSecondary} onPress={() => setEditTarget(null)}>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={modalBase.btnPrimary} onPress={saveRate} disabled={saving}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{saving ? 'Saving…' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -136,6 +181,7 @@ const styles = StyleSheet.create({
   resultDesign: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   resultSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   resultRate: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 3 },
+  resultRateEdit: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 3, textDecorationLine: 'underline' },
   stockPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   stockPillIn: { backgroundColor: '#E8F5E9' },
   stockPillOut: { backgroundColor: '#FEE9E9' },

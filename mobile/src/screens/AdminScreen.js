@@ -4,7 +4,7 @@ import {
   StyleSheet, Alert, Modal, ActivityIndicator, ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { adminApi, authApi, setAuthToken, settingsApi } from '../api/client';
+import { adminApi, authApi, setAuthToken, settingsApi, brandsApi } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 
@@ -19,7 +19,8 @@ export default function AdminScreen({ user, onLogout }) {
   const [pinModal, setPinModal] = useState(false);
   const [changePinModal, setChangePinModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [form, setForm] = useState({ username: '', pin: '', role: 'staff' });
+  const [form, setForm] = useState({ username: '', pin: '', role: 'staff', brand_id: null });
+  const [brands, setBrands] = useState([]);
   const [newPin, setNewPin] = useState('');
   const [changePinForm, setChangePinForm] = useState({ current: '', next: '' });
 
@@ -67,14 +68,18 @@ export default function AdminScreen({ user, onLogout }) {
     else if (t === 'template') loadTemplate();
   };
 
-  React.useEffect(() => { loadActivity(); }, []);
+  React.useEffect(() => {
+    loadActivity();
+    brandsApi.getAll().then(({ data }) => setBrands(data)).catch(() => {});
+  }, []);
 
   const addUser = async () => {
     if (!form.username || !form.pin) return notify('Required', 'Username and PIN are required');
+    if (form.role === 'manufacturer' && !form.brand_id) return notify('Required', 'Pick a brand for the manufacturer');
     try {
       await adminApi.addUser(form);
       setAddModal(false);
-      setForm({ username: '', pin: '', role: 'staff' });
+      setForm({ username: '', pin: '', role: 'staff', brand_id: null });
       loadUsers();
     } catch (e) {
       notify('Error', e.response?.data?.error || 'Could not add user');
@@ -255,15 +260,31 @@ export default function AdminScreen({ user, onLogout }) {
             <TextInput style={styles.input} placeholder="PIN (min 4 digits)" value={form.pin}
               onChangeText={v => setForm(f => ({ ...f, pin: v }))} keyboardType="number-pad" secureTextEntry maxLength={8} />
             <View style={styles.roleRow}>
-              {['staff', 'staff2', 'admin'].map(r => (
+              {['staff', 'staff2', 'accountant', 'manufacturer', 'admin'].map(r => (
                 <TouchableOpacity key={r} style={[styles.roleBtn, form.role === r && styles.roleBtnActive]}
-                  onPress={() => setForm(f => ({ ...f, role: r }))}>
+                  onPress={() => setForm(f => ({ ...f, role: r, brand_id: null }))}>
                   <Text style={form.role === r ? { color: '#fff' } : {}}>{r}</Text>
                 </TouchableOpacity>
               ))}
             </View>
             {form.role === 'staff2' && (
               <Text style={styles.roleHint}>staff2 can only see rates, tasks & order inquiries.</Text>
+            )}
+            {form.role === 'accountant' && (
+              <Text style={styles.roleHint}>accountant can edit design rates & upload discount docs.</Text>
+            )}
+            {form.role === 'manufacturer' && (
+              <>
+                <Text style={styles.roleHint}>manufacturer uploads invoices & dispatch photos for their brand, and sees its stock & sales. Pick their brand:</Text>
+                <View style={styles.roleRow}>
+                  {brands.map(b => (
+                    <TouchableOpacity key={b.id} style={[styles.roleBtn, form.brand_id === b.id && styles.roleBtnActive]}
+                      onPress={() => setForm(f => ({ ...f, brand_id: b.id }))}>
+                      <Text style={form.brand_id === b.id ? { color: '#fff' } : {}}>{b.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
             )}
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.btnSecondary} onPress={() => setAddModal(false)}><Text>Cancel</Text></TouchableOpacity>

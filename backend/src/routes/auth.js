@@ -39,7 +39,7 @@ router.post('/login', (req, res) => {
   db.prepare('INSERT INTO sessions (token, user_id) VALUES (?,?)').run(token, user.id);
   db.prepare('INSERT INTO activity_log (user_id, username, action) VALUES (?,?,?)').run(user.id, user.username, 'Logged in');
 
-  res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+  res.json({ token, user: { id: user.id, username: user.username, role: user.role, brand_id: user.brand_id } });
 });
 
 // POST /api/auth/logout
