@@ -6,10 +6,7 @@ import {
 import { manufacturerApi, getThumbUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
 import { notify } from '../utils/share';
-import { parseServerDate } from '../utils/date';
 import { colors, shadow } from '../constants/theme';
-
-const fmtDate = (dt) => parseServerDate(dt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 // Upload a dispatched-item photo, tagged by design number → attaches to that design.
 export function DispatchScreen() {
@@ -84,38 +81,6 @@ export function StockScreen() {
   );
 }
 
-// Read-only sales (orders) for the manufacturer's brand.
-export function SalesScreen() {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => {
-    try { const { data } = await manufacturerApi.sales(); setRows(data); }
-    catch { notify('Error', 'Could not load sales'); } finally { setLoading(false); }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
-  return (
-    <FlatList
-      style={styles.list}
-      data={rows}
-      keyExtractor={o => String(o.id)}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
-      ListEmptyComponent={<Text style={styles.empty}>No sales yet</Text>}
-      renderItem={({ item: o }) => (
-        <View style={styles.card}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{o.customer_name || 'Order'}</Text>
-            <Text style={styles.sub}>{o.design_number ? `Design ${o.design_number} · ` : ''}Qty {o.quantity} · {fmtDate(o.created_at)}</Text>
-          </View>
-          <Text style={styles.status}>{o.status}</Text>
-        </View>
-      )}
-    />
-  );
-}
-
 const styles = StyleSheet.create({
   padded: { flex: 1, backgroundColor: colors.background, padding: 20 },
   list: { flex: 1, backgroundColor: colors.background },
@@ -133,6 +98,5 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   qty: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
   stockTag: { fontSize: 11, fontWeight: '700', marginTop: 2 },
-  status: { fontSize: 12, fontWeight: '700', color: colors.primary, textTransform: 'capitalize' },
   empty: { textAlign: 'center', marginTop: 60, color: colors.textSecondary },
 });

@@ -43,19 +43,4 @@ router.get('/stock', (req, res) => {
   `).all(req.user.brand_id));
 });
 
-// GET /sales — orders for the brand.
-router.get('/sales', (req, res) => {
-  const brand = db.prepare('SELECT name FROM brands WHERE id = ?').get(req.user.brand_id);
-  // ponytail: match by joined brand_id, plus denormalized brand_name for custom-form orders.
-  res.json(db.prepare(`
-    SELECT o.*, COALESCE(d.design_number, o.design_number) AS design_number,
-           COALESCE(i.name, o.item_name) AS item_name, d.photo_path
-    FROM orders o
-    LEFT JOIN designs d ON d.id = o.design_id
-    LEFT JOIN items i ON i.id = d.item_id
-    WHERE i.brand_id = ? OR o.brand_name = ?
-    ORDER BY o.created_at DESC
-  `).all(req.user.brand_id, brand ? brand.name : ''));
-});
-
 module.exports = router;

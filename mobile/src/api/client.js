@@ -85,7 +85,6 @@ export const filesApi = {
 export const manufacturerApi = {
   dispatchPhoto: (formData) => api.post('/api/manufacturer/dispatch-photo', formData, { timeout: 30000 }),
   stock: () => api.get('/api/manufacturer/stock'),
-  sales: () => api.get('/api/manufacturer/sales'),
 };
 // Download URL carries the token as a query param (requireAuth honors ?token),
 // so a plain new-tab/Linking open works without an auth header.

@@ -23,7 +23,7 @@ import CreateFormScreen from './src/screens/CreateFormScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
-import { DispatchScreen, StockScreen, SalesScreen } from './src/screens/ManufacturerScreens';
+import { DispatchScreen, StockScreen } from './src/screens/ManufacturerScreens';
 import { authApi, setAuthToken, loadStoredToken, tasksApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
 import { confirmAction } from './src/utils/share';
@@ -216,7 +216,7 @@ function AccountantApp({ user, onLogout }) {
 // Limited navigator for the 'manufacturer' (Surat) role — upload dispatch photos
 // + invoices/order-forms for their brand, and see its stock & sales. Read-only otherwise.
 function ManufacturerApp({ user, onLogout }) {
-  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦', Sales: '🧾' };
+  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦' };
   const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
   const baseOpts = { headerShown: true, headerStyle, headerTintColor, headerTitleStyle, headerRight };
   return (
@@ -236,7 +236,6 @@ function ManufacturerApp({ user, onLogout }) {
             {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} emptyText="Upload your invoices & order forms" />}
           </Tab.Screen>
           <Tab.Screen name="Stock" component={StockScreen} options={{ ...baseOpts, title: 'My Stock' }} />
-          <Tab.Screen name="Sales" component={SalesScreen} options={{ ...baseOpts, title: 'My Sales' }} />
         </Tab.Navigator>
       </NavigationContainer>
       <BrandFooter />
