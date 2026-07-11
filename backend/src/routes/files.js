@@ -16,17 +16,14 @@ const SELECT = `
   LEFT JOIN users u ON u.id = f.uploaded_by
 `;
 
-// POST /api/files — upload a discount (accountant) or invoice/orderform (manufacturer).
-// Admin may upload any type for any brand.
+// POST /api/files — upload any doc type (admin/accountant) or invoice/orderform (manufacturer).
 router.post('/', requireRole('admin', 'accountant', 'manufacturer'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'File is required' });
   let { type, label } = req.body;
   let brand_id = req.body.brand_id ? Number(req.body.brand_id) : null;
 
   // Role decides what a user may upload and for whom.
-  if (req.user.role === 'accountant') {
-    type = 'discount';
-  } else if (req.user.role === 'manufacturer') {
+  if (req.user.role === 'manufacturer') {
     if (!['invoice', 'orderform'].includes(type)) return res.status(400).json({ error: 'type must be invoice or orderform' });
     brand_id = req.user.brand_id; // locked to their own brand
     if (!brand_id) return res.status(400).json({ error: 'Your account is not linked to a brand' });

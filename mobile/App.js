@@ -182,7 +182,7 @@ function Staff2App({ user, onLogout }) {
 }
 
 // Limited navigator for the 'accountant' role — edit design rates and upload
-// discount docs. No catalog, orders, tasks, or admin.
+// discount/invoice/orderform docs. No catalog, orders, tasks, or admin.
 function AccountantApp({ user, onLogout }) {
   const icons = { Rates: '🏷️', Discounts: '🧾', Invoices: '📄' };
   const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
@@ -204,7 +204,7 @@ function AccountantApp({ user, onLogout }) {
             {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag emptyText="Upload a discount doc from a manufacturer" />}
           </Tab.Screen>
           <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
-            {() => <FilesScreen types={['invoice', 'orderform']} emptyText="Manufacturer invoices & order forms appear here" />}
+            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} allowBrandTag emptyText="Manufacturer invoices & order forms appear here" />}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
