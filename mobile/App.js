@@ -111,7 +111,7 @@ function MoreStack({ user, onLogout }) {
       <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: 'Bulk Add Designs' }} />
       <Stack.Screen name="CreateForm" component={CreateFormScreen} options={{ title: 'Create Order Form' }} />
       <Stack.Screen name="Documents" options={{ title: 'Documents' }}>
-        {() => <FilesScreen types={['invoice', 'orderform', 'discount']} emptyText="Invoices, order forms & discounts appear here" />}
+        {() => <FilesScreen types={['invoice', 'orderform', 'discount']} canRename canDelete emptyText="Invoices, order forms & discounts appear here" />}
       </Stack.Screen>
       <Stack.Screen name="Admin" options={{ headerShown: false }}>
         {() => <AdminScreen user={user} onLogout={onLogout} />}
@@ -201,10 +201,10 @@ function AccountantApp({ user, onLogout }) {
         >
           <Tab.Screen name="Rates" component={RatesScreen} options={{ ...baseOpts, title: 'Edit Rates' }} />
           <Tab.Screen name="Discounts" options={{ ...baseOpts, title: 'Discounts' }}>
-            {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag emptyText="Upload a discount doc from a manufacturer" />}
+            {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag canRename emptyText="Upload a discount doc from a manufacturer" />}
           </Tab.Screen>
           <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
-            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} allowBrandTag emptyText="Manufacturer invoices & order forms appear here" />}
+            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} allowBrandTag canRename emptyText="Manufacturer invoices & order forms appear here" />}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>

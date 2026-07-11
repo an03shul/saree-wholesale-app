@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const { Jimp } = require('jimp');
 const db = require('../db/database');
 const storage = require('../services/storage');
 const { requireAuth, requireAdmin, requireRole } = require('../middleware/auth');
@@ -31,8 +32,20 @@ router.post('/', requireRole('admin', 'accountant', 'manufacturer'), upload.sing
     return res.status(400).json({ error: 'Invalid type' });
   }
 
-  const path = storage.generateKey(req.file.originalname || 'doc');
-  await storage.putFile(path, req.file.buffer);
+  // Recompress image uploads (phone photos are 3-8MB) to a web-sized JPEG so
+  // lists and downloads stay fast on shop data plans. PDFs pass through as-is.
+  let { buffer } = req.file;
+  let name = req.file.originalname || 'doc';
+  if ((req.file.mimetype || '').startsWith('image/')) {
+    try {
+      const img = await Jimp.read(buffer);
+      if (img.width > 1600) img.resize({ w: 1600 }); // keep invoice text legible
+      buffer = await img.getBuffer('image/jpeg', { quality: 72 });
+      name = name.replace(/\.[^.]*$/, '') + '.jpg';
+    } catch { /* not decodable — store the original */ }
+  }
+  const path = storage.generateKey(name);
+  await storage.putFile(path, buffer);
   const r = db.prepare('INSERT INTO files (type, brand_id, label, path, uploaded_by) VALUES (?,?,?,?,?)')
     .run(type, brand_id, (label || '').trim() || null, path, req.user.id);
   res.status(201).json(db.prepare(`${SELECT} WHERE f.id = ?`).get(r.lastInsertRowid));
@@ -58,6 +71,15 @@ router.get('/:id/download', requireRole('admin', 'accountant', 'manufacturer'), 
   res.set('Content-Type', storage.contentTypeFor(f.path));
   res.set('Content-Disposition', `attachment; filename="${(f.label || f.type)}${require('path').extname(f.path)}"`);
   res.send(buf);
+});
+
+// PATCH /api/files/:id — rename (label only). Admin and accountant.
+router.patch('/:id', requireRole('admin', 'accountant'), (req, res) => {
+  const label = (req.body.label || '').trim();
+  if (!label) return res.status(400).json({ error: 'Label is required' });
+  const r = db.prepare('UPDATE files SET label = ? WHERE id = ?').run(label, req.params.id);
+  if (r.changes === 0) return res.status(404).json({ error: 'Not found' });
+  res.json(db.prepare(`${SELECT} WHERE f.id = ?`).get(req.params.id));
 });
 
 // DELETE /api/files/:id — admin only.

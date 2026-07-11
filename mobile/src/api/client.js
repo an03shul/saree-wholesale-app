@@ -79,6 +79,7 @@ export const designsApi = {
 export const filesApi = {
   list: (params) => api.get('/api/files', { params }),
   upload: (formData) => api.post('/api/files', formData, { timeout: 30000 }),
+  rename: (id, label) => api.patch(`/api/files/${id}`, { label }),
   delete: (id) => api.delete(`/api/files/${id}`),
 };
 

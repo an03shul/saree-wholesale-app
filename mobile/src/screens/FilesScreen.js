@@ -5,14 +5,14 @@ import {
 } from 'react-native';
 import { filesApi, brandsApi, getFileDownloadUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
-import { notify } from '../utils/share';
+import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 import { colors, shadow, modalBase } from '../constants/theme';
 
 // Reusable doc list: filters files to `types`, tap-to-download, optional upload.
 // Used for accountant discounts (upload) and read-only invoice/order-form views.
-//   props: { types:[...], canUpload, uploadType, uploadTypes:[...], allowBrandTag, emptyText }
-export default function FilesScreen({ types, canUpload, uploadType, uploadTypes, allowBrandTag, emptyText }) {
+//   props: { types:[...], canUpload, uploadType, uploadTypes:[...], allowBrandTag, canRename, canDelete, emptyText }
+export default function FilesScreen({ types, canUpload, uploadType, uploadTypes, allowBrandTag, canRename, canDelete, emptyText }) {
   const [upType, setUpType] = useState(uploadType || (uploadTypes && uploadTypes[0]) || types[0]);
   const [files, setFiles] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -23,6 +23,8 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
   const [label, setLabel] = useState('');
   const [brandId, setBrandId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [renaming, setRenaming] = useState(null); // file being renamed
+  const [renameLabel, setRenameLabel] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +59,25 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
     } finally { setSaving(false); }
   };
 
+  const doRename = async () => {
+    if (!renameLabel.trim()) return;
+    setSaving(true);
+    try {
+      await filesApi.rename(renaming.id, renameLabel.trim());
+      setRenaming(null);
+      load();
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Rename failed');
+    } finally { setSaving(false); }
+  };
+
+  const doDelete = (f) => {
+    confirmAction('Delete', `Delete "${f.label || f.type}"?`, async () => {
+      try { await filesApi.delete(f.id); load(); }
+      catch (e) { notify('Error', e.response?.data?.error || 'Delete failed'); }
+    }, 'Delete');
+  };
+
   const open = (id) => {
     const url = getFileDownloadUrl(id);
     if (Platform.OS === 'web') window.open(url, '_blank');
@@ -88,6 +109,16 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
               <Text style={styles.label} numberOfLines={1}>{f.label || f.type}</Text>
               <Text style={styles.sub}>{f.type}{f.brand_name ? ` · ${f.brand_name}` : ''} · {fmt(f.created_at)}</Text>
             </View>
+            {canRename && (
+              <TouchableOpacity style={styles.action} onPress={() => { setRenaming(f); setRenameLabel(f.label || ''); }}>
+                <Text style={{ fontSize: 16 }}>✏️</Text>
+              </TouchableOpacity>
+            )}
+            {canDelete && (
+              <TouchableOpacity style={styles.action} onPress={() => doDelete(f)}>
+                <Text style={{ fontSize: 16 }}>🗑️</Text>
+              </TouchableOpacity>
+            )}
             <Text style={styles.download}>⬇</Text>
           </TouchableOpacity>
         )}
@@ -130,6 +161,19 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!renaming} transparent animationType="slide">
+        <View style={modalBase.overlay}>
+          <View style={modalBase.sheet}>
+            <Text style={modalBase.title}>Rename</Text>
+            <TextInput style={modalBase.input} placeholder="Label" placeholderTextColor={colors.textSecondary} value={renameLabel} onChangeText={setRenameLabel} autoFocus />
+            <View style={modalBase.row}>
+              <TouchableOpacity style={modalBase.btnSecondary} onPress={() => setRenaming(null)}><Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={modalBase.btnPrimary} onPress={doRename} disabled={saving}><Text style={{ color: '#fff', fontWeight: '700' }}>{saving ? 'Saving…' : 'Save'}</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -141,6 +185,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2, textTransform: 'capitalize' },
   download: { fontSize: 20, color: colors.primary },
+  action: { padding: 6 },
   empty: { alignItems: 'center', marginTop: 80, paddingHorizontal: 20 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
   emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 },
