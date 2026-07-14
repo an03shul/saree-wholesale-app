@@ -63,14 +63,23 @@ router.get('/', requireRole('admin', 'accountant', 'manufacturer'), (req, res) =
 
 // GET /api/files/:id/download — auth-gated stream (financial docs stay off public /uploads).
 router.get('/:id/download', requireRole('admin', 'accountant', 'manufacturer'), async (req, res) => {
-  const f = db.prepare('SELECT * FROM files WHERE id = ?').get(req.params.id);
-  if (!f) return res.status(404).json({ error: 'Not found' });
-  if (req.user.role === 'manufacturer' && f.brand_id !== req.user.brand_id) return res.status(403).json({ error: 'Not allowed' });
-  const buf = await storage.getFile(f.path);
-  if (!buf) return res.status(404).json({ error: 'File missing' });
-  res.set('Content-Type', storage.contentTypeFor(f.path));
-  res.set('Content-Disposition', `attachment; filename="${(f.label || f.type)}${require('path').extname(f.path)}"`);
-  res.send(buf);
+  try {
+    const f = db.prepare('SELECT * FROM files WHERE id = ?').get(req.params.id);
+    if (!f) return res.status(404).json({ error: 'Not found' });
+    if (req.user.role === 'manufacturer' && f.brand_id !== req.user.brand_id) return res.status(403).json({ error: 'Not allowed' });
+    const buf = await storage.getFile(f.path);
+    if (!buf) return res.status(404).json({ error: 'File missing' });
+    res.set('Content-Type', storage.contentTypeFor(f.path));
+    // Non-ASCII labels (Hindi etc.) are illegal in raw header values — ASCII
+    // fallback in filename=, real name RFC 5987-encoded in filename*.
+    const fname = `${(f.label || f.type)}${require('path').extname(f.path)}`;
+    const ascii = fname.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    res.set('Content-Disposition', `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fname)}`);
+    res.send(buf);
+  } catch (e) {
+    console.error('File download failed:', e.message);
+    res.status(500).json({ error: 'Download failed' });
+  }
 });
 
 // PATCH /api/files/:id — rename (label only). Admin and accountant.
