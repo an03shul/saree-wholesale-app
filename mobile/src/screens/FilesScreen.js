@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet,
-  Modal, ActivityIndicator, RefreshControl, Platform, Linking,
+  Modal, ActivityIndicator, RefreshControl, Platform, Linking, Image,
 } from 'react-native';
 import { filesApi, brandsApi, getFileDownloadUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
@@ -9,7 +9,7 @@ import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 import { colors, shadow, modalBase } from '../constants/theme';
 
-// Reusable doc list: filters files to `types`, tap-to-download, optional upload.
+// Reusable doc list: filters files to `types`, tap to view (image) or download (PDF), optional upload.
 // Used for accountant discounts (upload) and read-only invoice/order-form views.
 //   props: { types:[...], canUpload, uploadType, uploadTypes:[...], allowBrandTag, canRename, canDelete, emptyText }
 export default function FilesScreen({ types, canUpload, uploadType, uploadTypes, allowBrandTag, canRename, canDelete, emptyText }) {
@@ -25,6 +25,7 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
   const [saving, setSaving] = useState(false);
   const [renaming, setRenaming] = useState(null); // file being renamed
   const [renameLabel, setRenameLabel] = useState('');
+  const [viewing, setViewing] = useState(null); // image file shown full-screen
 
   const load = useCallback(async () => {
     try {
@@ -103,7 +104,10 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
           </View>
         }
         renderItem={({ item: f }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => open(f.id)}>
+          // Images open in an in-app viewer; PDFs still open/download in the
+          // browser (Content-Disposition download looked like "nothing happened"
+          // for pictures on the installed PWA).
+          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => (/\.pdf$/i.test(f.path) ? open(f.id) : setViewing(f))}>
             <Text style={styles.fileIcon}>{/\.pdf$/i.test(f.path) ? '📄' : '🖼️'}</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.label} numberOfLines={1}>{f.label || f.type}</Text>
@@ -119,7 +123,9 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
                 <Text style={{ fontSize: 16 }}>🗑️</Text>
               </TouchableOpacity>
             )}
-            <Text style={styles.download}>⬇</Text>
+            <TouchableOpacity style={styles.action} onPress={() => open(f.id)}>
+              <Text style={styles.download}>⬇</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
         )}
       />
@@ -162,6 +168,18 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
         </View>
       </Modal>
 
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+        <View style={styles.viewer}>
+          {viewing && (
+            <Image source={{ uri: getFileDownloadUrl(viewing.id) }} style={{ flex: 1 }} resizeMode="contain" />
+          )}
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewing(null)}>
+            <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>✕</Text>
+          </TouchableOpacity>
+          <Text style={styles.viewerLabel} numberOfLines={1}>{viewing?.label || viewing?.type}</Text>
+        </View>
+      </Modal>
+
       <Modal visible={!!renaming} transparent animationType="slide">
         <View style={modalBase.overlay}>
           <View style={modalBase.sheet}>
@@ -186,6 +204,9 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2, textTransform: 'capitalize' },
   download: { fontSize: 20, color: colors.primary },
   action: { padding: 6 },
+  viewer: { flex: 1, backgroundColor: '#000' },
+  viewerClose: { position: 'absolute', top: 40, right: 20, padding: 10 },
+  viewerLabel: { position: 'absolute', bottom: 30, alignSelf: 'center', color: '#fff', fontSize: 14, maxWidth: '80%', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: 'hidden' },
   empty: { alignItems: 'center', marginTop: 80, paddingHorizontal: 20 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
   emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 },
