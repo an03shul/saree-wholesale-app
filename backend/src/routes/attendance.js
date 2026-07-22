@@ -8,9 +8,9 @@ const { requireAdmin } = require('../middleware/auth');
 // with SHOP_LAT / SHOP_LNG / SHOP_RADIUS_M env vars.
 const SHOP_LAT = parseFloat(process.env.SHOP_LAT || '26.1948327');
 const SHOP_LNG = parseFloat(process.env.SHOP_LNG || '78.1557818');
-// ponytail: 200m tolerates normal GPS drift (indoors it's worse) without letting
+// ponytail: 100m tolerates normal GPS drift (indoors it's worse) without letting
 // someone check in from home. Tighten via SHOP_RADIUS_M once you see real spread.
-const SHOP_RADIUS_M = parseInt(process.env.SHOP_RADIUS_M || '200', 10);
+const SHOP_RADIUS_M = parseInt(process.env.SHOP_RADIUS_M || '100', 10);
 
 // IST shop calendar date 'YYYY-MM-DD' (India = UTC+5:30, no DST).
 function istToday() {
