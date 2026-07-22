@@ -457,7 +457,9 @@ const styles = StyleSheet.create({
   btnSecondary: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#ddd' },
   changePinLink: { marginBottom: 16 },
   changePinLinkText: { color: '#c0392b', fontWeight: '600', fontSize: 14 },
-  tabScroll: { backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
+  // Horizontal ScrollView collapses to a sliver in this column layout unless its
+  // height is pinned — keep it fixed so the tab row is never clipped.
+  tabScroll: { backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee', flexGrow: 0, flexShrink: 0, height: 52 },
   templateTitle: { fontSize: 18, fontWeight: '800', color: '#2c1810', marginBottom: 12 },
   templateHint: { fontSize: 13, color: '#666', backgroundColor: '#f5f0eb', padding: 12, borderRadius: 10, marginBottom: 16, lineHeight: 22 },
   varName: { color: '#8B1A2B', fontWeight: '700' },
