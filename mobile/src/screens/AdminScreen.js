@@ -221,6 +221,7 @@ export default function AdminScreen({ user, onLogout }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{s.username}</Text>
                 <Text style={styles.watchSub}>{relTime(s.last_active)}</Text>
+                <Text style={styles.loginLine}>🔑 {s.login_at ? `Logged in ${formatTime(s.login_at)}` : 'not logged in'}</Text>
               </View>
               <View style={styles.countPill}>
                 <Text style={styles.countNum}>{s.actions_today}</Text>
@@ -481,6 +482,7 @@ const styles = StyleSheet.create({
   watchCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   watchSub: { color: '#888', fontSize: 13, marginTop: 2 },
+  loginLine: { color: '#aaa', fontSize: 12, marginTop: 3 },
   countPill: { alignItems: 'center', minWidth: 48 },
   countNum: { fontSize: 20, fontWeight: '800', color: '#8B1A2B' },
   countLbl: { fontSize: 10, color: '#aaa', textTransform: 'uppercase' },

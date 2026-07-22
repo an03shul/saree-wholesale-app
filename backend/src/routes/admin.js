@@ -88,7 +88,8 @@ router.get('/staff-activity', (req, res) => {
   const rows = db.prepare(`
     SELECT u.id, u.username, u.role,
       (SELECT MAX(created_at) FROM staff_activity sa WHERE sa.user_id = u.id) AS last_active,
-      (SELECT COUNT(*) FROM staff_activity sa WHERE sa.user_id = u.id AND sa.created_at >= ?) AS actions_today
+      (SELECT COUNT(*) FROM staff_activity sa WHERE sa.user_id = u.id AND sa.created_at >= ?) AS actions_today,
+      (SELECT MAX(created_at) FROM sessions se WHERE se.user_id = u.id) AS login_at
     FROM users u
     WHERE u.role != 'admin'
     ORDER BY last_active DESC
