@@ -39,6 +39,12 @@ export const adminApi = {
   getStaffFeed: (userId) => api.get(`/api/admin/staff-activity/${userId}`),
 };
 
+export const attendanceApi = {
+  checkin: (coords) => api.post('/api/attendance/checkin', coords),
+  today: () => api.get('/api/attendance/today'),
+  month: (month) => api.get('/api/attendance/month', { params: { month } }),
+};
+
 export const fabricsApi = {
   getAll: () => api.get('/api/fabrics'),
   create: (name) => api.post('/api/fabrics', { name }),

@@ -98,6 +98,19 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_staff_activity_user_time ON staff_activity(user_id, created_at);
 
+  -- Daily shop attendance. One check-in per staff per IST calendar day (UNIQUE),
+  -- geo-verified: lat/lng captured at check-in must be within the shop radius
+  -- (enforced in routes/attendance.js) so presence can't be faked from home.
+  CREATE TABLE IF NOT EXISTS attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    lat REAL,
+    lng REAL,
+    UNIQUE(user_id, date)
+  );
+
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,

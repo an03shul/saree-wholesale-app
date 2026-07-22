@@ -4,7 +4,7 @@ import {
   StyleSheet, Alert, Modal, ActivityIndicator, ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { adminApi, authApi, setAuthToken, settingsApi, brandsApi } from '../api/client';
+import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 
@@ -26,6 +26,20 @@ export default function AdminScreen({ user, onLogout }) {
   const [staffAct, setStaffAct] = useState([]);
   const [feedUser, setFeedUser] = useState(null);
   const [feed, setFeed] = useState([]);
+  const [attMonth, setAttMonth] = useState(() => {
+    const ist = new Date(Date.now() + 5.5 * 3600 * 1000);
+    return ist.toISOString().slice(0, 7); // current IST month YYYY-MM
+  });
+  const [attRows, setAttRows] = useState([]);
+
+  const loadAttendance = useCallback(async (month) => {
+    setLoading(true);
+    try {
+      const { data } = await attendanceApi.month(month);
+      setAttRows(data.rows || []);
+    } catch { notify('Error', 'Could not load attendance'); }
+    finally { setLoading(false); }
+  }, []);
 
   const loadStaffAct = useCallback(async () => {
     setLoading(true);
@@ -86,6 +100,7 @@ export default function AdminScreen({ user, onLogout }) {
     setTab(t);
     if (t === 'activity') loadActivity();
     else if (t === 'staffwatch') loadStaffAct();
+    else if (t === 'attendance') loadAttendance(attMonth);
     else if (t === 'users') loadUsers();
     else if (t === 'template') loadTemplate();
   };
@@ -174,6 +189,41 @@ export default function AdminScreen({ user, onLogout }) {
     return '#e74c3c';               // stale
   };
 
+  const monthLabel = (ym) => {
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  };
+  const changeMonth = (delta) => {
+    const [y, m] = attMonth.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    setAttMonth(ym);
+    loadAttendance(ym);
+  };
+  const attByUser = () => {
+    const map = {};
+    attRows.forEach(r => {
+      if (!map[r.user_id]) map[r.user_id] = { username: r.username, days: [] };
+      if (r.date) map[r.user_id].days.push(r.date);
+    });
+    return Object.values(map).sort((a, b) => a.username.localeCompare(b.username));
+  };
+  const shareReport = async (list) => {
+    const lines = ['Gopiram Sarees — Attendance', monthLabel(attMonth), ''];
+    list.forEach(s => {
+      lines.push(`${s.username}: ${s.days.length} day${s.days.length === 1 ? '' : 's'} present`);
+      if (s.days.length) lines.push('  Days: ' + s.days.map(d => Number(d.slice(8))).join(', '));
+    });
+    const text = lines.join('\n');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) { await navigator.share({ title: 'Attendance', text }); return; }
+    } catch (e) { if (e?.name === 'AbortError') return; }
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) { await navigator.clipboard.writeText(text); notify('Copied', 'Attendance report copied to clipboard'); return; }
+    } catch {}
+    notify('Attendance', text);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -189,7 +239,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -231,6 +281,44 @@ export default function AdminScreen({ user, onLogout }) {
           )}
         />
       )}
+
+      {/* Attendance (geo-verified daily check-ins) */}
+      {tab === 'attendance' && !loading && (() => {
+        const list = attByUser();
+        return (
+          <FlatList
+            data={list}
+            keyExtractor={s => s.username}
+            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            ListHeaderComponent={
+              <View>
+                <View style={styles.monthBar}>
+                  <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthNav}><Text style={styles.monthNavTxt}>‹</Text></TouchableOpacity>
+                  <Text style={styles.monthLbl}>{monthLabel(attMonth)}</Text>
+                  <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthNav}><Text style={styles.monthNavTxt}>›</Text></TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.shareBtn} onPress={() => shareReport(list)}>
+                  <Text style={styles.shareBtnTxt}>⇪  Share month report</Text>
+                </TouchableOpacity>
+                <Text style={styles.watchHint}>Each day = one geo-verified check-in from the shop. Only you (admin) can view or share this.</Text>
+              </View>
+            }
+            ListEmptyComponent={<Text style={styles.empty}>No staff</Text>}
+            renderItem={({ item: s }) => (
+              <View style={styles.watchCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.userName}>{s.username}</Text>
+                  <Text style={styles.attDays}>{s.days.length ? s.days.map(d => Number(d.slice(8))).join(', ') : 'absent all month'}</Text>
+                </View>
+                <View style={styles.countPill}>
+                  <Text style={styles.countNum}>{s.days.length}</Text>
+                  <Text style={styles.countLbl}>days</Text>
+                </View>
+              </View>
+            )}
+          />
+        );
+      })()}
 
       {/* Activity Log */}
       {tab === 'activity' && !loading && (
@@ -488,4 +576,11 @@ const styles = StyleSheet.create({
   countLbl: { fontSize: 10, color: '#aaa', textTransform: 'uppercase' },
   feedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0ece6' },
   feedAction: { color: '#2c1810', fontSize: 14, flex: 1 },
+  monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  monthNav: { paddingHorizontal: 16, paddingVertical: 6 },
+  monthNavTxt: { fontSize: 28, color: '#8B1A2B', fontWeight: '700', lineHeight: 30 },
+  monthLbl: { fontSize: 17, fontWeight: '800', color: '#2c1810' },
+  shareBtn: { backgroundColor: '#8B1A2B', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 12 },
+  shareBtnTxt: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  attDays: { color: '#888', fontSize: 12, marginTop: 3, lineHeight: 17 },
 });

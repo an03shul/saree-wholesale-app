@@ -4,7 +4,7 @@ export const useUser = () => useContext(UserContext);
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Text, ActivityIndicator, View, Image, TouchableOpacity } from 'react-native';
+import { Text, ActivityIndicator, View, Image, TouchableOpacity, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import BrandsScreen from './src/screens/BrandsScreen';
@@ -24,7 +24,7 @@ import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
 import { DispatchScreen, StockScreen } from './src/screens/ManufacturerScreens';
-import { authApi, setAuthToken, loadStoredToken, tasksApi } from './src/api/client';
+import { authApi, setAuthToken, loadStoredToken, tasksApi, attendanceApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
 import { confirmAction } from './src/utils/share';
 
@@ -201,10 +201,10 @@ function AccountantApp({ user, onLogout }) {
         >
           <Tab.Screen name="Rates" component={RatesScreen} options={{ ...baseOpts, title: 'Edit Rates' }} />
           <Tab.Screen name="Discounts" options={{ ...baseOpts, title: 'Discounts' }}>
-            {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag canRename emptyText="Upload a discount doc from a manufacturer" />}
+            {() => <FilesScreen types={['discount']} canUpload uploadType="discount" allowBrandTag canRename canDelete="own" emptyText="Upload a discount doc from a manufacturer" />}
           </Tab.Screen>
           <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
-            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} allowBrandTag canRename emptyText="Manufacturer invoices & order forms appear here" />}
+            {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} allowBrandTag canRename canDelete="own" emptyText="Manufacturer invoices & order forms appear here" />}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
@@ -250,6 +250,78 @@ function BrandFooter() {
         Powered by Nayvert AI
       </Text>
     </View>
+  );
+}
+
+// Reads the device GPS once (PWA / browser geolocation). Rejects with a
+// user-facing message if unavailable or permission is denied.
+function getPosition() {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      return reject(new Error('Location is not available on this device.'));
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      (err) => reject(new Error(err.code === 1
+        ? 'Location permission denied. Allow location to check in.'
+        : 'Could not get your location. Move to an open area and try again.')),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+}
+
+// Auto-prompt attendance check-in for non-admin roles. Shows once per app open
+// until they've checked in today; geo-verified server-side (must be at the shop).
+function CheckInGate({ user }) {
+  const [status, setStatus] = useState('loading'); // loading | need | done | dismissed
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    attendanceApi.today()
+      .then(({ data }) => setStatus(data.checked_in ? 'done' : 'need'))
+      .catch(() => setStatus('done')); // fail open — never block the app if the check errors
+  }, []);
+
+  const checkIn = async () => {
+    setBusy(true); setError('');
+    try {
+      const coords = await getPosition();
+      await attendanceApi.checkin(coords);
+      setStatus('done');
+    } catch (e) {
+      setError(e.response?.data?.error || e.message || 'Could not check in.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (status !== 'need') return null;
+  const now = new Date();
+  return (
+    <Modal visible transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 28 }}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 26, alignItems: 'center' }}>
+          <Text style={{ fontSize: 40, marginBottom: 6 }}>📍</Text>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: '#2c1810' }}>Good day, {user.username}</Text>
+          <Text style={{ color: '#888', marginTop: 4, marginBottom: 20 }}>
+            {now.toLocaleDateString('en-IN', { day: '2-digit', month: 'long' })} · mark your attendance
+          </Text>
+          <TouchableOpacity onPress={checkIn} disabled={busy}
+            style={{ backgroundColor: '#8B1A2B', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 14, minWidth: 220, alignItems: 'center', opacity: busy ? 0.7 : 1 }}>
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>✓ Check in now</Text>}
+          </TouchableOpacity>
+          {busy && <Text style={{ color: '#aaa', fontSize: 12, marginTop: 10 }}>Getting your location…</Text>}
+          {!!error && <Text style={{ color: '#c0392b', fontSize: 13, marginTop: 14, textAlign: 'center' }}>{error}</Text>}
+          <Text style={{ color: '#bbb', fontSize: 11, marginTop: 16, textAlign: 'center' }}>
+            Your location is checked to confirm you're at the shop.
+          </Text>
+          <TouchableOpacity onPress={() => setStatus('dismissed')} style={{ marginTop: 14 }}>
+            <Text style={{ color: '#999', fontSize: 13 }}>Not now</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -301,6 +373,7 @@ export default function App() {
           : user.role === 'manufacturer'
           ? <ManufacturerApp user={user} onLogout={handleLogout} />
           : <MainApp user={user} onLogout={handleLogout} />}
+        {['staff', 'staff2'].includes(user.role) && <CheckInGate user={user} />}
       </TasksBadgeProvider>
     </UserContext.Provider>
   );
