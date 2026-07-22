@@ -35,6 +35,8 @@ export const adminApi = {
   deleteUser: (id) => api.delete(`/api/admin/users/${id}`),
   resetPin: (id, new_pin) => api.post(`/api/admin/users/${id}/reset-pin`, { new_pin }),
   getActivity: (limit = 50) => api.get('/api/admin/activity', { params: { limit } }),
+  getStaffActivity: () => api.get('/api/admin/staff-activity'),
+  getStaffFeed: (userId) => api.get(`/api/admin/staff-activity/${userId}`),
 };
 
 export const fabricsApi = {

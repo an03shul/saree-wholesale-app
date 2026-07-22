@@ -5,7 +5,7 @@ const path = require('path');
 const https = require('https');
 const fs = require('fs');
 
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, trackStaffActivity } = require('./middleware/auth');
 
 const app = express();
 
@@ -74,6 +74,10 @@ app.get('/thumb/:name', async (req, res) => {
     res.status(404).end();
   }
 });
+
+// Logs staff work-actions (mutations) once per request for the admin dashboard.
+// Registered before all routers; reads req.user at response finish.
+app.use(trackStaffActivity);
 
 // Public routes (no auth needed)
 app.use('/api/auth', require('./routes/auth'));

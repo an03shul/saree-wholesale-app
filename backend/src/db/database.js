@@ -86,6 +86,18 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- One row per successful staff work-action (add design, update order, send
+  -- catalog, …), written centrally by trackStaffActivity middleware. Powers the
+  -- admin "Staff Activity" dashboard (last-action time + actions-today count).
+  -- ponytail: grows unbounded; fine at shop scale. Prune old rows if it ever bloats.
+  CREATE TABLE IF NOT EXISTS staff_activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_staff_activity_user_time ON staff_activity(user_id, created_at);
+
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,

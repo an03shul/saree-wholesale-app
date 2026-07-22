@@ -73,4 +73,37 @@ router.get('/activity', (req, res) => {
   res.json(logs);
 });
 
+// Start of "today" in IST (shop time) as a UTC "YYYY-MM-DD HH:MM:SS" string, to
+// compare against SQLite's UTC created_at. India has no DST → fixed +5:30.
+function istDayStartUtc() {
+  const IST = 5.5 * 60 * 60 * 1000;
+  const nowIst = new Date(Date.now() + IST);
+  const midnightIst = Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate());
+  return new Date(midnightIst - IST).toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// GET /api/admin/staff-activity — per non-admin user: last action time + today's action count
+router.get('/staff-activity', (req, res) => {
+  const todayStart = istDayStartUtc();
+  const rows = db.prepare(`
+    SELECT u.id, u.username, u.role,
+      (SELECT MAX(created_at) FROM staff_activity sa WHERE sa.user_id = u.id) AS last_active,
+      (SELECT COUNT(*) FROM staff_activity sa WHERE sa.user_id = u.id AND sa.created_at >= ?) AS actions_today
+    FROM users u
+    WHERE u.role != 'admin'
+    ORDER BY last_active DESC
+  `).all(todayStart);
+  res.json(rows);
+});
+
+// GET /api/admin/staff-activity/:userId — that user's actions today (feed)
+router.get('/staff-activity/:userId', (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, action, created_at FROM staff_activity
+    WHERE user_id = ? AND created_at >= ?
+    ORDER BY created_at DESC LIMIT 200
+  `).all(req.params.userId, istDayStartUtc());
+  res.json(rows);
+});
+
 module.exports = router;

@@ -9,7 +9,7 @@ import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 
 export default function AdminScreen({ user, onLogout }) {
-  const [tab, setTab] = useState('activity'); // 'activity' | 'users' | 'template'
+  const [tab, setTab] = useState('staffwatch'); // 'staffwatch' | 'activity' | 'users' | 'template'
   const [template, setTemplate] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -23,6 +23,27 @@ export default function AdminScreen({ user, onLogout }) {
   const [brands, setBrands] = useState([]);
   const [newPin, setNewPin] = useState('');
   const [changePinForm, setChangePinForm] = useState({ current: '', next: '' });
+  const [staffAct, setStaffAct] = useState([]);
+  const [feedUser, setFeedUser] = useState(null);
+  const [feed, setFeed] = useState([]);
+
+  const loadStaffAct = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await adminApi.getStaffActivity();
+      setStaffAct(data);
+    } catch { notify('Error', 'Could not load staff activity'); }
+    finally { setLoading(false); }
+  }, []);
+
+  const openFeed = async (u) => {
+    setFeedUser(u);
+    setFeed([]);
+    try {
+      const { data } = await adminApi.getStaffFeed(u.id);
+      setFeed(data);
+    } catch { notify('Error', 'Could not load activity feed'); }
+  };
 
   const loadActivity = useCallback(async () => {
     setLoading(true);
@@ -64,12 +85,13 @@ export default function AdminScreen({ user, onLogout }) {
   const switchTab = (t) => {
     setTab(t);
     if (t === 'activity') loadActivity();
+    else if (t === 'staffwatch') loadStaffAct();
     else if (t === 'users') loadUsers();
     else if (t === 'template') loadTemplate();
   };
 
   React.useEffect(() => {
-    loadActivity();
+    loadStaffAct();
     brandsApi.getAll().then(({ data }) => setBrands(data)).catch(() => {});
   }, []);
 
@@ -134,6 +156,24 @@ export default function AdminScreen({ user, onLogout }) {
       d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const relTime = (ts) => {
+    if (!ts) return 'no activity yet';
+    const m = Math.floor((Date.now() - parseServerDate(ts).getTime()) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ${m % 60}m ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const statusColor = (ts) => {
+    if (!ts) return '#bbb';
+    const m = (Date.now() - parseServerDate(ts).getTime()) / 60000;
+    if (m < 15) return '#27ae60';   // active
+    if (m < 120) return '#f39c12';  // idle a while
+    return '#e74c3c';               // stale
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -149,7 +189,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -157,6 +197,30 @@ export default function AdminScreen({ user, onLogout }) {
       </ScrollView>
 
       {loading && <ActivityIndicator color="#c0392b" style={{ marginTop: 30 }} size="large" />}
+
+      {/* Staff Activity dashboard */}
+      {tab === 'staffwatch' && !loading && (
+        <FlatList
+          data={staffAct}
+          keyExtractor={s => String(s.id)}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          ListHeaderComponent={<Text style={styles.watchHint}>Tap a name to see today’s actions. Counts real work in the app — not just having it open.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>No staff added yet</Text>}
+          renderItem={({ item: s }) => (
+            <TouchableOpacity style={styles.watchCard} onPress={() => openFeed(s)}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor(s.last_active) }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.userName}>{s.username}</Text>
+                <Text style={styles.watchSub}>{relTime(s.last_active)}</Text>
+              </View>
+              <View style={styles.countPill}>
+                <Text style={styles.countNum}>{s.actions_today}</Text>
+                <Text style={styles.countLbl}>today</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Activity Log */}
       {tab === 'activity' && !loading && (
@@ -249,6 +313,29 @@ export default function AdminScreen({ user, onLogout }) {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      {/* Staff activity feed modal */}
+      <Modal visible={!!feedUser} transparent animationType="slide" onRequestClose={() => setFeedUser(null)}>
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { maxHeight: '75%' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.modalTitle}>{feedUser?.username} · today</Text>
+              <TouchableOpacity onPress={() => setFeedUser(null)}><Text style={{ fontSize: 20, color: '#888' }}>✕</Text></TouchableOpacity>
+            </View>
+            <FlatList
+              data={feed}
+              keyExtractor={f => String(f.id)}
+              ListEmptyComponent={<Text style={styles.empty}>No actions recorded today</Text>}
+              renderItem={({ item: f }) => (
+                <View style={styles.feedRow}>
+                  <Text style={styles.feedAction}>{f.action}</Text>
+                  <Text style={styles.logTime}>{formatTime(f.created_at)}</Text>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* Add User Modal */}
       <Modal visible={addModal} transparent animationType="slide">
@@ -375,4 +462,13 @@ const styles = StyleSheet.create({
   templateHint: { fontSize: 13, color: '#666', backgroundColor: '#f5f0eb', padding: 12, borderRadius: 10, marginBottom: 16, lineHeight: 22 },
   varName: { color: '#8B1A2B', fontWeight: '700' },
   templateInput: { borderWidth: 1.5, borderColor: '#ddd', borderRadius: 12, padding: 14, fontSize: 15, minHeight: 160, marginBottom: 20, color: '#1A0A0D', backgroundColor: '#FAF7F2', lineHeight: 22 },
+  watchHint: { fontSize: 12, color: '#888', backgroundColor: '#f5f0eb', padding: 10, borderRadius: 10, marginBottom: 10, lineHeight: 18 },
+  watchCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  statusDot: { width: 12, height: 12, borderRadius: 6 },
+  watchSub: { color: '#888', fontSize: 13, marginTop: 2 },
+  countPill: { alignItems: 'center', minWidth: 48 },
+  countNum: { fontSize: 20, fontWeight: '800', color: '#8B1A2B' },
+  countLbl: { fontSize: 10, color: '#aaa', textTransform: 'uppercase' },
+  feedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0ece6' },
+  feedAction: { color: '#2c1810', fontSize: 14, flex: 1 },
 });
