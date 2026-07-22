@@ -204,7 +204,16 @@ export default function AdminScreen({ user, onLogout }) {
           data={staffAct}
           keyExtractor={s => String(s.id)}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-          ListHeaderComponent={<Text style={styles.watchHint}>Tap a name to see today’s actions. Counts real work in the app — not just having it open.</Text>}
+          ListHeaderComponent={
+            <View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryNum}>{staffAct.reduce((n, s) => n + (s.actions_today || 0), 0)}</Text>
+                <Text style={styles.summaryLbl}>actions today</Text>
+                <Text style={styles.summarySub}>{staffAct.filter(s => (s.actions_today || 0) > 0).length} of {staffAct.length} staff active today</Text>
+              </View>
+              <Text style={styles.watchHint}>Tap a name to see today’s actions. Counts real work in the app — not just having it open.</Text>
+            </View>
+          }
           ListEmptyComponent={<Text style={styles.empty}>No staff added yet</Text>}
           renderItem={({ item: s }) => (
             <TouchableOpacity style={styles.watchCard} onPress={() => openFeed(s)}>
@@ -464,6 +473,10 @@ const styles = StyleSheet.create({
   templateHint: { fontSize: 13, color: '#666', backgroundColor: '#f5f0eb', padding: 12, borderRadius: 10, marginBottom: 16, lineHeight: 22 },
   varName: { color: '#8B1A2B', fontWeight: '700' },
   templateInput: { borderWidth: 1.5, borderColor: '#ddd', borderRadius: 12, padding: 14, fontSize: 15, minHeight: 160, marginBottom: 20, color: '#1A0A0D', backgroundColor: '#FAF7F2', lineHeight: 22 },
+  summaryCard: { backgroundColor: '#8B1A2B', borderRadius: 14, padding: 18, alignItems: 'center', marginBottom: 12 },
+  summaryNum: { color: '#fff', fontSize: 38, fontWeight: '800', lineHeight: 42 },
+  summaryLbl: { color: 'rgba(255,255,255,0.85)', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+  summarySub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 6 },
   watchHint: { fontSize: 12, color: '#888', backgroundColor: '#f5f0eb', padding: 10, borderRadius: 10, marginBottom: 10, lineHeight: 18 },
   watchCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
