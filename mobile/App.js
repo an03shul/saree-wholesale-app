@@ -373,7 +373,7 @@ export default function App() {
           : user.role === 'manufacturer'
           ? <ManufacturerApp user={user} onLogout={handleLogout} />
           : <MainApp user={user} onLogout={handleLogout} />}
-        {['staff', 'staff2'].includes(user.role) && <CheckInGate user={user} />}
+        {['staff', 'staff2', 'accountant'].includes(user.role) && <CheckInGate user={user} />}
       </TasksBadgeProvider>
     </UserContext.Provider>
   );

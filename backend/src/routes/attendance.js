@@ -64,7 +64,7 @@ router.get('/month', requireAdmin, (req, res) => {
     SELECT u.id AS user_id, u.username, a.date, a.checked_in_at, a.lat
     FROM users u
     LEFT JOIN attendance a ON a.user_id = u.id AND a.date LIKE ?
-    WHERE u.role IN ('staff','staff2')
+    WHERE u.role IN ('staff','staff2','accountant')
     ORDER BY u.username, a.date
   `).all(month + '-%');
   res.json({ month, rows });
@@ -81,7 +81,7 @@ router.post('/admin-mark', requireAdmin, (req, res) => {
   }
   if (date > istToday()) return res.status(400).json({ error: 'Cannot mark a future date' });
   const u = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
-  if (!u || !['staff', 'staff2'].includes(u.role)) return res.status(400).json({ error: 'Not a staff user' });
+  if (!u || !['staff', 'staff2', 'accountant'].includes(u.role)) return res.status(400).json({ error: 'Not a staff user' });
   db.prepare('INSERT OR IGNORE INTO attendance (user_id, date) VALUES (?,?)').run(userId, date);
   res.json({ success: true, user_id: userId, date });
 });
