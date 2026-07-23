@@ -4,7 +4,7 @@ const multer = require('multer');
 const { Jimp } = require('jimp');
 const db = require('../db/database');
 const storage = require('../services/storage');
-const { requireAuth, requireAdmin, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
@@ -91,10 +91,13 @@ router.patch('/:id', requireRole('admin', 'accountant'), (req, res) => {
   res.json(db.prepare(`${SELECT} WHERE f.id = ?`).get(req.params.id));
 });
 
-// DELETE /api/files/:id — admin only.
-router.delete('/:id', requireAdmin, async (req, res) => {
-  const f = db.prepare('SELECT path FROM files WHERE id = ?').get(req.params.id);
+// DELETE /api/files/:id — admin deletes anything; accountant only their own uploads.
+router.delete('/:id', requireRole('admin', 'accountant'), async (req, res) => {
+  const f = db.prepare('SELECT path, uploaded_by FROM files WHERE id = ?').get(req.params.id);
   if (!f) return res.status(404).json({ error: 'Not found' });
+  if (req.user.role === 'accountant' && f.uploaded_by !== req.user.id) {
+    return res.status(403).json({ error: 'You can only delete your own uploads' });
+  }
   await storage.deleteFile(f.path);
   db.prepare('DELETE FROM files WHERE id = ?').run(req.params.id);
   res.json({ success: true });

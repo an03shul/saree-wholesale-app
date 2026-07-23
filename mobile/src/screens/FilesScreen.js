@@ -4,6 +4,7 @@ import {
   Modal, ActivityIndicator, RefreshControl, Platform, Linking, Image,
 } from 'react-native';
 import { filesApi, brandsApi, getFileDownloadUrl } from '../api/client';
+import { useUser } from '../../App';
 import { pickFile } from '../utils/pickFile';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
@@ -12,7 +13,9 @@ import { colors, shadow, modalBase } from '../constants/theme';
 // Reusable doc list: filters files to `types`, tap to view (image) or download (PDF), optional upload.
 // Used for accountant discounts (upload) and read-only invoice/order-form views.
 //   props: { types:[...], canUpload, uploadType, uploadTypes:[...], allowBrandTag, canRename, canDelete, emptyText }
+//   canDelete: true = every row (admin), 'own' = only rows the current user uploaded (accountant)
 export default function FilesScreen({ types, canUpload, uploadType, uploadTypes, allowBrandTag, canRename, canDelete, emptyText }) {
+  const user = useUser();
   const [upType, setUpType] = useState(uploadType || (uploadTypes && uploadTypes[0]) || types[0]);
   const [files, setFiles] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -118,7 +121,7 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
                 <Text style={{ fontSize: 16 }}>✏️</Text>
               </TouchableOpacity>
             )}
-            {canDelete && (
+            {(canDelete === true || (canDelete === 'own' && f.uploaded_by === user?.id)) && (
               <TouchableOpacity style={styles.action} onPress={() => doDelete(f)}>
                 <Text style={{ fontSize: 16 }}>🗑️</Text>
               </TouchableOpacity>
