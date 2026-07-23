@@ -13,6 +13,9 @@
  *   5. One check-in per staff per IST day (idempotent; keeps the first).
  *   6. GET /today reflects the check-in.
  *   7. The monthly report is admin-only (staff → 403, admin → 200).
+ *   8. Admin override: mark present (admin-only, no future dates, non-staff blocked);
+ *      unmark removes a manual day but can NOT erase a geo-verified check-in.
+ *   9. Accountants are on-site staff: their check-in works and shows in the report.
  *
  * Shop location + radius come from src/routes/attendance.js (env-overridable via
  * SHOP_LAT / SHOP_LNG / SHOP_RADIUS_M; defaults = Gwalior storefront, 100m).
@@ -32,6 +35,7 @@ const S = att.SHOP; // { lat, lng, radius }
 const northMeters = (m) => m / 111320; // metres -> Δlatitude
 
 const uid = db.prepare("INSERT INTO users (username,pin_hash,role) VALUES ('ramesh','x','staff')").run().lastInsertRowid;
+const acctId = db.prepare("INSERT INTO users (username,pin_hash,role) VALUES ('meena','x','accountant')").run().lastInsertRowid;
 
 // 1. Geofence maths
 assert.equal(att.distanceMeters(S.lat, S.lng, S.lat, S.lng), 0, 'same point = 0m');
@@ -42,14 +46,14 @@ console.log(`✓ geofence maths (shop ${S.lat},${S.lng} · radius ${S.radius}m)`
 // Minimal app that injects an authenticated user, so we exercise the real routes.
 const app = express();
 app.use(express.json());
-app.use((req, res, next) => { req.user = { id: uid, role: req.headers['x-role'] || 'staff' }; next(); });
+app.use((req, res, next) => { req.user = { id: Number(req.headers['x-uid']) || uid, role: req.headers['x-role'] || 'staff' }; next(); });
 app.use('/api/attendance', att);
 
 const srv = app.listen(0, async () => {
   const port = srv.address().port;
-  const req = (method, path, body, role) => new Promise((resolve) => {
+  const req = (method, path, body, role, asUid) => new Promise((resolve) => {
     const data = body ? JSON.stringify(body) : null;
-    const r = http.request({ port, path, method, headers: { 'Content-Type': 'application/json', 'x-role': role || 'staff', ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}) } },
+    const r = http.request({ port, path, method, headers: { 'Content-Type': 'application/json', 'x-role': role || 'staff', ...(asUid ? { 'x-uid': String(asUid) } : {}), ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}) } },
       (resp) => { let b = ''; resp.on('data', c => b += c); resp.on('end', () => resolve({ status: resp.statusCode, body: JSON.parse(b || '{}') })); });
     if (data) r.write(data); r.end();
   });
@@ -121,7 +125,17 @@ const srv = app.listen(0, async () => {
     assert.ok(db.prepare('SELECT 1 FROM attendance WHERE user_id = ? AND date = ?').get(uid, shopDate), 'verified row intact');
     console.log('✓ geo-verified check-in cannot be erased by unmark');
 
-    console.log('\nALL PASS — attendance check-in + admin override verified.');
+    // 9. Accountants are on-site staff too — check-in works and they appear in
+    //    the monthly report (manufacturer, being remote, is excluded elsewhere).
+    r = await req('POST', '/api/attendance/checkin', { lat: S.lat, lng: S.lng }, 'accountant', acctId);
+    assert.equal(r.status, 200, 'accountant at-shop check-in accepted');
+    r = await req('GET', '/api/attendance/today', null, 'accountant', acctId);
+    assert.equal(r.body.checked_in, true, 'accountant today reflects check-in');
+    r = await req('GET', '/api/attendance/month', null, 'admin');
+    assert.ok(r.body.rows.some(x => x.username === 'meena' && x.date), 'accountant present-day in month report');
+    console.log('✓ accountant check-in from shop → 200 and appears in the report');
+
+    console.log('\nALL PASS — attendance check-in + admin override + accountant verified.');
   } catch (e) {
     console.error('\nFAIL:', e.message); process.exitCode = 1;
   } finally {
