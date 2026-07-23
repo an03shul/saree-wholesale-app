@@ -36,3 +36,6 @@ expo-env.d.ts
 
 # Local editor / Claude config
 .claude/
+
+# graphify knowledge-graph output/cache — regenerable, not source
+graphify-out/
