@@ -31,6 +31,7 @@ export default function AdminScreen({ user, onLogout }) {
     return ist.toISOString().slice(0, 7); // current IST month YYYY-MM
   });
   const [attRows, setAttRows] = useState([]);
+  const [attEditUser, setAttEditUser] = useState(null);
 
   const loadAttendance = useCallback(async (month) => {
     setLoading(true);
@@ -200,19 +201,33 @@ export default function AdminScreen({ user, onLogout }) {
     setAttMonth(ym);
     loadAttendance(ym);
   };
+  const istTodayStr = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
   const attByUser = () => {
     const map = {};
     attRows.forEach(r => {
-      if (!map[r.user_id]) map[r.user_id] = { username: r.username, days: [] };
-      if (r.date) map[r.user_id].days.push(r.date);
+      if (!map[r.user_id]) map[r.user_id] = { user_id: r.user_id, username: r.username, days: [] };
+      if (r.date) map[r.user_id].days.push({ date: r.date, verified: r.lat != null });
     });
     return Object.values(map).sort((a, b) => a.username.localeCompare(b.username));
+  };
+  const toggleDay = async (userId, dayNum, staffDays) => {
+    const dateStr = `${attMonth}-${String(dayNum).padStart(2, '0')}`;
+    const existing = staffDays.find(d => d.date === dateStr);
+    if (existing?.verified) return notify('Geo-verified', 'This is a real check-in from the shop — it can’t be changed.');
+    try {
+      if (existing) await attendanceApi.adminUnmark(userId, dateStr);
+      else {
+        if (dateStr > istTodayStr()) return notify('Not allowed', 'Can’t mark a future date.');
+        await attendanceApi.adminMark(userId, dateStr);
+      }
+      await loadAttendance(attMonth);
+    } catch (e) { notify('Error', e.response?.data?.error || 'Could not update attendance'); }
   };
   const shareReport = async (list) => {
     const lines = ['Gopiram Sarees — Attendance', monthLabel(attMonth), ''];
     list.forEach(s => {
       lines.push(`${s.username}: ${s.days.length} day${s.days.length === 1 ? '' : 's'} present`);
-      if (s.days.length) lines.push('  Days: ' + s.days.map(d => Number(d.slice(8))).join(', '));
+      if (s.days.length) lines.push('  Days: ' + s.days.map(d => Number(d.date.slice(8))).join(', '));
     });
     const text = lines.join('\n');
     try {
@@ -300,21 +315,21 @@ export default function AdminScreen({ user, onLogout }) {
                 <TouchableOpacity style={styles.shareBtn} onPress={() => shareReport(list)}>
                   <Text style={styles.shareBtnTxt}>⇪  Share month report</Text>
                 </TouchableOpacity>
-                <Text style={styles.watchHint}>Each day = one geo-verified check-in from the shop. Only you (admin) can view or share this.</Text>
+                <Text style={styles.watchHint}>Each day = one geo-verified check-in from the shop. Tap a staff member to mark them present manually (e.g. their phone can’t use GPS). Only you (admin) can view or share this.</Text>
               </View>
             }
             ListEmptyComponent={<Text style={styles.empty}>No staff</Text>}
             renderItem={({ item: s }) => (
-              <View style={styles.watchCard}>
+              <TouchableOpacity style={styles.watchCard} onPress={() => setAttEditUser({ user_id: s.user_id, username: s.username })}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.userName}>{s.username}</Text>
-                  <Text style={styles.attDays}>{s.days.length ? s.days.map(d => Number(d.slice(8))).join(', ') : 'absent all month'}</Text>
+                  <Text style={styles.attDays}>{s.days.length ? s.days.map(d => Number(d.date.slice(8))).join(', ') : 'absent all month'}</Text>
                 </View>
                 <View style={styles.countPill}>
                   <Text style={styles.countNum}>{s.days.length}</Text>
                   <Text style={styles.countLbl}>days</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
         );
@@ -431,6 +446,47 @@ export default function AdminScreen({ user, onLogout }) {
                 </View>
               )}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Attendance day editor (admin manual mark / unmark) */}
+      <Modal visible={!!attEditUser} transparent animationType="slide" onRequestClose={() => setAttEditUser(null)}>
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { maxHeight: '80%' }]}>
+            {attEditUser && (() => {
+              const staff = attByUser().find(u => u.user_id === attEditUser.user_id) || { days: [] };
+              const y = Number(attMonth.slice(0, 4)), m = Number(attMonth.slice(5, 7));
+              const dim = new Date(y, m, 0).getDate();
+              const dayStatus = {};
+              staff.days.forEach(d => { dayStatus[Number(d.date.slice(8))] = d.verified ? 'verified' : 'manual'; });
+              const today = istTodayStr();
+              return (
+                <>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <Text style={styles.modalTitle}>{attEditUser.username} · {monthLabel(attMonth)}</Text>
+                    <TouchableOpacity onPress={() => setAttEditUser(null)}><Text style={{ fontSize: 20, color: '#888' }}>✕</Text></TouchableOpacity>
+                  </View>
+                  <Text style={styles.watchHint}>Tap a day to mark present / remove. Green = geo-verified (locked). Maroon = marked by you.</Text>
+                  <ScrollView>
+                    <View style={styles.dayGrid}>
+                      {Array.from({ length: dim }, (_, i) => i + 1).map(dnum => {
+                        const dateStr = `${attMonth}-${String(dnum).padStart(2, '0')}`;
+                        const st = dayStatus[dnum]; // 'verified' | 'manual' | undefined
+                        const future = dateStr > today;
+                        return (
+                          <TouchableOpacity key={dnum} disabled={future && !st}
+                            onPress={() => toggleDay(attEditUser.user_id, dnum, staff.days)}
+                            style={[styles.dayChip, st === 'verified' && styles.dayVerified, st === 'manual' && styles.dayManual, future && !st && styles.dayFuture]}>
+                            <Text style={[styles.dayChipTxt, st && { color: '#fff' }]}>{dnum}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </>
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -583,4 +639,10 @@ const styles = StyleSheet.create({
   shareBtn: { backgroundColor: '#8B1A2B', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 12 },
   shareBtnTxt: { color: '#fff', fontWeight: '800', fontSize: 15 },
   attDays: { color: '#888', fontSize: 12, marginTop: 3, lineHeight: 17 },
+  dayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 10 },
+  dayChip: { width: 42, height: 42, borderRadius: 10, borderWidth: 1, borderColor: '#ddd', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  dayVerified: { backgroundColor: '#27ae60', borderColor: '#27ae60' },
+  dayManual: { backgroundColor: '#8B1A2B', borderColor: '#8B1A2B' },
+  dayFuture: { opacity: 0.3 },
+  dayChipTxt: { color: '#444', fontWeight: '700' },
 });

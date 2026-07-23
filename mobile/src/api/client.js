@@ -43,6 +43,8 @@ export const attendanceApi = {
   checkin: (coords) => api.post('/api/attendance/checkin', coords),
   today: () => api.get('/api/attendance/today'),
   month: (month) => api.get('/api/attendance/month', { params: { month } }),
+  adminMark: (user_id, date) => api.post('/api/attendance/admin-mark', { user_id, date }),
+  adminUnmark: (user_id, date) => api.delete('/api/attendance/admin-mark', { data: { user_id, date } }),
 };
 
 export const fabricsApi = {

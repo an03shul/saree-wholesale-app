@@ -91,7 +91,37 @@ const srv = app.listen(0, async () => {
     assert.equal(r.status, 200, 'admin gets month report'); assert.ok(Array.isArray(r.body.rows));
     console.log('✓ monthly report admin-only (staff → 403, admin → 200)');
 
-    console.log('\nALL PASS — attendance check-in verified.');
+    // 8. Admin override — manual mark (no geo), staff blocked, future blocked,
+    //    unmark removes a manual day, and a geo-verified check-in can't be erased.
+    const istNow = Date.now() + 5.5 * 3600 * 1000;
+    const yesterday = new Date(istNow - 86400000).toISOString().slice(0, 10);
+    const tomorrow = new Date(istNow + 86400000).toISOString().slice(0, 10);
+
+    r = await req('POST', '/api/attendance/admin-mark', { user_id: uid, date: yesterday }, 'admin');
+    assert.equal(r.status, 200, 'admin can mark present');
+    const mrow = db.prepare('SELECT lat FROM attendance WHERE user_id = ? AND date = ?').get(uid, yesterday);
+    assert.ok(mrow && mrow.lat === null, 'manual mark has NULL lat (not geo)');
+    console.log('✓ admin manual mark → present, no geo (lat NULL)');
+
+    r = await req('POST', '/api/attendance/admin-mark', { user_id: uid, date: yesterday }, 'staff');
+    assert.equal(r.status, 403, 'staff blocked from admin-mark');
+    console.log('✓ staff blocked from admin-mark → 403');
+
+    r = await req('POST', '/api/attendance/admin-mark', { user_id: uid, date: tomorrow }, 'admin');
+    assert.equal(r.status, 400, 'future date rejected');
+    console.log('✓ future date rejected → 400');
+
+    r = await req('DELETE', '/api/attendance/admin-mark', { user_id: uid, date: yesterday }, 'admin');
+    assert.equal(r.body.removed, 1, 'manual mark removed');
+    console.log('✓ admin unmark removes the manual day');
+
+    const shopDate = db.prepare('SELECT date FROM attendance WHERE user_id = ? AND lat IS NOT NULL').get(uid).date;
+    r = await req('DELETE', '/api/attendance/admin-mark', { user_id: uid, date: shopDate }, 'admin');
+    assert.equal(r.body.removed, 0, 'geo-verified not removable via unmark');
+    assert.ok(db.prepare('SELECT 1 FROM attendance WHERE user_id = ? AND date = ?').get(uid, shopDate), 'verified row intact');
+    console.log('✓ geo-verified check-in cannot be erased by unmark');
+
+    console.log('\nALL PASS — attendance check-in + admin override verified.');
   } catch (e) {
     console.error('\nFAIL:', e.message); process.exitCode = 1;
   } finally {

@@ -61,13 +61,42 @@ router.get('/today', (req, res) => {
 router.get('/month', requireAdmin, (req, res) => {
   const month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : istToday().slice(0, 7);
   const rows = db.prepare(`
-    SELECT u.id AS user_id, u.username, a.date, a.checked_in_at
+    SELECT u.id AS user_id, u.username, a.date, a.checked_in_at, a.lat
     FROM users u
     LEFT JOIN attendance a ON a.user_id = u.id AND a.date LIKE ?
     WHERE u.role IN ('staff','staff2')
     ORDER BY u.username, a.date
   `).all(month + '-%');
   res.json({ month, rows });
+});
+
+// POST /api/attendance/admin-mark { user_id, date } — admin marks a staff present
+// for a day (e.g. their phone can't do GPS). No geo: lat/lng stay NULL, which is
+// how a manual mark is told apart from a real geo-verified check-in.
+router.post('/admin-mark', requireAdmin, (req, res) => {
+  const userId = Number(req.body?.user_id);
+  const date = String(req.body?.date || '');
+  if (!userId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'user_id and date (YYYY-MM-DD) required' });
+  }
+  if (date > istToday()) return res.status(400).json({ error: 'Cannot mark a future date' });
+  const u = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
+  if (!u || !['staff', 'staff2'].includes(u.role)) return res.status(400).json({ error: 'Not a staff user' });
+  db.prepare('INSERT OR IGNORE INTO attendance (user_id, date) VALUES (?,?)').run(userId, date);
+  res.json({ success: true, user_id: userId, date });
+});
+
+// DELETE /api/attendance/admin-mark { user_id, date } — admin removes a MANUAL
+// mark only. Geo-verified check-ins (lat NOT NULL) can't be erased this way, so
+// the real attendance record stays trustworthy.
+router.delete('/admin-mark', requireAdmin, (req, res) => {
+  const userId = Number(req.body?.user_id);
+  const date = String(req.body?.date || '');
+  if (!userId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'user_id and date required' });
+  }
+  const r = db.prepare('DELETE FROM attendance WHERE user_id = ? AND date = ? AND lat IS NULL').run(userId, date);
+  res.json({ success: true, removed: r.changes });
 });
 
 module.exports = router;
