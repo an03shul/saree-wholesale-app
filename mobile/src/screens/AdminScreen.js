@@ -208,7 +208,7 @@ export default function AdminScreen({ user, onLogout }) {
     const map = {};
     attRows.forEach(r => {
       if (!map[r.user_id]) map[r.user_id] = { user_id: r.user_id, username: r.username, days: [] };
-      if (r.date) map[r.user_id].days.push({ date: r.date, verified: r.lat != null });
+      if (r.date) map[r.user_id].days.push({ date: r.date, verified: r.lat != null, at: r.checked_in_at });
     });
     return Object.values(map).sort((a, b) => a.username.localeCompare(b.username));
   };
@@ -229,7 +229,9 @@ export default function AdminScreen({ user, onLogout }) {
     const lines = ['Gopiram Sarees — Attendance', monthLabel(attMonth), ''];
     list.forEach(s => {
       lines.push(`${s.username}: ${s.days.length} day${s.days.length === 1 ? '' : 's'} present`);
-      if (s.days.length) lines.push('  Days: ' + s.days.map(d => Number(d.date.slice(8))).join(', '));
+      [...s.days].sort((a, b) => a.date.localeCompare(b.date)).forEach(d => {
+        lines.push(`  ${d.date} — ${d.verified ? timeOnly(d.at) : 'marked by admin'}`);
+      });
     });
     const text = lines.join('\n');
     try {
@@ -485,6 +487,17 @@ export default function AdminScreen({ user, onLogout }) {
                         );
                       })}
                     </View>
+                    {staff.days.length > 0 && (
+                      <View style={{ marginTop: 14 }}>
+                        <Text style={[styles.watchHint, { marginBottom: 2 }]}>Check-in times</Text>
+                        {[...staff.days].sort((a, b) => a.date.localeCompare(b.date)).map(d => (
+                          <View key={d.date} style={styles.feedRow}>
+                            <Text style={styles.feedAction}>{Number(d.date.slice(8))} {monthLabel(attMonth).split(' ')[0]}</Text>
+                            <Text style={styles.logTime}>{d.verified ? `📍 ${timeOnly(d.at)}` : 'marked by admin'}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </ScrollView>
                 </>
               );
