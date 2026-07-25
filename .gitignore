@@ -39,3 +39,7 @@ expo-env.d.ts
 
 # graphify knowledge-graph output/cache — regenerable, not source
 graphify-out/
+
+# session artifacts — generated deliverables / skill docs, not source
+Domain-Rating-Plan.pdf
+graphify-SKILL.md
