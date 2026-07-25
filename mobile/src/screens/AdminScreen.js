@@ -172,6 +172,8 @@ export default function AdminScreen({ user, onLogout }) {
       d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const timeOnly = (ts) => parseServerDate(ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
   const relTime = (ts) => {
     if (!ts) return 'no activity yet';
     const m = Math.floor((Date.now() - parseServerDate(ts).getTime()) / 60000);
@@ -286,7 +288,7 @@ export default function AdminScreen({ user, onLogout }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{s.username}</Text>
                 <Text style={styles.watchSub}>{relTime(s.last_active)}</Text>
-                <Text style={styles.loginLine}>🔑 {s.login_at ? `Logged in ${formatTime(s.login_at)}` : 'not logged in'}</Text>
+                <Text style={styles.loginLine}>{s.checkin_today ? `📍 Checked in ${timeOnly(s.checkin_today)}` : '○ not checked in today'}</Text>
               </View>
               <View style={styles.countPill}>
                 <Text style={styles.countNum}>{s.actions_today}</Text>

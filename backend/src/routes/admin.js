@@ -85,15 +85,16 @@ function istDayStartUtc() {
 // GET /api/admin/staff-activity — per non-admin user: last action time + today's action count
 router.get('/staff-activity', (req, res) => {
   const todayStart = istDayStartUtc();
+  const istDate = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10); // IST 'YYYY-MM-DD'
   const rows = db.prepare(`
     SELECT u.id, u.username, u.role,
       (SELECT MAX(created_at) FROM staff_activity sa WHERE sa.user_id = u.id) AS last_active,
       (SELECT COUNT(*) FROM staff_activity sa WHERE sa.user_id = u.id AND sa.created_at >= ?) AS actions_today,
-      (SELECT MAX(created_at) FROM sessions se WHERE se.user_id = u.id) AS login_at
+      (SELECT a.checked_in_at FROM attendance a WHERE a.user_id = u.id AND a.date = ?) AS checkin_today
     FROM users u
     WHERE u.role != 'admin'
     ORDER BY last_active DESC
-  `).all(todayStart);
+  `).all(todayStart, istDate);
   res.json(rows);
 });
 
