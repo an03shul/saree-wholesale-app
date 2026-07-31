@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet,
+  View, Text, FlatList, SectionList, TouchableOpacity, TextInput, StyleSheet,
   Image, ActivityIndicator, RefreshControl, Modal,
 } from 'react-native';
 import { manufacturerApi, getThumbUrl, getImageUrl } from '../api/client';
@@ -102,7 +102,8 @@ export function DispatchScreen() {
   );
 }
 
-// Read-only stock for the manufacturer's brand.
+// Read-only stock for the manufacturer's brand, grouped by collection (item)
+// with each collection's Tally total and a company-wide total.
 export function StockScreen() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,16 +114,45 @@ export function StockScreen() {
     catch { notify('Error', 'Could not load stock'); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Group designs under their collection; item_qty is the collection's Tally total.
+  const sections = useMemo(() => {
+    const map = new Map();
+    for (const d of rows) {
+      if (!map.has(d.item_id)) map.set(d.item_id, { title: d.item_name, item_qty: d.item_qty, data: [] });
+      map.get(d.item_id).data.push(d);
+    }
+    return [...map.values()];
+  }, [rows]);
+  // Company total = sum of each collection's Tally stock (once per collection).
+  const companyTotal = useMemo(() => sections.reduce((s, sec) => s + (sec.item_qty || 0), 0), [sections]);
+  const linkedCount = useMemo(() => sections.filter(s => s.item_qty != null).length, [sections]);
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
   return (
     <>
-      <FlatList
+      <SectionList
         style={styles.list}
-        data={rows}
+        sections={sections}
         keyExtractor={d => String(d.id)}
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
         ListEmptyComponent={<Text style={styles.empty}>No designs for your brand yet</Text>}
+        ListHeaderComponent={sections.length ? (
+          <View style={styles.summaryBar}>
+            <Text style={styles.summaryNum}>{companyTotal}</Text>
+            <Text style={styles.summaryLbl}>total stock in Tally</Text>
+            <Text style={styles.summarySub}>{linkedCount} of {sections.length} collections linked</Text>
+          </View>
+        ) : null}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionName} numberOfLines={1}>{section.title}</Text>
+            <Text style={[styles.sectionQty, section.item_qty == null && styles.sectionQtyMuted]}>
+              {section.item_qty != null ? `${section.item_qty} in stock` : 'Not linked to Tally'}
+            </Text>
+          </View>
+        )}
         renderItem={({ item: d }) => (
           // Tap a design with a photo to see it full-screen.
           <TouchableOpacity style={styles.card} activeOpacity={d.photo_path ? 0.7 : 1} onPress={() => d.photo_path && setViewing(d)}>
@@ -130,12 +160,9 @@ export function StockScreen() {
               : <View style={[styles.thumb, styles.noThumb]}><Text style={styles.noThumbText}>No photo</Text></View>}
             <View style={{ flex: 1 }}>
               <Text style={styles.title} numberOfLines={1}>Design {d.design_number}</Text>
-              <Text style={styles.sub} numberOfLines={1}>{d.item_name} · ₹{d.rate}</Text>
+              <Text style={styles.sub} numberOfLines={1}>₹{d.rate}</Text>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.qty}>{d.qty != null ? `${d.qty}` : '—'}</Text>
-              <Text style={[styles.stockTag, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>{d.in_stock ? 'In stock' : 'Out'}</Text>
-            </View>
+            <Text style={[styles.stockTag, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>{d.in_stock ? 'In stock' : 'Out'}</Text>
           </TouchableOpacity>
         )}
       />
@@ -230,8 +257,15 @@ const styles = StyleSheet.create({
   noThumbText: { fontSize: 9, color: colors.textSecondary },
   title: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  qty: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
-  stockTag: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  stockTag: { fontSize: 11, fontWeight: '700' },
+  summaryBar: { backgroundColor: colors.card, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 14, ...shadow.small },
+  summaryNum: { fontSize: 34, fontWeight: '900', color: colors.primary },
+  summaryLbl: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginTop: 2 },
+  summarySub: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.background, paddingVertical: 8, gap: 12 },
+  sectionName: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  sectionQty: { fontSize: 13, fontWeight: '800', color: '#2E7D32' },
+  sectionQtyMuted: { color: colors.textSecondary, fontWeight: '600' },
   empty: { textAlign: 'center', marginTop: 60, color: colors.textSecondary },
   viewer: { flex: 1, backgroundColor: '#000' },
   viewerClose: { position: 'absolute', top: 40, right: 20, padding: 10 },

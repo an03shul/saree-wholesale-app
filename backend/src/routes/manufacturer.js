@@ -40,11 +40,13 @@ router.post('/dispatch-photo', upload.single('photo'), async (req, res) => {
 // tally_stock cache (kept fresh by the shop-PC sync agent) joined on the
 // design's tally_item_name — same source the shop's own stock view uses.
 router.get('/stock', (req, res) => {
+  // item_qty is the collection's live Tally stock (same for every design in the
+  // item) — the manufacturer view groups by item and shows this as the total.
   res.json(db.prepare(`
-    SELECT d.id, d.design_number, d.rate, d.in_stock, d.photo_path,
-           ts.qty AS qty, i.name AS item_name
+    SELECT d.id, d.item_id, d.design_number, d.rate, d.in_stock, d.photo_path,
+           i.name AS item_name, ts.qty AS item_qty
     FROM designs d JOIN items i ON i.id = d.item_id
-    LEFT JOIN tally_stock ts ON ts.tally_item_name = COALESCE(i.tally_item_name, d.tally_item_name)
+    LEFT JOIN tally_stock ts ON ts.tally_item_name = i.tally_item_name
     WHERE i.brand_id = ?
     ORDER BY i.name, CAST(d.design_number AS INTEGER), d.design_number
   `).all(req.user.brand_id));
