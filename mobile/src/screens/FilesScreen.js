@@ -42,7 +42,8 @@ export default function FilesScreen({ types, canUpload, uploadType, uploadTypes,
   useEffect(() => { load(); }, [load]);
 
   const startUpload = async () => {
-    const p = await pickFile();
+    // '*/*' so iOS surfaces the Files picker (PDFs), not just Photo Library.
+    const p = await pickFile('*/*');
     if (!p) return;
     setPicked(p); setLabel(p.name || ''); setBrandId(null); setModal(true);
   };

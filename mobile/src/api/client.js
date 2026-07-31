@@ -152,6 +152,7 @@ export const settingsApi = {
 
 export const tallyApi = {
   getCustomers: () => api.get('/api/tally/customers'),
+  getItems: () => api.get('/api/tally/items'),
   getStatus: () => api.get('/api/tally/status'),
   // Returns an EventSource for real-time stock streaming
   stockStream: (itemId) => new EventSource(`${BASE_URL}/api/tally/stock-stream?item_id=${itemId}&token=${api.defaults.headers.common['Authorization']?.replace('Bearer ', '')}`),

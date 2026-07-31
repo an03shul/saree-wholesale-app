@@ -20,17 +20,17 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { name, description, brand_id } = req.body;
+  const { name, description, brand_id, tally_item_name } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   if (!brand_id) return res.status(400).json({ error: 'brand_id is required' });
-  const result = db.prepare('INSERT INTO items (name, description, brand_id) VALUES (?, ?, ?)').run(name.trim(), description || null, brand_id);
-  res.status(201).json({ id: result.lastInsertRowid, name, description, brand_id });
+  const result = db.prepare('INSERT INTO items (name, description, brand_id, tally_item_name) VALUES (?, ?, ?, ?)').run(name.trim(), description || null, brand_id, (tally_item_name || '').trim() || null);
+  res.status(201).json({ id: result.lastInsertRowid, name, description, brand_id, tally_item_name: tally_item_name || null });
 });
 
 router.put('/:id', requireAdmin, (req, res) => {
-  const { name, description, brand_id } = req.body;
-  db.prepare('UPDATE items SET name = ?, description = ?, brand_id = ? WHERE id = ?').run(name, description, brand_id, req.params.id);
-  res.json({ id: req.params.id, name, description, brand_id });
+  const { name, description, brand_id, tally_item_name } = req.body;
+  db.prepare('UPDATE items SET name = ?, description = ?, brand_id = ?, tally_item_name = ? WHERE id = ?').run(name, description, brand_id, (tally_item_name || '').trim() || null, req.params.id);
+  res.json({ id: req.params.id, name, description, brand_id, tally_item_name: tally_item_name || null });
 });
 
 router.patch('/:id/stock', requireAuth, (req, res) => {

@@ -6,12 +6,18 @@ import * as ImagePicker from 'expo-image-picker';
 //   web:    { file: File, name }          (native File from <input>)
 //   native: { file: {uri,name,type}, name } (image only — the shop uses the web PWA)
 // ponytail: web-first via a plain <input type=file>; no expo-document-picker dep.
-export async function pickFile() {
+//
+// `accept` maps to the <input accept>. Default is image-first (good for photo
+// capture). Pass '*/*' for document uploads (invoices/order-forms): an
+// image-restricted input on an iOS installed-PWA only offers Photo Library /
+// Take Photo and hides the Files picker where PDFs live, so PDFs become
+// unselectable — a permissive accept restores the "Choose File" option.
+export async function pickFile(accept = 'image/*,application/pdf') {
   if (Platform.OS === 'web') {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'image/*,application/pdf';
+      input.accept = accept;
       input.onchange = () => {
         const f = input.files && input.files[0];
         resolve(f ? { file: f, name: f.name } : null);

@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet,
-  Image, ActivityIndicator, RefreshControl,
+  Image, ActivityIndicator, RefreshControl, Modal,
 } from 'react-native';
-import { manufacturerApi, getThumbUrl } from '../api/client';
+import { manufacturerApi, getThumbUrl, getImageUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
 import { notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
@@ -107,6 +107,7 @@ export function StockScreen() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewing, setViewing] = useState(null); // design shown full-screen
   const load = useCallback(async () => {
     try { const { data } = await manufacturerApi.stock(); setRows(data); }
     catch { notify('Error', 'Could not load stock'); } finally { setLoading(false); }
@@ -114,28 +115,40 @@ export function StockScreen() {
   useEffect(() => { load(); }, [load]);
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
   return (
-    <FlatList
-      style={styles.list}
-      data={rows}
-      keyExtractor={d => String(d.id)}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
-      ListEmptyComponent={<Text style={styles.empty}>No designs for your brand yet</Text>}
-      renderItem={({ item: d }) => (
-        <View style={styles.card}>
-          {d.photo_path ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.thumb} />
-            : <View style={[styles.thumb, styles.noThumb]}><Text style={styles.noThumbText}>No photo</Text></View>}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>Design {d.design_number}</Text>
-            <Text style={styles.sub} numberOfLines={1}>{d.item_name} · ₹{d.rate}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.qty}>{d.qty != null ? `${d.qty}` : '—'}</Text>
-            <Text style={[styles.stockTag, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>{d.in_stock ? 'In stock' : 'Out'}</Text>
-          </View>
+    <>
+      <FlatList
+        style={styles.list}
+        data={rows}
+        keyExtractor={d => String(d.id)}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
+        ListEmptyComponent={<Text style={styles.empty}>No designs for your brand yet</Text>}
+        renderItem={({ item: d }) => (
+          // Tap a design with a photo to see it full-screen.
+          <TouchableOpacity style={styles.card} activeOpacity={d.photo_path ? 0.7 : 1} onPress={() => d.photo_path && setViewing(d)}>
+            {d.photo_path ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.thumb} />
+              : <View style={[styles.thumb, styles.noThumb]}><Text style={styles.noThumbText}>No photo</Text></View>}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title} numberOfLines={1}>Design {d.design_number}</Text>
+              <Text style={styles.sub} numberOfLines={1}>{d.item_name} · ₹{d.rate}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.qty}>{d.qty != null ? `${d.qty}` : '—'}</Text>
+              <Text style={[styles.stockTag, { color: d.in_stock ? '#2E7D32' : colors.danger }]}>{d.in_stock ? 'In stock' : 'Out'}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+        <View style={styles.viewer}>
+          {viewing && <Image source={{ uri: getImageUrl(viewing.photo_path) }} style={{ flex: 1 }} resizeMode="contain" />}
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewing(null)}>
+            <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>✕</Text>
+          </TouchableOpacity>
+          {viewing && <Text style={styles.viewerLabel} numberOfLines={1}>Design {viewing.design_number} · {viewing.item_name}</Text>}
         </View>
-      )}
-    />
+      </Modal>
+    </>
   );
 }
 
@@ -220,4 +233,7 @@ const styles = StyleSheet.create({
   qty: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
   stockTag: { fontSize: 11, fontWeight: '700', marginTop: 2 },
   empty: { textAlign: 'center', marginTop: 60, color: colors.textSecondary },
+  viewer: { flex: 1, backgroundColor: '#000' },
+  viewerClose: { position: 'absolute', top: 40, right: 20, padding: 10 },
+  viewerLabel: { position: 'absolute', bottom: 30, alignSelf: 'center', color: '#fff', fontSize: 14, maxWidth: '80%', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: 'hidden' },
 });

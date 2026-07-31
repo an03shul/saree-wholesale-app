@@ -12,6 +12,12 @@ router.get('/customers', (req, res) => {
   res.json(rows.map(r => ({ name: r.name, phone: r.phone || '', raw_phone: r.phone || '' })));
 });
 
+// GET /api/tally/items — the synced Tally stock item names + qty, for the
+// item→Tally matching picker in the app. Newest-synced/alphabetical.
+router.get('/items', (req, res) => {
+  res.json(db.prepare('SELECT tally_item_name AS name, qty FROM tally_stock ORDER BY tally_item_name').all());
+});
+
 // GET /api/tally/status — when the sync agent last pushed stock from the shop PC
 router.get('/status', (req, res) => {
   const lastSync = db.prepare("SELECT value FROM settings WHERE key='tally_last_sync'").get()?.value || null;
@@ -29,6 +35,9 @@ router.get('/stock-stream', (req, res) => {
   const designs = db.prepare(
     'SELECT * FROM designs WHERE item_id = ? ORDER BY CAST(design_number AS INTEGER), design_number'
   ).all(item_id);
+  // Item-level match takes precedence: all designs in the item share its Tally
+  // stock item. Falls back to a design's own tally_item_name if the item has none.
+  const itemTallyName = db.prepare('SELECT tally_item_name FROM items WHERE id = ?').get(item_id)?.tally_item_name || null;
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -53,12 +62,13 @@ router.get('/stock-stream', (req, res) => {
   let completed = 0;
   for (const d of designs) {
     if (res.writableEnded) break;
+    const matchName = itemTallyName || d.tally_item_name;
     let stock = null;
-    if (d.tally_item_name) {
-      const row = lookup.get(d.tally_item_name);
+    if (matchName) {
+      const row = lookup.get(matchName);
       stock = row ? row.qty : null;
     }
-    send('stock', { id: d.id, design_number: d.design_number, stock, tally_item_name: d.tally_item_name });
+    send('stock', { id: d.id, design_number: d.design_number, stock, tally_item_name: matchName });
     completed++;
   }
 

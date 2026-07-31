@@ -196,6 +196,9 @@ db.exec(`
 
 // Migrations for existing DBs
 try { db.exec('ALTER TABLE items ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE'); } catch {}
+// Item-level Tally match: one Tally stock item name per collection. All designs
+// under the item inherit its stock, so matching is set once per item, not per design.
+try { db.exec('ALTER TABLE items ADD COLUMN tally_item_name TEXT'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN fabric_type TEXT'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN in_stock INTEGER DEFAULT 1'); } catch {}
 try { db.exec('ALTER TABLE items ADD COLUMN in_stock INTEGER DEFAULT 1'); } catch {}

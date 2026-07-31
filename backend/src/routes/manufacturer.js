@@ -36,12 +36,15 @@ router.post('/dispatch-photo', upload.single('photo'), async (req, res) => {
   res.json({ success: true, design_id: design.id, photo_path: filename, design_number: num });
 });
 
-// GET /stock — the brand's designs + stock (Tally cache qty).
+// GET /stock — the brand's designs + live Tally stock. Qty comes from the
+// tally_stock cache (kept fresh by the shop-PC sync agent) joined on the
+// design's tally_item_name — same source the shop's own stock view uses.
 router.get('/stock', (req, res) => {
   res.json(db.prepare(`
     SELECT d.id, d.design_number, d.rate, d.in_stock, d.photo_path,
-           d.tally_stock_cache AS qty, i.name AS item_name
+           ts.qty AS qty, i.name AS item_name
     FROM designs d JOIN items i ON i.id = d.item_id
+    LEFT JOIN tally_stock ts ON ts.tally_item_name = COALESCE(i.tally_item_name, d.tally_item_name)
     WHERE i.brand_id = ?
     ORDER BY i.name, CAST(d.design_number AS INTEGER), d.design_number
   `).all(req.user.brand_id));
