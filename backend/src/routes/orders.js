@@ -77,8 +77,10 @@ router.patch('/:id/status', requireAuth, (req, res) => {
   res.json({ status });
 });
 
-// DELETE /api/orders/:id
-router.delete('/:id', requireAdmin, (req, res) => {
+// DELETE /api/orders/:id — this router is mounted publicly (catalog POST), so
+// requireAuth must run here explicitly or req.user is never set and requireAdmin
+// 403s everyone, admins included.
+router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
   db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

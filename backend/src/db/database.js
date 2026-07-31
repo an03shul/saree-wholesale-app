@@ -53,7 +53,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    design_id INTEGER REFERENCES designs(id),
+    design_id INTEGER REFERENCES designs(id) ON DELETE SET NULL,
     customer_name TEXT,
     customer_phone TEXT,
     quantity INTEGER DEFAULT 1,
@@ -197,6 +197,46 @@ try { db.exec('ALTER TABLE orders ADD COLUMN brand_name TEXT'); } catch {}
 try { db.exec("ALTER TABLE orders ADD COLUMN source TEXT DEFAULT 'orders_tab'"); } catch {}
 // Comma-separated design ids for multi-design (custom-form) orders
 try { db.exec('ALTER TABLE orders ADD COLUMN design_ids TEXT'); } catch {}
+
+// orders.design_id originally had no ON DELETE action, so any order referencing
+// a design blocked deleting that design's brand/item chain ("FOREIGN KEY
+// constraint failed"). Rebuild with ON DELETE SET NULL — order history survives
+// via the denormalized design_number/item_name/brand_name text columns. Same
+// rename-swap pattern as the users role migration above.
+try {
+  const ordersInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").get();
+  if (ordersInfo?.sql?.includes('REFERENCES designs(id)') && !ordersInfo.sql.includes('SET NULL')) {
+    db.exec('PRAGMA foreign_keys = OFF');
+    db.exec('PRAGMA legacy_alter_table = ON');
+    db.exec(`
+      ALTER TABLE orders RENAME TO orders_old;
+      CREATE TABLE orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        design_id INTEGER REFERENCES designs(id) ON DELETE SET NULL,
+        customer_name TEXT,
+        customer_phone TEXT,
+        quantity INTEGER DEFAULT 1,
+        note TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        design_number TEXT,
+        item_name TEXT,
+        brand_name TEXT,
+        source TEXT DEFAULT 'orders_tab',
+        design_ids TEXT
+      );
+      INSERT INTO orders (id, design_id, customer_name, customer_phone, quantity, note, status, created_at, design_number, item_name, brand_name, source, design_ids)
+        SELECT id, design_id, customer_name, customer_phone, quantity, note, status, created_at, design_number, item_name, brand_name, source, design_ids FROM orders_old;
+      DROP TABLE orders_old;
+    `);
+    db.exec('PRAGMA legacy_alter_table = OFF');
+    db.exec('PRAGMA foreign_keys = ON');
+    console.log('Migrated orders.design_id to ON DELETE SET NULL');
+  }
+} catch (e) {
+  console.error('orders FK migration failed:', e.message);
+  try { db.exec('PRAGMA legacy_alter_table = OFF'); db.exec('PRAGMA foreign_keys = ON'); } catch {}
+}
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_cache REAL'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN tally_stock_updated_at DATETIME'); } catch {}
 
