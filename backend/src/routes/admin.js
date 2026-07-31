@@ -103,7 +103,9 @@ router.get('/staff-activity', (req, res) => {
       (SELECT COUNT(*) FROM staff_activity sa WHERE sa.user_id = u.id AND sa.created_at >= ?) AS actions_today,
       (SELECT a.checked_in_at FROM attendance a WHERE a.user_id = u.id AND a.date = ?) AS checkin_today
     FROM users u
-    WHERE u.role != 'admin'
+    -- Manufacturers are remote (Surat) — no attendance/check-in, so keep them out
+    -- of the staff activity + attendance dashboard.
+    WHERE u.role NOT IN ('admin', 'manufacturer')
     ORDER BY last_active DESC
   `).all(todayStart, istDate);
   res.json(rows);

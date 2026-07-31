@@ -216,8 +216,17 @@ function AccountantApp({ user, onLogout }) {
 // Limited navigator for the 'manufacturer' (Surat) role — upload dispatch photos
 // + invoices/order-forms for their brand, and see its stock & sales. Read-only otherwise.
 function ManufacturerApp({ user, onLogout }) {
-  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦', Notes: '📝' };
-  const headerRight = () => <HeaderLogoutButton onLogout={onLogout} />;
+  const [notesOpen, setNotesOpen] = useState(false);
+  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦' };
+  // Notes moved off the bottom tabs to a chat icon in the header (top-right).
+  const headerRight = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <TouchableOpacity onPress={() => setNotesOpen(true)} accessibilityLabel="Notes to admin" style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
+        <Text style={{ fontSize: 22 }}>💬</Text>
+      </TouchableOpacity>
+      <HeaderLogoutButton onLogout={onLogout} />
+    </View>
+  );
   const baseOpts = { headerShown: true, headerStyle, headerTintColor, headerTitleStyle, headerRight };
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -236,9 +245,22 @@ function ManufacturerApp({ user, onLogout }) {
             {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} emptyText="Upload your invoices & order forms" />}
           </Tab.Screen>
           <Tab.Screen name="Stock" component={StockScreen} options={{ ...baseOpts, title: 'My Stock' }} />
-          <Tab.Screen name="Notes" component={NotesScreen} options={{ ...baseOpts, title: 'Notes' }} />
         </Tab.Navigator>
       </NavigationContainer>
+
+      {/* Notes to admin — opened from the header chat icon */}
+      <Modal visible={notesOpen} animationType="slide" onRequestClose={() => setNotesOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={{ backgroundColor: '#8B1A2B', paddingTop: 50, paddingBottom: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.3 }}>Notes to Admin</Text>
+            <TouchableOpacity onPress={() => setNotesOpen(false)} style={{ padding: 6 }} accessibilityLabel="Close notes">
+              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <NotesScreen />
+        </View>
+      </Modal>
+
       <BrandFooter />
     </View>
   );
