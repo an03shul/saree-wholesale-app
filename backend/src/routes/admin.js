@@ -73,6 +73,17 @@ router.get('/activity', (req, res) => {
   res.json(logs);
 });
 
+// GET /api/admin/manufacturer-notes — private notes left by manufacturers (admin only).
+router.get('/manufacturer-notes', (req, res) => {
+  res.json(db.prepare(`
+    SELECT n.id, n.body, n.created_at, u.username, b.name AS brand_name
+    FROM manufacturer_notes n
+    JOIN users u ON u.id = n.user_id
+    LEFT JOIN brands b ON b.id = n.brand_id
+    ORDER BY n.created_at DESC
+  `).all());
+});
+
 // Start of "today" in IST (shop time) as a UTC "YYYY-MM-DD HH:MM:SS" string, to
 // compare against SQLite's UTC created_at. India has no DST → fixed +5:30.
 function istDayStartUtc() {

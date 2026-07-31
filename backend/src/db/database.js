@@ -183,6 +183,17 @@ db.exec(`
   );
 `);
 
+// Private notes a manufacturer leaves for the admin (only admin can read them).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS manufacturer_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    brand_id INTEGER REFERENCES brands(id) ON DELETE SET NULL,
+    body TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
 // Migrations for existing DBs
 try { db.exec('ALTER TABLE items ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE'); } catch {}
 try { db.exec('ALTER TABLE designs ADD COLUMN fabric_type TEXT'); } catch {}

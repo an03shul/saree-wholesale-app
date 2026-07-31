@@ -6,40 +6,98 @@ import {
 import { manufacturerApi, getThumbUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
 import { notify } from '../utils/share';
+import { parseServerDate } from '../utils/date';
 import { colors, shadow } from '../constants/theme';
 
-// Upload a dispatched-item photo, tagged by design number → attaches to that design.
+// Upload a dispatched-item photo. The manufacturer searches their own catalog
+// (by design number or collection name) and picks the design, so a photo can't
+// land on the wrong design — or fail because they typed a name, not a number.
 export function DispatchScreen() {
-  const [num, setNum] = useState('');
+  const [designs, setDesigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
+  const [selected, setSelected] = useState(null);
   const [picked, setPicked] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const loadDesigns = useCallback(() => {
+    manufacturerApi.stock()
+      .then(({ data }) => setDesigns(data))
+      .catch(() => notify('Error', 'Could not load your designs'))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => { loadDesigns(); }, [loadDesigns]);
+
+  const term = q.trim().toLowerCase();
+  const matches = term
+    ? designs.filter(d => String(d.design_number).toLowerCase().includes(term) || (d.item_name || '').toLowerCase().includes(term))
+    : designs;
+
   const submit = async () => {
-    if (!num.trim()) return notify('Required', 'Enter the design number');
+    if (!selected) return notify('Required', 'Pick the design');
     if (!picked) return notify('Required', 'Pick a photo');
     setSaving(true);
     try {
       const fd = new FormData();
-      fd.append('design_number', num.trim());
+      fd.append('design_id', String(selected.id));
       fd.append('photo', picked.file);
       await manufacturerApi.dispatchPhoto(fd);
-      notify('Uploaded', `Photo attached to design ${num.trim()}`);
-      setNum(''); setPicked(null);
+      notify('Uploaded', `Photo attached to ${selected.item_name} · ${selected.design_number}`);
+      setSelected(null); setPicked(null); setQ('');
+      loadDesigns(); // reflect the new photo in the list
     } catch (e) {
       notify('Error', e.response?.data?.error || 'Upload failed');
     } finally { setSaving(false); }
   };
 
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
+
+  // Once a design is chosen, collapse to a compact bar + the photo upload.
+  if (selected) {
+    return (
+      <View style={styles.padded}>
+        <Text style={styles.help}>Photograph the dispatched item — it attaches to this design in the catalog, so the shop doesn't have to re-shoot it.</Text>
+        <View style={styles.pickedBar}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} numberOfLines={1}>{selected.item_name}</Text>
+            <Text style={styles.sub}>Design {selected.design_number}</Text>
+          </View>
+          <TouchableOpacity onPress={() => { setSelected(null); setPicked(null); }}>
+            <Text style={styles.changeBtn}>Change</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.pickBtn} onPress={async () => { const p = await pickFile(); if (p) setPicked(p); }}>
+          <Text style={styles.pickBtnText}>{picked ? `📎 ${picked.name}` : '📷  Pick / take photo'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.submit, saving && { opacity: 0.6 }]} onPress={submit} disabled={saving}>
+          <Text style={styles.submitText}>{saving ? 'Uploading…' : 'Upload dispatch photo'}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.padded}>
-      <Text style={styles.help}>Photograph a dispatched item and tag it with its design number — it attaches to that design in the catalog, so the shop doesn't have to re-shoot it.</Text>
-      <TextInput style={styles.input} placeholder="Design number" placeholderTextColor={colors.textSecondary} value={num} onChangeText={setNum} autoCapitalize="characters" />
-      <TouchableOpacity style={styles.pickBtn} onPress={async () => { const p = await pickFile(); if (p) setPicked(p); }}>
-        <Text style={styles.pickBtnText}>{picked ? `📎 ${picked.name}` : '📷  Pick / take photo'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.submit, saving && { opacity: 0.6 }]} onPress={submit} disabled={saving}>
-        <Text style={styles.submitText}>{saving ? 'Uploading…' : 'Upload dispatch photo'}</Text>
-      </TouchableOpacity>
+      <Text style={styles.help}>Find the design you're dispatching, then attach its photo. Search by design number or collection name.</Text>
+      <TextInput style={styles.input} placeholder="Search design or collection…" placeholderTextColor={colors.textSecondary} value={q} onChangeText={setQ} autoCapitalize="none" />
+      <FlatList
+        data={matches}
+        keyExtractor={d => String(d.id)}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 40 }}
+        ListEmptyComponent={<Text style={styles.empty}>{designs.length ? 'No matches' : 'No designs in your catalog yet'}</Text>}
+        renderItem={({ item: d }) => (
+          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => setSelected(d)}>
+            {d.photo_path ? <Image source={{ uri: getThumbUrl(d.photo_path) }} style={styles.thumb} />
+              : <View style={[styles.thumb, styles.noThumb]}><Text style={styles.noThumbText}>No photo</Text></View>}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title} numberOfLines={1}>{d.item_name}</Text>
+              <Text style={styles.sub} numberOfLines={1}>Design {d.design_number} · ₹{d.rate}</Text>
+            </View>
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>{d.photo_path ? 'Replace' : 'Attach'}</Text>
+          </TouchableOpacity>
+        )}
+      />
     </View>
   );
 }
@@ -81,11 +139,74 @@ export function StockScreen() {
   );
 }
 
+// Private notes to the admin — the manufacturer writes, only admin reads.
+export function NotesScreen() {
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [body, setBody] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(() => {
+    manufacturerApi.notes()
+      .then(({ data }) => setNotes(data))
+      .catch(() => notify('Error', 'Could not load notes'))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async () => {
+    if (!body.trim()) return;
+    setSaving(true);
+    try {
+      await manufacturerApi.addNote(body.trim());
+      setBody('');
+      load();
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Could not save note');
+    } finally { setSaving(false); }
+  };
+
+  const fmt = (ts) => parseServerDate(ts).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <View style={styles.padded}>
+      <Text style={styles.help}>Leave a note for the shop owner — only they can see it. Use it for anything about a dispatch, stock, or an issue.</Text>
+      <TextInput style={styles.noteInput} placeholder="Write a note…" placeholderTextColor={colors.textSecondary} value={body} onChangeText={setBody} multiline />
+      <TouchableOpacity style={[styles.submit, (saving || !body.trim()) && { opacity: 0.6 }]} onPress={submit} disabled={saving || !body.trim()}>
+        <Text style={styles.submitText}>{saving ? 'Sending…' : 'Send note'}</Text>
+      </TouchableOpacity>
+      {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.primary} />
+        : (
+          <FlatList
+            style={{ marginTop: 16 }}
+            data={notes}
+            keyExtractor={n => String(n.id)}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 40 }}
+            ListEmptyComponent={<Text style={styles.empty}>No notes yet</Text>}
+            renderItem={({ item: n }) => (
+              <View style={styles.noteCard}>
+                <Text style={styles.noteBody}>{n.body}</Text>
+                <Text style={styles.noteTime}>{fmt(n.created_at)}</Text>
+              </View>
+            )}
+          />
+        )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   padded: { flex: 1, backgroundColor: colors.background, padding: 20 },
+  noteInput: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.textPrimary, minHeight: 90, textAlignVertical: 'top', marginBottom: 12 },
+  noteCard: { backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10, ...shadow.small },
+  noteBody: { fontSize: 15, color: colors.textPrimary, lineHeight: 21 },
+  noteTime: { fontSize: 11, color: colors.textSecondary, marginTop: 8 },
   list: { flex: 1, backgroundColor: colors.background },
   help: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 18, backgroundColor: colors.card, padding: 12, borderRadius: 10, ...shadow.small },
   input: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.textPrimary, marginBottom: 12 },
+  pickedBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.primary, padding: 14, marginBottom: 16 },
+  changeBtn: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   pickBtn: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', padding: 16, alignItems: 'center', marginBottom: 16 },
   pickBtnText: { fontSize: 15, fontWeight: '600', color: colors.primary },
   submit: { backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center' },

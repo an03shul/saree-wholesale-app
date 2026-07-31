@@ -37,6 +37,7 @@ export const adminApi = {
   getActivity: (limit = 50) => api.get('/api/admin/activity', { params: { limit } }),
   getStaffActivity: () => api.get('/api/admin/staff-activity'),
   getStaffFeed: (userId) => api.get(`/api/admin/staff-activity/${userId}`),
+  getManufacturerNotes: () => api.get('/api/admin/manufacturer-notes'),
 };
 
 export const attendanceApi = {
@@ -96,6 +97,8 @@ export const filesApi = {
 export const manufacturerApi = {
   dispatchPhoto: (formData) => api.post('/api/manufacturer/dispatch-photo', formData, { timeout: 30000 }),
   stock: () => api.get('/api/manufacturer/stock'),
+  notes: () => api.get('/api/manufacturer/notes'),
+  addNote: (body) => api.post('/api/manufacturer/notes', { body }),
 };
 // Download URL carries the token as a query param (requireAuth honors ?token),
 // so a plain new-tab/Linking open works without an auth header.

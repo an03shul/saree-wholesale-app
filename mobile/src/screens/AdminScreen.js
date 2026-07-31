@@ -13,6 +13,7 @@ export default function AdminScreen({ user, onLogout }) {
   const [template, setTemplate] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [addModal, setAddModal] = useState(false);
@@ -78,6 +79,15 @@ export default function AdminScreen({ user, onLogout }) {
     finally { setLoading(false); }
   }, []);
 
+  const loadNotes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await adminApi.getManufacturerNotes();
+      setNotes(data);
+    } catch { notify('Error', 'Could not load manufacturer notes'); }
+    finally { setLoading(false); }
+  }, []);
+
   const loadTemplate = useCallback(async () => {
     try {
       const { data } = await settingsApi.getAll();
@@ -103,6 +113,7 @@ export default function AdminScreen({ user, onLogout }) {
     else if (t === 'staffwatch') loadStaffAct();
     else if (t === 'attendance') loadAttendance(attMonth);
     else if (t === 'users') loadUsers();
+    else if (t === 'notes') loadNotes();
     else if (t === 'template') loadTemplate();
   };
 
@@ -258,7 +269,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['notes','📝 Notes'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -361,6 +372,26 @@ export default function AdminScreen({ user, onLogout }) {
                   {l.details && <Text style={styles.logDetails}>{l.details}</Text>}
                 </View>
               </View>
+            </View>
+          )}
+        />
+      )}
+
+      {/* Manufacturer notes (private — only admin sees these) */}
+      {tab === 'notes' && !loading && (
+        <FlatList
+          data={notes}
+          keyExtractor={n => String(n.id)}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          ListHeaderComponent={<Text style={styles.watchHint}>Private notes from manufacturers. Only you can see them.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>No notes from manufacturers yet</Text>}
+          renderItem={({ item: n }) => (
+            <View style={styles.logCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={styles.logUser}>{n.username}{n.brand_name ? ` · ${n.brand_name}` : ''}</Text>
+                <Text style={styles.logTime}>{formatTime(n.created_at)}</Text>
+              </View>
+              <Text style={styles.logDetails}>{n.body}</Text>
             </View>
           )}
         />
