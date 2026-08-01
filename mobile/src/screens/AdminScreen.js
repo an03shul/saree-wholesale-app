@@ -4,7 +4,7 @@ import {
   StyleSheet, Alert, Modal, ActivityIndicator, ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi } from '../api/client';
+import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi, tallyApi } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 
@@ -31,6 +31,7 @@ export default function AdminScreen({ user, onLogout }) {
     return ist.toISOString().slice(0, 7); // current IST month YYYY-MM
   });
   const [attRows, setAttRows] = useState([]);
+  const [tallySync, setTallySync] = useState(null); // /api/tally/status — null until loaded
   const [attEditUser, setAttEditUser] = useState(null);
 
   const loadAttendance = useCallback(async (month) => {
@@ -109,6 +110,7 @@ export default function AdminScreen({ user, onLogout }) {
   React.useEffect(() => {
     loadStaffAct();
     brandsApi.getAll().then(({ data }) => setBrands(data)).catch(() => {});
+    tallyApi.getStatus().then(({ data }) => setTallySync(data)).catch(() => setTallySync({ synced: false }));
   }, []);
 
   const addUser = async () => {
@@ -264,6 +266,23 @@ export default function AdminScreen({ user, onLogout }) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Tally sync health — agent pushes every ~5 min; stale = agent/Tally down at the shop */}
+      {tallySync && (() => {
+        const mins = tallySync.last_sync ? Math.floor((Date.now() - parseServerDate(tallySync.last_sync).getTime()) / 60000) : null;
+        const ok = tallySync.synced && mins != null && mins <= 15;
+        const warn = tallySync.synced && mins != null && mins > 15 && mins <= 60;
+        const color = ok ? '#2E7D32' : warn ? '#B26A00' : '#c0392b';
+        const text = tallySync.synced
+          ? `Tally: synced ${relTime(tallySync.last_sync)} · ${tallySync.item_count} items`
+          : 'Tally: never synced — is the agent running on the shop PC?';
+        return (
+          <View style={styles.tallyBar}>
+            <View style={[styles.statusDot, { backgroundColor: color, marginRight: 8 }]} />
+            <Text style={[styles.tallyBarText, { color }]} numberOfLines={1}>{text}</Text>
+          </View>
+        );
+      })()}
 
       {loading && <ActivityIndicator color="#c0392b" style={{ marginTop: 30 }} size="large" />}
 
@@ -629,6 +648,8 @@ const styles = StyleSheet.create({
   // Horizontal ScrollView collapses to a sliver in this column layout unless its
   // height is pinned — keep it fixed so the tab row is never clipped.
   tabScroll: { backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee', flexGrow: 0, flexShrink: 0, height: 52 },
+  tallyBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee' },
+  tallyBarText: { fontSize: 12, fontWeight: '700', flex: 1 },
   templateTitle: { fontSize: 18, fontWeight: '800', color: '#2c1810', marginBottom: 12 },
   templateHint: { fontSize: 13, color: '#666', backgroundColor: '#f5f0eb', padding: 12, borderRadius: 10, marginBottom: 16, lineHeight: 22 },
   varName: { color: '#8B1A2B', fontWeight: '700' },
