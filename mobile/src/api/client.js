@@ -101,6 +101,7 @@ export const manufacturerApi = {
   stock: () => api.get('/api/manufacturer/stock'),
   notes: () => api.get('/api/manufacturer/notes'),
   addNote: (body) => api.post('/api/manufacturer/notes', { body }),
+  insights: () => api.get('/api/manufacturer/insights'),
 };
 // Download URL carries the token as a query param (requireAuth honors ?token),
 // so a plain new-tab/Linking open works without an auth header.

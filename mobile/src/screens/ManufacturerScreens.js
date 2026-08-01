@@ -179,6 +179,116 @@ export function StockScreen() {
   );
 }
 
+// Analytics for the manufacturer's brand: stock alerts, demand, photo coverage.
+export function InsightsScreen() {
+  const [data, setData] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(() => manufacturerApi.insights()
+    .then(({ data }) => setData(data))
+    .catch(() => notify('Error', 'Could not load insights')), []);
+  useEffect(() => { load(); }, [load]);
+
+  if (!data) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
+  const pending = data.byStatus.find(s => s.status === 'pending')?.n || 0;
+  const done = data.byStatus.filter(s => s.status !== 'pending').reduce((n, s) => n + s.n, 0);
+
+  const Section = ({ title, children }) => (
+    <View style={{ marginBottom: 18 }}>
+      <Text style={insight.secTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+  const Row = ({ left, right, danger }) => (
+    <View style={insight.row}>
+      <Text style={insight.rowLeft} numberOfLines={1}>{left}</Text>
+      <Text style={[insight.rowRight, danger && { color: colors.danger }]}>{right}</Text>
+    </View>
+  );
+
+  return (
+    <FlatList
+      style={styles.list}
+      data={[1]} keyExtractor={() => 'insights'}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
+      renderItem={() => (
+        <View style={{ padding: 16 }}>
+          {/* B6 — demand */}
+          <View style={insight.statRow}>
+            <View style={insight.statCard}>
+              <Text style={insight.statNum}>{data.week.pieces}</Text>
+              <Text style={insight.statLbl}>pcs ordered · 7 days</Text>
+              <Text style={insight.statSub}>{data.week.orders} orders</Text>
+            </View>
+            <View style={insight.statCard}>
+              <Text style={insight.statNum}>{data.month.pieces}</Text>
+              <Text style={insight.statLbl}>pcs ordered · 30 days</Text>
+              <Text style={insight.statSub}>{data.month.orders} orders</Text>
+            </View>
+          </View>
+          {/* B8 — order status */}
+          <View style={insight.statRow}>
+            <View style={insight.statCard}>
+              <Text style={[insight.statNum, pending > 0 && { color: '#B26A00' }]}>{pending}</Text>
+              <Text style={insight.statLbl}>orders pending</Text>
+            </View>
+            <View style={insight.statCard}>
+              <Text style={[insight.statNum, { color: '#2E7D32' }]}>{done}</Text>
+              <Text style={insight.statLbl}>orders completed</Text>
+            </View>
+          </View>
+
+          {/* B10 — urgent */}
+          {data.urgent.length > 0 && (
+            <Section title="🚨 Ordered but out of stock — dispatch these first">
+              {data.urgent.map((u, i) => <Row key={i} left={`${u.item_name} · ${u.design_number}`} right={`${u.pending_pieces} pcs pending`} danger />)}
+            </Section>
+          )}
+
+          {/* A3 — out of stock */}
+          <Section title={`Out of stock (${data.outOfStock.length})`}>
+            {data.outOfStock.length === 0 ? <Text style={insight.okLine}>Nothing at zero 🎉</Text>
+              : data.outOfStock.map((c, i) => <Row key={i} left={c.name} right="0" danger />)}
+          </Section>
+
+          {/* A4 — low stock */}
+          <Section title={`Low stock — 5 pcs or less (${data.lowStock.length})`}>
+            {data.lowStock.length === 0 ? <Text style={insight.okLine}>No collections running low</Text>
+              : data.lowStock.map((c, i) => <Row key={i} left={c.name} right={`${c.qty} pcs`} />)}
+          </Section>
+
+          {/* B7 — top sellers */}
+          <Section title="Top designs · last 90 days">
+            {data.topDesigns.length === 0 ? <Text style={insight.okLine}>No orders yet in this period</Text>
+              : data.topDesigns.map((t, i) => <Row key={i} left={`${i + 1}. ${t.item_name || ''} · ${t.design_number}`} right={`${t.pieces} pcs`} />)}
+          </Section>
+
+          {/* C11 — photo coverage */}
+          <Section title="Catalog photos">
+            <Row left={`${data.photos.total - data.photos.missing} of ${data.photos.total} designs have photos`}
+                 right={data.photos.missing > 0 ? `${data.photos.missing} missing` : '✓'}
+                 danger={data.photos.missing > 0} />
+            {data.photos.missing > 0 && <Text style={insight.hint}>Add them from the Dispatch tab — tap a design marked “Attach”.</Text>}
+          </Section>
+        </View>
+      )}
+    />
+  );
+}
+
+const insight = StyleSheet.create({
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  statCard: { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: 'center', ...shadow.small },
+  statNum: { fontSize: 26, fontWeight: '900', color: colors.primary },
+  statLbl: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
+  statSub: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  secTitle: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, marginBottom: 8, marginTop: 6, letterSpacing: 0.3 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6, gap: 10, ...shadow.small },
+  rowLeft: { flex: 1, fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
+  rowRight: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  okLine: { fontSize: 13, color: colors.textSecondary, paddingVertical: 4 },
+  hint: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
+});
+
 // Two-way private chat with the admin (only they can see it).
 export function NotesScreen() {
   const [notes, setNotes] = useState([]);

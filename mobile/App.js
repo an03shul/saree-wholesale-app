@@ -23,7 +23,7 @@ import CreateFormScreen from './src/screens/CreateFormScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
-import { DispatchScreen, StockScreen, NotesScreen } from './src/screens/ManufacturerScreens';
+import { DispatchScreen, StockScreen, NotesScreen, InsightsScreen } from './src/screens/ManufacturerScreens';
 import AdminChatModal from './src/screens/AdminChat';
 import { authApi, setAuthToken, loadStoredToken, tasksApi, attendanceApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
@@ -238,10 +238,14 @@ function AccountantApp({ user, onLogout }) {
 // + invoices/order-forms for their brand, and see its stock & sales. Read-only otherwise.
 function ManufacturerApp({ user, onLogout }) {
   const [notesOpen, setNotesOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦' };
-  // Notes moved off the bottom tabs to a chat icon in the header (top-right).
+  // Notes (💬) and Insights (📊) live in the header, not the bottom tabs.
   const headerRight = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <TouchableOpacity onPress={() => setInsightsOpen(true)} accessibilityLabel="Insights" style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
+        <Text style={{ fontSize: 22 }}>📊</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => setNotesOpen(true)} accessibilityLabel="Notes to admin" style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
         <Text style={{ fontSize: 22 }}>💬</Text>
       </TouchableOpacity>
@@ -268,6 +272,19 @@ function ManufacturerApp({ user, onLogout }) {
           <Tab.Screen name="Stock" component={StockScreen} options={{ ...baseOpts, title: 'My Stock' }} />
         </Tab.Navigator>
       </NavigationContainer>
+
+      {/* Insights — opened from the header 📊 icon */}
+      <Modal visible={insightsOpen} animationType="slide" onRequestClose={() => setInsightsOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={{ backgroundColor: '#8B1A2B', paddingTop: 50, paddingBottom: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.3 }}>Insights</Text>
+            <TouchableOpacity onPress={() => setInsightsOpen(false)} style={{ padding: 6 }} accessibilityLabel="Close insights">
+              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <InsightsScreen />
+        </View>
+      </Modal>
 
       {/* Notes to admin — opened from the header chat icon */}
       <Modal visible={notesOpen} animationType="slide" onRequestClose={() => setNotesOpen(false)}>
