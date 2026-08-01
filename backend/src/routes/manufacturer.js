@@ -52,12 +52,18 @@ router.get('/stock', (req, res) => {
   `).all(req.user.brand_id));
 });
 
-// GET /notes — the manufacturer's own private notes (newest first).
+// GET /notes — the full private chat thread for this manufacturer's brand
+// (their messages + admin replies), oldest first for chat display.
 router.get('/notes', (req, res) => {
-  res.json(db.prepare('SELECT id, body, created_at FROM manufacturer_notes WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id));
+  res.json(db.prepare(`
+    SELECT n.id, n.body, n.created_at, u.role AS sender_role
+    FROM manufacturer_notes n JOIN users u ON u.id = n.user_id
+    WHERE n.brand_id = ?
+    ORDER BY n.created_at ASC
+  `).all(req.user.brand_id));
 });
 
-// POST /notes — leave a private note that only the admin can read.
+// POST /notes — send a message to the admin (private to this brand's thread).
 router.post('/notes', (req, res) => {
   const body = (req.body.body || '').trim();
   if (!body) return res.status(400).json({ error: 'Note is required' });

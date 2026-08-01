@@ -6,8 +6,8 @@ import {
 import { manufacturerApi, getThumbUrl, getImageUrl } from '../api/client';
 import { pickFile } from '../utils/pickFile';
 import { notify } from '../utils/share';
-import { parseServerDate } from '../utils/date';
 import { colors, shadow } from '../constants/theme';
+import ChatThread from '../components/ChatThread';
 
 // Upload a dispatched-item photo. The manufacturer searches their own catalog
 // (by design number or collection name) and picks the design, so a photo can't
@@ -179,69 +179,36 @@ export function StockScreen() {
   );
 }
 
-// Private notes to the admin — the manufacturer writes, only admin reads.
+// Two-way private chat with the admin (only they can see it).
 export function NotesScreen() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [body, setBody] = useState('');
-  const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
     manufacturerApi.notes()
       .then(({ data }) => setNotes(data))
-      .catch(() => notify('Error', 'Could not load notes'))
+      .catch(() => notify('Error', 'Could not load messages'))
       .finally(() => setLoading(false));
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const submit = async () => {
-    if (!body.trim()) return;
-    setSaving(true);
-    try {
-      await manufacturerApi.addNote(body.trim());
-      setBody('');
-      load();
-    } catch (e) {
-      notify('Error', e.response?.data?.error || 'Could not save note');
-    } finally { setSaving(false); }
-  };
-
-  const fmt = (ts) => parseServerDate(ts).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-
   return (
-    <View style={styles.padded}>
-      <Text style={styles.help}>Leave a note for the shop owner — only they can see it. Use it for anything about a dispatch, stock, or an issue.</Text>
-      <TextInput style={styles.noteInput} placeholder="Write a note…" placeholderTextColor={colors.textSecondary} value={body} onChangeText={setBody} multiline />
-      <TouchableOpacity style={[styles.submit, (saving || !body.trim()) && { opacity: 0.6 }]} onPress={submit} disabled={saving || !body.trim()}>
-        <Text style={styles.submitText}>{saving ? 'Sending…' : 'Send note'}</Text>
-      </TouchableOpacity>
-      {loading ? <ActivityIndicator style={{ marginTop: 24 }} color={colors.primary} />
-        : (
-          <FlatList
-            style={{ marginTop: 16 }}
-            data={notes}
-            keyExtractor={n => String(n.id)}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 40 }}
-            ListEmptyComponent={<Text style={styles.empty}>No notes yet</Text>}
-            renderItem={({ item: n }) => (
-              <View style={styles.noteCard}>
-                <Text style={styles.noteBody}>{n.body}</Text>
-                <Text style={styles.noteTime}>{fmt(n.created_at)}</Text>
-              </View>
-            )}
-          />
-        )}
-    </View>
+    <ChatThread
+      messages={notes}
+      mineRole="manufacturer"
+      loading={loading}
+      placeholder="Message the shop owner…"
+      emptyText="Send a message to the shop owner about a dispatch, stock or an issue — only they can see it."
+      onSend={async (t) => {
+        try { await manufacturerApi.addNote(t); load(); }
+        catch (e) { notify('Error', e.response?.data?.error || 'Could not send'); throw e; }
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   padded: { flex: 1, backgroundColor: colors.background, padding: 20 },
-  noteInput: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.textPrimary, minHeight: 90, textAlignVertical: 'top', marginBottom: 12 },
-  noteCard: { backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10, ...shadow.small },
-  noteBody: { fontSize: 15, color: colors.textPrimary, lineHeight: 21 },
-  noteTime: { fontSize: 11, color: colors.textSecondary, marginTop: 8 },
   list: { flex: 1, backgroundColor: colors.background },
   help: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 18, backgroundColor: colors.card, padding: 12, borderRadius: 10, ...shadow.small },
   input: { backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.textPrimary, marginBottom: 12 },

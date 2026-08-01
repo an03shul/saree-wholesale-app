@@ -73,15 +73,28 @@ router.get('/activity', (req, res) => {
   res.json(logs);
 });
 
-// GET /api/admin/manufacturer-notes — private notes left by manufacturers (admin only).
+// GET /api/admin/manufacturer-notes — the full manufacturer↔admin chat, oldest
+// first. The app groups these by brand_id into per-manufacturer threads.
 router.get('/manufacturer-notes', (req, res) => {
   res.json(db.prepare(`
-    SELECT n.id, n.body, n.created_at, u.username, b.name AS brand_name
+    SELECT n.id, n.body, n.created_at, n.brand_id, u.username, u.role AS sender_role, b.name AS brand_name
     FROM manufacturer_notes n
     JOIN users u ON u.id = n.user_id
     LEFT JOIN brands b ON b.id = n.brand_id
-    ORDER BY n.created_at DESC
+    ORDER BY n.created_at ASC
   `).all());
+});
+
+// POST /api/admin/manufacturer-notes { brand_id, body } — admin replies into a
+// brand's thread (the manufacturer on that brand sees it).
+router.post('/manufacturer-notes', (req, res) => {
+  const brand_id = Number(req.body.brand_id) || null;
+  const body = (req.body.body || '').trim();
+  if (!brand_id) return res.status(400).json({ error: 'brand_id required' });
+  if (!body) return res.status(400).json({ error: 'Message is required' });
+  const r = db.prepare('INSERT INTO manufacturer_notes (user_id, brand_id, body) VALUES (?,?,?)')
+    .run(req.user.id, brand_id, body);
+  res.status(201).json(db.prepare('SELECT id, body, created_at, brand_id FROM manufacturer_notes WHERE id = ?').get(r.lastInsertRowid));
 });
 
 // Start of "today" in IST (shop time) as a UTC "YYYY-MM-DD HH:MM:SS" string, to

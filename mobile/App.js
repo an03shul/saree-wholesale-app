@@ -24,6 +24,7 @@ import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
 import { DispatchScreen, StockScreen, NotesScreen } from './src/screens/ManufacturerScreens';
+import AdminChatModal from './src/screens/AdminChat';
 import { authApi, setAuthToken, loadStoredToken, tasksApi, attendanceApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
 import { confirmAction } from './src/utils/share';
@@ -33,6 +34,18 @@ import { confirmAction } from './src/utils/share';
 // shows up without reopening the app.
 const TasksBadgeContext = createContext({ pending: 0, refresh: () => {} });
 export const useTasksBadge = () => useContext(TasksBadgeContext);
+
+// Lets the 💬 header button (deep in the navigator) open the admin chat modal
+// that lives at the MainApp root.
+const ChatContext = createContext({ openChat: () => {} });
+function ChatHeaderButton() {
+  const { openChat } = useContext(ChatContext);
+  return (
+    <TouchableOpacity onPress={openChat} accessibilityLabel="Manufacturer chat" style={{ marginRight: 14, paddingHorizontal: 6, paddingVertical: 6 }}>
+      <Text style={{ fontSize: 22 }}>💬</Text>
+    </TouchableOpacity>
+  );
+}
 
 function TasksBadgeProvider({ children }) {
   const [pending, setPending] = useState(0);
@@ -84,7 +97,8 @@ const HeaderLogo = () => (
   />
 );
 
-function CatalogStack() {
+function CatalogStack({ user }) {
+  const isAdmin = user?.role === 'admin';
   return (
     <Stack.Navigator screenOptions={{ headerStyle, headerTintColor, headerTitleStyle }}>
       <Stack.Screen name="Brands" component={BrandsScreen} options={{
@@ -92,6 +106,7 @@ function CatalogStack() {
         headerLeft: () => (
           <Image source={require('./assets/logo.png')} style={{ width: 60, height: 60, marginLeft: 12 }} resizeMode="contain" />
         ),
+        headerRight: isAdmin ? () => <ChatHeaderButton /> : undefined,
       }} />
       <Stack.Screen name="Items" component={ItemsScreen} />
       <Stack.Screen name="Designs" component={DesignsScreen} />
@@ -111,7 +126,7 @@ function MoreStack({ user, onLogout }) {
       <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: 'Bulk Add Designs' }} />
       <Stack.Screen name="CreateForm" component={CreateFormScreen} options={{ title: 'Create Order Form' }} />
       <Stack.Screen name="Documents" options={{ title: 'Documents' }}>
-        {() => <FilesScreen types={['invoice', 'orderform', 'discount']} canRename canDelete emptyText="Invoices, order forms & discounts appear here" />}
+        {() => <FilesScreen types={['invoice', 'orderform', 'discount']} allowBrandTag canRename canDelete emptyText="Invoices, order forms & discounts appear here" />}
       </Stack.Screen>
       <Stack.Screen name="Admin" options={{ headerShown: false }}>
         {() => <AdminScreen user={user} onLogout={onLogout} />}
@@ -124,7 +139,9 @@ function MainApp({ user, onLogout }) {
   const icons = { Catalog: '🧵', Orders: '📋', Tasks: '✅', Send: '📤', More: '☰' };
   const { pending } = useTasksBadge();
   const taskBadge = pending > 0 ? pending : undefined;
+  const [chatOpen, setChatOpen] = useState(false);
   return (
+    <ChatContext.Provider value={{ openChat: () => setChatOpen(true) }}>
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <NavigationContainer>
         <Tab.Navigator
@@ -136,7 +153,9 @@ function MainApp({ user, onLogout }) {
             headerShown: false,
           })}
         >
-          <Tab.Screen name="Catalog" component={CatalogStack} />
+          <Tab.Screen name="Catalog">
+            {() => <CatalogStack user={user} />}
+          </Tab.Screen>
           <Tab.Screen name="Orders" component={OrdersScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Orders & Inquiries' }} />
           <Tab.Screen name="Tasks" component={TasksScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: user.role === 'admin' ? 'Tasks' : 'My Tasks', tabBarBadge: taskBadge }} />
           <Tab.Screen name="Send" component={SendScreen} options={{ headerShown: true, headerStyle, headerTintColor, headerTitleStyle, title: 'Send Updates' }} />
@@ -145,8 +164,10 @@ function MainApp({ user, onLogout }) {
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
+      {user.role === 'admin' && <AdminChatModal visible={chatOpen} onClose={() => setChatOpen(false)} />}
       <BrandFooter />
     </View>
+    </ChatContext.Provider>
   );
 }
 

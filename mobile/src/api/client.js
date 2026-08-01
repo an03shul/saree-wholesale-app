@@ -38,6 +38,7 @@ export const adminApi = {
   getStaffActivity: () => api.get('/api/admin/staff-activity'),
   getStaffFeed: (userId) => api.get(`/api/admin/staff-activity/${userId}`),
   getManufacturerNotes: () => api.get('/api/admin/manufacturer-notes'),
+  replyManufacturerNote: (brand_id, body) => api.post('/api/admin/manufacturer-notes', { brand_id, body }),
 };
 
 export const attendanceApi = {
@@ -91,6 +92,7 @@ export const filesApi = {
   list: (params) => api.get('/api/files', { params }),
   upload: (formData) => api.post('/api/files', formData, { timeout: 30000 }),
   rename: (id, label) => api.patch(`/api/files/${id}`, { label }),
+  assignBrand: (id, brand_id) => api.patch(`/api/files/${id}`, { brand_id }), // brand_id null = Others
   delete: (id) => api.delete(`/api/files/${id}`),
 };
 

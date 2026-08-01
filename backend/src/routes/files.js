@@ -82,12 +82,20 @@ router.get('/:id/download', requireRole('admin', 'accountant', 'manufacturer'), 
   }
 });
 
-// PATCH /api/files/:id — rename (label only). Admin and accountant.
+// PATCH /api/files/:id — rename (label) and/or transfer to a company (brand_id,
+// null = "Others"/unassigned). Admin and accountant.
 router.patch('/:id', requireRole('admin', 'accountant'), (req, res) => {
-  const label = (req.body.label || '').trim();
-  if (!label) return res.status(400).json({ error: 'Label is required' });
-  const r = db.prepare('UPDATE files SET label = ? WHERE id = ?').run(label, req.params.id);
-  if (r.changes === 0) return res.status(404).json({ error: 'Not found' });
+  const existing = db.prepare('SELECT id FROM files WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  if ('brand_id' in req.body) {
+    const bid = req.body.brand_id === null || req.body.brand_id === '' ? null : Number(req.body.brand_id);
+    db.prepare('UPDATE files SET brand_id = ? WHERE id = ?').run(bid, req.params.id);
+  }
+  if ('label' in req.body) {
+    const label = (req.body.label || '').trim();
+    if (!label) return res.status(400).json({ error: 'Label is required' });
+    db.prepare('UPDATE files SET label = ? WHERE id = ?').run(label, req.params.id);
+  }
   res.json(db.prepare(`${SELECT} WHERE f.id = ?`).get(req.params.id));
 });
 
