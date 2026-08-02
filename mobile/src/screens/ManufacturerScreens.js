@@ -179,6 +179,65 @@ export function StockScreen() {
   );
 }
 
+// Production requests from the shop: accept → start → mark dispatched.
+const REQ_STATUS = {
+  requested: { label: 'New request', color: '#B26A00', next: 'accepted', action: 'Accept' },
+  accepted: { label: 'Accepted', color: '#1565C0', next: 'in_progress', action: 'Start making' },
+  in_progress: { label: 'In progress', color: '#6A1B9A', next: 'dispatched', action: 'Mark dispatched' },
+  dispatched: { label: 'Dispatched ✓', color: '#2E7D32', next: null, action: null },
+  cancelled: { label: 'Cancelled', color: colors.textSecondary, next: null, action: null },
+};
+export function RequestsScreen() {
+  const [rows, setRows] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [busy, setBusy] = useState(null);
+  const load = useCallback(() => manufacturerApi.requests().then(({ data }) => setRows(data)).catch(() => notify('Error', 'Could not load requests')), []);
+  useEffect(() => { load(); }, [load]);
+
+  const advance = async (r) => {
+    const next = REQ_STATUS[r.status]?.next;
+    if (!next) return;
+    setBusy(r.id);
+    try { await manufacturerApi.setRequestStatus(r.id, next); await load(); }
+    catch (e) { notify('Error', e.response?.data?.error || 'Could not update'); }
+    finally { setBusy(null); }
+  };
+
+  if (!rows) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
+  return (
+    <FlatList
+      style={styles.list}
+      data={rows}
+      keyExtractor={r => String(r.id)}
+      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
+      ListEmptyComponent={<Text style={styles.empty}>No production requests yet. When the shop asks you to make something, it appears here.</Text>}
+      renderItem={({ item: r }) => {
+        const st = REQ_STATUS[r.status] || REQ_STATUS.requested;
+        return (
+          <View style={styles.card}>
+            {r.photo_path ? <Image source={{ uri: getThumbUrl(r.photo_path) }} style={styles.thumb} />
+              : <View style={[styles.thumb, styles.noThumb]}><Text style={styles.noThumbText}>No photo</Text></View>}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title} numberOfLines={1}>{r.item_name || 'Design'}{r.design_number ? ` · ${r.design_number}` : ''}</Text>
+              <Text style={styles.sub}>{r.quantity ? `${r.quantity} pcs` : 'qty —'}{r.due_date ? ` · by ${r.due_date}` : ''}</Text>
+              {!!r.note && <Text style={[styles.sub, { marginTop: 3 }]} numberOfLines={2}>📝 {r.note}</Text>}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 10 }}>
+                <Text style={[styles.reqBadge, { color: st.color, borderColor: st.color }]}>{st.label}</Text>
+                {st.action && (
+                  <TouchableOpacity style={[styles.reqBtn, busy === r.id && { opacity: 0.5 }]} disabled={busy === r.id} onPress={() => advance(r)}>
+                    <Text style={styles.reqBtnText}>{busy === r.id ? '…' : st.action}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        );
+      }}
+    />
+  );
+}
+
 // Analytics for the manufacturer's brand: stock alerts, demand, photo coverage.
 export function InsightsScreen() {
   const [data, setData] = useState(null);
@@ -335,6 +394,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   sub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   stockTag: { fontSize: 11, fontWeight: '700' },
+  reqBadge: { fontSize: 11, fontWeight: '800', borderWidth: 1.2, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
+  reqBtn: { backgroundColor: colors.primary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7 },
+  reqBtnText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   summaryBar: { backgroundColor: colors.card, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 14, ...shadow.small },
   summaryNum: { fontSize: 34, fontWeight: '900', color: colors.primary },
   summaryLbl: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginTop: 2 },

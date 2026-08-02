@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const db = require('../db/database');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { notifyUser } = require('../services/pushNotify');
 
 function hashPin(pin) {
   return crypto.createHash('sha256').update(String(pin)).digest('hex');
@@ -95,6 +96,62 @@ router.post('/manufacturer-notes', (req, res) => {
   const r = db.prepare('INSERT INTO manufacturer_notes (user_id, brand_id, body) VALUES (?,?,?)')
     .run(req.user.id, brand_id, body);
   res.status(201).json(db.prepare('SELECT id, body, created_at, brand_id FROM manufacturer_notes WHERE id = ?').get(r.lastInsertRowid));
+});
+
+// ── Production requests (admin → manufacturer) ───────────────────────────────
+const PR_SELECT = `
+  SELECT pr.*, b.name AS brand_name, d.photo_path
+  FROM production_requests pr
+  LEFT JOIN brands b ON b.id = pr.brand_id
+  LEFT JOIN designs d ON d.id = pr.design_id
+`;
+
+// GET /api/admin/production-requests — all requests, newest first.
+router.get('/production-requests', (req, res) => {
+  res.json(db.prepare(`${PR_SELECT} ORDER BY pr.created_at DESC`).all());
+});
+
+// POST /api/admin/production-requests { brand_id, design_id?, quantity, due_date?, note? }
+router.post('/production-requests', (req, res) => {
+  const brand_id = Number(req.body.brand_id) || null;
+  if (!brand_id) return res.status(400).json({ error: 'brand_id required' });
+  const quantity = Number(req.body.quantity) || null;
+  const design_id = Number(req.body.design_id) || null;
+  // Denormalize the design label so it survives even if the design is removed.
+  let design_number = null, item_name = null;
+  if (design_id) {
+    const d = db.prepare('SELECT d.design_number, i.name AS item_name FROM designs d JOIN items i ON i.id = d.item_id WHERE d.id = ?').get(design_id);
+    if (d) { design_number = d.design_number; item_name = d.item_name; }
+  }
+  const r = db.prepare(`INSERT INTO production_requests (brand_id, design_id, design_number, item_name, quantity, due_date, note, created_by)
+    VALUES (?,?,?,?,?,?,?,?)`).run(brand_id, design_id, design_number, item_name, quantity, (req.body.due_date || '').trim() || null, (req.body.note || '').trim() || null, req.user.id);
+  // Targeted push to that brand's manufacturer(s).
+  const mfgs = db.prepare("SELECT id FROM users WHERE role='manufacturer' AND brand_id = ?").all(brand_id);
+  const label = [item_name, design_number && `#${design_number}`].filter(Boolean).join(' ');
+  for (const m of mfgs) notifyUser(m.id, { title: 'New production request', body: `${quantity ? quantity + ' pcs' : ''} ${label}`.trim() || 'Open the app for details', url: '/' }).catch(() => {});
+  res.status(201).json(db.prepare(`${PR_SELECT} WHERE pr.id = ?`).get(r.lastInsertRowid));
+});
+
+// PATCH /api/admin/production-requests/:id — edit qty/due/note/status.
+router.patch('/production-requests/:id', (req, res) => {
+  const existing = db.prepare('SELECT id FROM production_requests WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const fields = [], args = [];
+  if ('quantity' in req.body) { fields.push('quantity = ?'); args.push(Number(req.body.quantity) || null); }
+  if ('due_date' in req.body) { fields.push('due_date = ?'); args.push((req.body.due_date || '').trim() || null); }
+  if ('note' in req.body) { fields.push('note = ?'); args.push((req.body.note || '').trim() || null); }
+  if ('status' in req.body) { fields.push('status = ?'); args.push(req.body.status); }
+  if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
+  args.push(req.params.id);
+  try { db.prepare(`UPDATE production_requests SET ${fields.join(', ')} WHERE id = ?`).run(...args); }
+  catch (e) { return res.status(400).json({ error: 'Invalid update (' + e.message + ')' }); }
+  res.json(db.prepare(`${PR_SELECT} WHERE pr.id = ?`).get(req.params.id));
+});
+
+// DELETE /api/admin/production-requests/:id
+router.delete('/production-requests/:id', (req, res) => {
+  db.prepare('DELETE FROM production_requests WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
 });
 
 // Start of "today" in IST (shop time) as a UTC "YYYY-MM-DD HH:MM:SS" string, to

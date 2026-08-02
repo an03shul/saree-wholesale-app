@@ -23,8 +23,9 @@ import CreateFormScreen from './src/screens/CreateFormScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
-import { DispatchScreen, StockScreen, NotesScreen, InsightsScreen } from './src/screens/ManufacturerScreens';
+import { DispatchScreen, StockScreen, NotesScreen, InsightsScreen, RequestsScreen } from './src/screens/ManufacturerScreens';
 import AdminChatModal from './src/screens/AdminChat';
+import ProductionScreen from './src/screens/ProductionScreen';
 import { authApi, setAuthToken, loadStoredToken, tasksApi, attendanceApi } from './src/api/client';
 import { subscribeToPush } from './src/utils/pushSubscription';
 import { confirmAction } from './src/utils/share';
@@ -125,6 +126,7 @@ function MoreStack({ user, onLogout }) {
       <Stack.Screen name="Identify" component={IdentifyScreen} options={{ title: 'Identify Piece' }} />
       <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: 'Bulk Add Designs' }} />
       <Stack.Screen name="CreateForm" component={CreateFormScreen} options={{ title: 'Create Order Form' }} />
+      <Stack.Screen name="Production" component={ProductionScreen} options={{ title: 'Production' }} />
       <Stack.Screen name="Documents" options={{ title: 'Documents' }}>
         {() => <FilesScreen types={['invoice', 'orderform', 'discount']} allowBrandTag canRename canDelete emptyText="Invoices, order forms & discounts appear here" />}
       </Stack.Screen>
@@ -239,14 +241,18 @@ function AccountantApp({ user, onLogout }) {
 function ManufacturerApp({ user, onLogout }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [requestsOpen, setRequestsOpen] = useState(false);
   const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦' };
-  // Notes (💬) and Insights (📊) live in the header, not the bottom tabs.
+  // Requests (📋), Insights (📊) and Notes (💬) live in the header, not the tabs.
   const headerRight = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <TouchableOpacity onPress={() => setInsightsOpen(true)} accessibilityLabel="Insights" style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
+      <TouchableOpacity onPress={() => setRequestsOpen(true)} accessibilityLabel="Production requests" style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+        <Text style={{ fontSize: 22 }}>📋</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setInsightsOpen(true)} accessibilityLabel="Insights" style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
         <Text style={{ fontSize: 22 }}>📊</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => setNotesOpen(true)} accessibilityLabel="Notes to admin" style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
+      <TouchableOpacity onPress={() => setNotesOpen(true)} accessibilityLabel="Notes to admin" style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
         <Text style={{ fontSize: 22 }}>💬</Text>
       </TouchableOpacity>
       <HeaderLogoutButton onLogout={onLogout} />
@@ -272,6 +278,19 @@ function ManufacturerApp({ user, onLogout }) {
           <Tab.Screen name="Stock" component={StockScreen} options={{ ...baseOpts, title: 'My Stock' }} />
         </Tab.Navigator>
       </NavigationContainer>
+
+      {/* Production requests — opened from the header 📋 icon */}
+      <Modal visible={requestsOpen} animationType="slide" onRequestClose={() => setRequestsOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={{ backgroundColor: '#8B1A2B', paddingTop: 50, paddingBottom: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.3 }}>Production Requests</Text>
+            <TouchableOpacity onPress={() => setRequestsOpen(false)} style={{ padding: 6 }} accessibilityLabel="Close requests">
+              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <RequestsScreen />
+        </View>
+      </Modal>
 
       {/* Insights — opened from the header 📊 icon */}
       <Modal visible={insightsOpen} animationType="slide" onRequestClose={() => setInsightsOpen(false)}>

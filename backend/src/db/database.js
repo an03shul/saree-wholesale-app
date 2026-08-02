@@ -183,6 +183,23 @@ db.exec(`
   );
 `);
 
+// Production requests: admin asks a manufacturer (brand) to make N of a design.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS production_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE,
+    design_id INTEGER REFERENCES designs(id) ON DELETE SET NULL,
+    design_number TEXT,
+    item_name TEXT,
+    quantity INTEGER,
+    due_date TEXT,
+    note TEXT,
+    status TEXT DEFAULT 'requested' CHECK(status IN ('requested','accepted','in_progress','dispatched','cancelled')),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
 // Private notes a manufacturer leaves for the admin (only admin can read them).
 db.exec(`
   CREATE TABLE IF NOT EXISTS manufacturer_notes (

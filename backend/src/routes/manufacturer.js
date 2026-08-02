@@ -123,6 +123,27 @@ router.get('/insights', (req, res) => {
   res.json({ outOfStock, lowStock, week, month, topDesigns, byStatus, urgent, photos });
 });
 
+// GET /requests — production requests for this manufacturer's brand.
+router.get('/requests', (req, res) => {
+  res.json(db.prepare(`
+    SELECT pr.id, pr.design_number, pr.item_name, pr.quantity, pr.due_date, pr.note,
+           pr.status, pr.created_at, d.photo_path
+    FROM production_requests pr LEFT JOIN designs d ON d.id = pr.design_id
+    WHERE pr.brand_id = ? ORDER BY pr.status='dispatched', pr.created_at DESC
+  `).all(req.user.brand_id));
+});
+
+// PATCH /requests/:id/status — manufacturer moves a request forward.
+const MFG_STATUSES = ['accepted', 'in_progress', 'dispatched'];
+router.patch('/requests/:id/status', (req, res) => {
+  const status = req.body.status;
+  if (!MFG_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  const pr = db.prepare('SELECT id, brand_id FROM production_requests WHERE id = ?').get(req.params.id);
+  if (!pr || pr.brand_id !== req.user.brand_id) return res.status(404).json({ error: 'Not found' });
+  db.prepare('UPDATE production_requests SET status = ? WHERE id = ?').run(status, req.params.id);
+  res.json({ success: true, status });
+});
+
 // GET /notes — the full private chat thread for this manufacturer's brand
 // (their messages + admin replies), oldest first for chat display.
 router.get('/notes', (req, res) => {
