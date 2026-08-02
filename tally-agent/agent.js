@@ -17,8 +17,16 @@ if (!CLOUD_URL || !SYNC_TOKEN) {
   process.exit(1);
 }
 
+// Tally computes ClosingBalance only within a date range. Without SVFROMDATE/
+// SVTODATE the export returns empty/zero balances — so we ask for the balance
+// as of today (from a far-past date to capture the running stock).
+function todayYmd() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // TDL collection request: all stock items with their closing balance.
-const STOCK_QUERY = `
+const STOCK_QUERY = () => `
 <ENVELOPE>
   <HEADER>
     <VERSION>1</VERSION>
@@ -30,6 +38,8 @@ const STOCK_QUERY = `
     <DESC>
       <STATICVARIABLES>
         <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+        <SVFROMDATE TYPE="Date">20000401</SVFROMDATE>
+        <SVTODATE TYPE="Date">${todayYmd()}</SVTODATE>
       </STATICVARIABLES>
       <TDL>
         <TDLMESSAGE>
@@ -88,11 +98,19 @@ function parseQty(closingBalance) {
   return Number.isFinite(n) ? n : 0;
 }
 
+let dumpedRaw = false;
 async function readTallyStock() {
-  const res = await axios.post(TALLY_URL, STOCK_QUERY, {
+  const res = await axios.post(TALLY_URL, STOCK_QUERY(), {
     headers: { 'Content-Type': 'text/xml' },
     timeout: 20000,
   });
+  // One-time diagnostic: show the raw XML of the first stock item so we can see
+  // exactly which field carries the quantity (and whether it's now populated).
+  if (!dumpedRaw) {
+    dumpedRaw = true;
+    const first = String(res.data).match(/<STOCKITEM[\s\S]*?<\/STOCKITEM>/i);
+    console.log('   [debug] raw first stock item:', first ? first[0].replace(/\s+/g, ' ').trim() : '(none found)');
+  }
   const parsed = await xml2js.parseStringPromise(res.data, { explicitArray: false, mergeAttrs: true });
   let items = parsed?.ENVELOPE?.BODY?.DATA?.COLLECTION?.STOCKITEM;
   if (!items) return [];
