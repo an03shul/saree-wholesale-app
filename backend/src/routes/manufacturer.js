@@ -82,13 +82,18 @@ router.get('/insights', (req, res) => {
   const lowStock = collections.filter(c => c.qty !== null && c.qty > 0 && c.qty <= 5);
   const stockUnknown = collections.filter(c => c.qty === null);
 
-  // B6 — orders this week / month (count + pieces)
-  const period = (days) => db.prepare(`
-    SELECT COUNT(*) AS orders, COALESCE(SUM(o.quantity), 0) AS pieces
-    ${ordersFrom} AND o.created_at >= datetime('now', ?)
-  `).get(B, brandName, `-${days} days`);
+  // B6 — demand for a rolling window, with piece count AND ₹ value.
+  // value = quantity × the linked design's rate; catalog orders with no linked
+  // design contribute 0, so revenue is an estimate (labelled as such in the UI).
+  const windowSel = `
+    SELECT COUNT(*) AS orders, COALESCE(SUM(o.quantity), 0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate, 0)), 0)) AS value
+  `;
+  const period = (days) => db.prepare(`${windowSel} ${ordersFrom} AND o.created_at >= datetime('now', ?)`).get(B, brandName, `-${days} days`);
+  const between = (fromD, toD) => db.prepare(`${windowSel} ${ordersFrom} AND o.created_at >= datetime('now', ?) AND o.created_at < datetime('now', ?)`).get(B, brandName, `-${fromD} days`, `-${toD} days`);
   const week = period(7);
   const month = period(30);
+  const prevMonth = between(60, 30); // 31–60 days ago, for the 30-day % change
 
   // B7 — top-selling designs, last 90 days
   const topDesigns = db.prepare(`
@@ -125,7 +130,71 @@ router.get('/insights', (req, res) => {
     FROM designs d JOIN items i ON i.id = d.item_id WHERE i.brand_id = ?
   `).get(B);
 
-  res.json({ outOfStock, lowStock, stockUnknown, week, month, topDesigns, byStatus, urgent, photos });
+  // Demand trend — pieces & ₹ per week for the last 8 weeks (0 = current week),
+  // gap-filled in JS so the chart always has 8 continuous points, oldest first.
+  const trendRaw = db.prepare(`
+    SELECT CAST((julianday('now') - julianday(o.created_at)) / 7 AS INTEGER) AS weeks_ago,
+           COALESCE(SUM(o.quantity), 0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate, 0)), 0)) AS value
+    ${ordersFrom} AND o.created_at >= datetime('now', '-56 days')
+    GROUP BY weeks_ago
+  `).all(B, brandName);
+  const trendMap = new Map(trendRaw.map(r => [r.weeks_ago, r]));
+  const trend = [];
+  for (let w = 7; w >= 0; w--) {
+    const r = trendMap.get(w) || { pieces: 0, value: 0 };
+    trend.push({ label: w === 0 ? 'now' : `${w}w`, pieces: r.pieces, value: r.value });
+  }
+
+  // Demand by collection — pieces & ₹ over the last 90 days.
+  const byCollection = db.prepare(`
+    SELECT COALESCE(i.name, o.item_name) AS name,
+           COALESCE(SUM(o.quantity), 0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate, 0)), 0)) AS value
+    ${ordersFrom} AND o.created_at >= datetime('now', '-90 days')
+      AND COALESCE(i.name, o.item_name) IS NOT NULL
+    GROUP BY 1 ORDER BY pieces DESC LIMIT 8
+  `).all(B, brandName);
+
+  // Reorder priorities — the most actionable list: design-linked demand (90d)
+  // whose collection is low/zero OR has unknown stock → "make these next".
+  const reorder = db.prepare(`
+    SELECT d.design_number, i.name AS item_name,
+           COALESCE(SUM(o.quantity), 0) AS demand, ts.qty
+    FROM orders o
+    JOIN designs d ON d.id = o.design_id
+    JOIN items i ON i.id = d.item_id
+    LEFT JOIN tally_stock ts ON ts.tally_item_name = i.tally_item_name
+    WHERE i.brand_id = ? AND o.created_at >= datetime('now', '-90 days')
+    GROUP BY d.id
+    HAVING ts.qty IS NULL OR ts.qty <= 5
+    ORDER BY demand DESC LIMIT 6
+  `).all(B);
+
+  // Production workload — request counts by status.
+  const requestStatus = db.prepare(`
+    SELECT status, COUNT(*) AS n FROM production_requests WHERE brand_id = ? GROUP BY status
+  `).all(B);
+
+  // Portfolio totals (all-time demand + catalog size + live stock).
+  const catalog = db.prepare(`
+    SELECT (SELECT COUNT(*) FROM designs d JOIN items i ON i.id = d.item_id WHERE i.brand_id = ?) AS designs,
+           (SELECT COUNT(*) FROM items WHERE brand_id = ?) AS collections
+  `).get(B, B);
+  const allTime = db.prepare(`${windowSel} ${ordersFrom}`).get(B, brandName);
+  const totals = {
+    designs: catalog.designs,
+    collections: catalog.collections,
+    stock: collections.reduce((s, c) => s + (c.qty || 0), 0),
+    orders: allTime.orders,
+    pieces: allTime.pieces,
+    value: allTime.value,
+  };
+
+  res.json({
+    totals, week, month, prevMonth, trend, byCollection, reorder,
+    outOfStock, lowStock, stockUnknown, topDesigns, byStatus, urgent, requestStatus, photos,
+  });
 });
 
 // GET /requests — production requests for this manufacturer's brand.

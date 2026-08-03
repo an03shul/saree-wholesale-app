@@ -8,6 +8,7 @@ import { pickFile } from '../utils/pickFile';
 import { notify } from '../utils/share';
 import { colors, shadow } from '../constants/theme';
 import ChatThread from '../components/ChatThread';
+import { BarChart, HBar } from '../components/InsightCharts';
 
 // Upload a dispatched-item photo. The manufacturer searches their own catalog
 // (by design number or collection name) and picks the design, so a photo can't
@@ -354,7 +355,23 @@ export function RequestsScreen() {
   );
 }
 
-// Analytics for the manufacturer's brand: stock alerts, demand, photo coverage.
+// ₹ with Indian grouping; compact for large numbers (₹1.2L, ₹3.4Cr).
+const money = (n) => {
+  n = Math.round(n || 0);
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n % 1e7 ? 1 : 0)}Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n % 1e5 ? 1 : 0)}L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+};
+const pctChange = (cur, prev) => {
+  if (!prev) return cur > 0 ? { v: 100, dir: 'up' } : null;
+  const d = Math.round(((cur - prev) / prev) * 100);
+  if (d === 0) return null;
+  return { v: Math.abs(d), dir: d > 0 ? 'up' : 'down' };
+};
+const stockBadge = (qty) => qty == null ? { t: 'stock ?', c: colors.textSecondary } : qty <= 0 ? { t: '0 left', c: colors.danger } : { t: `${qty} left`, c: '#B26A00' };
+
+// Analytics dashboard for the manufacturer's brand: revenue, demand trend,
+// reorder priorities, stock health, top designs, production workload.
 export function InsightsScreen() {
   const [data, setData] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -365,13 +382,18 @@ export function InsightsScreen() {
 
   if (!data) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
   const pending = data.byStatus.find(s => s.status === 'pending')?.n || 0;
-  // "completed" = fulfilled statuses only — NOT everything that isn't pending
-  // (that would count 'cancelled' as a completed order).
+  // "completed" = fulfilled statuses only (not 'cancelled').
   const done = data.byStatus.filter(s => s.status === 'confirmed' || s.status === 'dispatched').reduce((n, s) => n + s.n, 0);
+  const revChg = pctChange(data.month.value, data.prevMonth?.value || 0);
+  const pcsChg = pctChange(data.month.pieces, data.prevMonth?.pieces || 0);
+  const trendPeak = Math.max(0, ...(data.trend || []).map(t => t.pieces));
+  const collMax = Math.max(1, ...(data.byCollection || []).map(c => c.pieces));
+  const reqByStatus = Object.fromEntries((data.requestStatus || []).map(r => [r.status, r.n]));
 
-  const Section = ({ title, children }) => (
-    <View style={{ marginBottom: 18 }}>
+  const Section = ({ title, sub, children }) => (
+    <View style={{ marginBottom: 20 }}>
       <Text style={insight.secTitle}>{title}</Text>
+      {sub ? <Text style={insight.secSub}>{sub}</Text> : null}
       {children}
     </View>
   );
@@ -381,6 +403,11 @@ export function InsightsScreen() {
       <Text style={[insight.rowRight, danger && { color: colors.danger }]}>{right}</Text>
     </View>
   );
+  const Delta = ({ chg }) => !chg ? null : (
+    <Text style={[insight.delta, { color: chg.dir === 'up' ? '#2E7D32' : colors.danger }]}>
+      {chg.dir === 'up' ? '▲' : '▼'} {chg.v}%
+    </Text>
+  );
 
   return (
     <FlatList
@@ -389,64 +416,105 @@ export function InsightsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
       renderItem={() => (
         <View style={{ padding: 16 }}>
-          {/* B6 — demand */}
+          {/* Hero — revenue (30d) */}
+          <View style={insight.hero}>
+            <Text style={insight.heroLbl}>REVENUE · LAST 30 DAYS <Text style={insight.est}>(est.)</Text></Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+              <Text style={insight.heroNum}>{money(data.month.value)}</Text>
+              <View style={{ paddingBottom: 6 }}><Delta chg={revChg} /></View>
+            </View>
+            <Text style={insight.heroSub}>{data.month.pieces} pcs · {data.month.orders} orders · vs {money(data.prevMonth?.value || 0)} prior 30d</Text>
+          </View>
+
+          {/* KPI row */}
           <View style={insight.statRow}>
             <View style={insight.statCard}>
               <Text style={insight.statNum}>{data.week.pieces}</Text>
-              <Text style={insight.statLbl}>pcs ordered · 7 days</Text>
-              <Text style={insight.statSub}>{data.week.orders} orders</Text>
+              <Text style={insight.statLbl}>pcs · 7 days</Text>
             </View>
-            <View style={insight.statCard}>
-              <Text style={insight.statNum}>{data.month.pieces}</Text>
-              <Text style={insight.statLbl}>pcs ordered · 30 days</Text>
-              <Text style={insight.statSub}>{data.month.orders} orders</Text>
-            </View>
-          </View>
-          {/* B8 — order status */}
-          <View style={insight.statRow}>
             <View style={insight.statCard}>
               <Text style={[insight.statNum, pending > 0 && { color: '#B26A00' }]}>{pending}</Text>
               <Text style={insight.statLbl}>orders pending</Text>
             </View>
             <View style={insight.statCard}>
               <Text style={[insight.statNum, { color: '#2E7D32' }]}>{done}</Text>
-              <Text style={insight.statLbl}>orders completed</Text>
+              <Text style={insight.statLbl}>completed</Text>
             </View>
           </View>
 
-          {/* B10 — urgent */}
+          {/* Demand trend */}
+          <Section title="Weekly demand" sub={trendPeak > 0 ? `pieces ordered per week · peak ${trendPeak}` : 'pieces ordered per week · last 8 weeks'}>
+            <View style={insight.chartCard}>
+              <BarChart data={(data.trend || []).map(t => ({ label: t.label, value: t.pieces }))} />
+            </View>
+          </Section>
+
+          {/* Reorder priorities — the headline actionable insight */}
+          <Section title="🎯 Make these next" sub="Strong demand (90d) with low or unknown stock">
+            {(!data.reorder || data.reorder.length === 0)
+              ? <Text style={insight.okLine}>Nothing urgent — stock is keeping up with demand 👍</Text>
+              : data.reorder.map((r, i) => {
+                  const b = stockBadge(r.qty);
+                  return (
+                    <View key={i} style={insight.priRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={insight.priTitle} numberOfLines={1}>{r.item_name} · {r.design_number}</Text>
+                        <Text style={insight.priSub}>{r.demand} pcs ordered · 90 days</Text>
+                      </View>
+                      <Text style={[insight.priBadge, { color: b.c, borderColor: b.c }]}>{b.t}</Text>
+                    </View>
+                  );
+                })}
+          </Section>
+
+          {/* Urgent — pending on a zero-stock collection */}
           {data.urgent.length > 0 && (
-            <Section title="🚨 Ordered but out of stock — dispatch these first">
+            <Section title="🚨 Dispatch first" sub="Pending orders on a sold-out collection">
               {data.urgent.map((u, i) => <Row key={i} left={`${u.item_name} · ${u.design_number}`} right={`${u.pending_pieces} pcs pending`} danger />)}
             </Section>
           )}
 
-          {/* A3 — out of stock */}
-          <Section title={`Out of stock (${data.outOfStock.length})`}>
-            {data.outOfStock.length === 0 ? <Text style={insight.okLine}>Nothing at zero 🎉</Text>
-              : data.outOfStock.map((c, i) => <Row key={i} left={c.name} right="0" danger />)}
-          </Section>
-
-          {/* A4 — low stock */}
-          <Section title={`Low stock — 5 pcs or less (${data.lowStock.length})`}>
-            {data.lowStock.length === 0 ? <Text style={insight.okLine}>No collections running low</Text>
-              : data.lowStock.map((c, i) => <Row key={i} left={c.name} right={`${c.qty} pcs`} />)}
-          </Section>
-
-          {/* A4b — collections with no Tally link (stock can't be known) */}
-          {data.stockUnknown?.length > 0 && (
-            <Section title={`Stock unknown — not linked to Tally (${data.stockUnknown.length})`}>
-              {data.stockUnknown.map((c, i) => <Row key={i} left={c.name} right="—" danger />)}
+          {/* Demand by collection */}
+          {data.byCollection?.length > 0 && (
+            <Section title="Demand by collection" sub="pieces ordered · last 90 days">
+              <View style={insight.chartCard}>
+                {data.byCollection.map((c, i) => (
+                  <HBar key={i} label={c.name} value={c.pieces} max={collMax} right={`${c.pieces} pcs`} />
+                ))}
+              </View>
             </Section>
           )}
 
-          {/* B7 — top sellers */}
-          <Section title="Top designs · last 90 days">
+          {/* Stock health */}
+          <Section title="Stock health">
+            {data.outOfStock.length === 0 && data.lowStock.length === 0 && (!data.stockUnknown || data.stockUnknown.length === 0)
+              ? <Text style={insight.okLine}>All linked collections have healthy stock 🎉</Text>
+              : <>
+                  {data.outOfStock.map((c, i) => <Row key={`o${i}`} left={`⛔ ${c.name}`} right="0 left" danger />)}
+                  {data.lowStock.map((c, i) => <Row key={`l${i}`} left={`⚠️ ${c.name}`} right={`${c.qty} left`} />)}
+                  {(data.stockUnknown || []).map((c, i) => <Row key={`u${i}`} left={`❔ ${c.name}`} right="not in Tally" danger />)}
+                </>}
+          </Section>
+
+          {/* Top designs */}
+          <Section title="Top designs · 90 days">
             {data.topDesigns.length === 0 ? <Text style={insight.okLine}>No orders yet in this period</Text>
               : data.topDesigns.map((t, i) => <Row key={i} left={`${i + 1}. ${t.item_name || ''} · ${t.design_number}`} right={`${t.pieces} pcs`} />)}
           </Section>
 
-          {/* C11 — photo coverage */}
+          {/* Production workload */}
+          <Section title="Production workload">
+            <View style={insight.chipWrap}>
+              {[['New', reqByStatus.requested, '#B26A00'], ['Accepted', reqByStatus.accepted, '#1565C0'], ['In progress', reqByStatus.in_progress, '#6A1B9A'], ['Dispatched', reqByStatus.dispatched, '#2E7D32']].map(([lbl, n, c], i) => (
+                <View key={i} style={[insight.wchip, { borderColor: c }]}>
+                  <Text style={[insight.wchipNum, { color: c }]}>{n || 0}</Text>
+                  <Text style={insight.wchipLbl}>{lbl}</Text>
+                </View>
+              ))}
+            </View>
+          </Section>
+
+          {/* Catalog photos */}
           <Section title="Catalog photos">
             <Row left={`${data.photos.total - data.photos.missing} of ${data.photos.total} designs have photos`}
                  right={data.photos.missing > 0 ? `${data.photos.missing} missing` : '✓'}
@@ -460,17 +528,32 @@ export function InsightsScreen() {
 }
 
 const insight = StyleSheet.create({
-  statRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  hero: { backgroundColor: colors.primary, borderRadius: 16, padding: 18, marginBottom: 12, ...shadow.medium },
+  heroLbl: { fontSize: 11, fontWeight: '800', color: colors.goldLight, letterSpacing: 0.5, marginBottom: 4 },
+  est: { fontWeight: '600', color: 'rgba(240,217,160,0.7)' },
+  heroNum: { fontSize: 34, fontWeight: '900', color: '#fff' },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 6 },
+  delta: { fontSize: 14, fontWeight: '800' },
+  statRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: 'center', ...shadow.small },
-  statNum: { fontSize: 26, fontWeight: '900', color: colors.primary },
+  statNum: { fontSize: 24, fontWeight: '900', color: colors.primary },
   statLbl: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
-  statSub: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
-  secTitle: { fontSize: 13, fontWeight: '800', color: colors.textPrimary, marginBottom: 8, marginTop: 6, letterSpacing: 0.3 },
+  secTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 2, letterSpacing: 0.2 },
+  secSub: { fontSize: 12, color: colors.textSecondary, marginBottom: 10 },
+  chartCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, ...shadow.small },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6, gap: 10, ...shadow.small },
   rowLeft: { flex: 1, fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
   rowRight: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  priRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.gold, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 8, gap: 10, ...shadow.small },
+  priTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  priSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  priBadge: { fontSize: 11, fontWeight: '800', borderWidth: 1.2, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, overflow: 'hidden' },
   okLine: { fontSize: 13, color: colors.textSecondary, paddingVertical: 4 },
   hint: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  wchip: { flexGrow: 1, minWidth: 70, alignItems: 'center', backgroundColor: colors.card, borderWidth: 1.5, borderRadius: 12, paddingVertical: 10, ...shadow.small },
+  wchipNum: { fontSize: 20, fontWeight: '900' },
+  wchipLbl: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginTop: 2 },
 });
 
 // Two-way private chat with the admin (only they can see it).
