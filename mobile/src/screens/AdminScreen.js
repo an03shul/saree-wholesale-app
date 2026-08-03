@@ -293,8 +293,10 @@ export default function AdminScreen({ user, onLogout }) {
         const ok = tallySync.synced && mins != null && mins <= 15;
         const warn = tallySync.synced && mins != null && mins > 15 && mins <= 60;
         const color = ok ? '#2E7D32' : warn ? '#B26A00' : '#c0392b';
+        // Show company + sync mode (incremental/full) when the v2 agent reports them.
+        const extra = [tallySync.company, tallySync.mode].filter(Boolean).join(' · ');
         const text = tallySync.synced
-          ? `Tally: synced ${relTime(tallySync.last_sync)} · ${tallySync.item_count} items`
+          ? `Tally: synced ${relTime(tallySync.last_sync)} · ${tallySync.item_count} items${extra ? ` · ${extra}` : ''}`
           : 'Tally: never synced — is the agent running on the shop PC?';
         return (
           <View style={styles.tallyBar}>

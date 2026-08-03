@@ -12,17 +12,33 @@ router.get('/customers', (req, res) => {
   res.json(rows.map(r => ({ name: r.name, phone: r.phone || '', raw_phone: r.phone || '' })));
 });
 
-// GET /api/tally/items — the synced Tally stock item names + qty, for the
-// item→Tally matching picker in the app. Newest-synced/alphabetical.
+// GET /api/tally/items — the synced Tally stock item names + qty (and value/units
+// when the incremental agent provides them), for the item→Tally matching picker.
 router.get('/items', (req, res) => {
-  res.json(db.prepare('SELECT tally_item_name AS name, qty FROM tally_stock ORDER BY tally_item_name').all());
+  res.json(db.prepare('SELECT tally_item_name AS name, qty, value, units FROM tally_stock ORDER BY tally_item_name').all());
 });
 
-// GET /api/tally/status — when the sync agent last pushed stock from the shop PC
+// GET /api/tally/status — sync health: when the agent last pushed, the mode
+// (full/incremental), company, Tally AlterID watermarks, last-cycle counts, and
+// a `stale` flag (no sync in >30 min) so the app can flag a stuck agent.
 router.get('/status', (req, res) => {
   const lastSync = db.prepare("SELECT value FROM settings WHERE key='tally_last_sync'").get()?.value || null;
   const count = db.prepare('SELECT COUNT(*) AS c FROM tally_stock').get().c;
-  res.json({ synced: !!lastSync, last_sync: lastSync, item_count: count });
+  let status = {};
+  try { status = JSON.parse(db.prepare("SELECT value FROM settings WHERE key='tally_sync_status'").get()?.value || '{}'); } catch {}
+  const stale = lastSync ? (Date.now() - new Date(lastSync).getTime() > 30 * 60 * 1000) : true;
+  res.json({
+    synced: !!lastSync,
+    last_sync: lastSync,
+    item_count: count,
+    stale,
+    mode: status.mode || null,
+    company: status.company || null,
+    last_alter_master: status.last_alter_master ?? null,
+    last_alter_voucher: status.last_alter_voucher ?? null,
+    agent_version: status.agent_version || null,
+    last_cycle: { stock_synced: status.stock_synced ?? null, stock_deleted: status.stock_deleted ?? null, customers_synced: status.customers_synced ?? null },
+  });
 });
 
 // GET /api/tally/stock-stream?item_id=X — stream cached stock for each design of

@@ -6,6 +6,16 @@ app shows up-to-date stock from anywhere.
 
 It only ever **reads** from Tally — it never changes anything in Tally.
 
+### How it syncs (v2 — incremental)
+Each cycle the agent asks Tally for its change counters (AlterID). It only
+re-reads **stock** when a new voucher has been posted, and **customers/ledgers**
+when a master changed — so when nothing has happened it just sends a fast
+heartbeat instead of re-dumping everything. It also sends each item's **value**
+and **units**, and each customer's **outstanding balance**, and forces a full
+resync every hour to self-heal and catch deletions. If your Tally build doesn't
+expose the AlterID counters, the agent automatically falls back to a full sync
+every cycle — i.e. never worse than before.
+
 ---
 
 ## One-time setup (on the shop PC)

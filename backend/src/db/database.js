@@ -313,6 +313,13 @@ try {
   `);
 } catch {}
 
+// Richer Tally fields (populated when the incremental agent sends them; all
+// optional so an older agent that only sends name/qty keeps working).
+try { db.exec('ALTER TABLE tally_stock ADD COLUMN value REAL'); } catch {}      // ClosingValue (₹)
+try { db.exec('ALTER TABLE tally_stock ADD COLUMN units TEXT'); } catch {}      // base units (Nos/Pcs/Mtr)
+try { db.exec('ALTER TABLE tally_stock ADD COLUMN alter_id INTEGER'); } catch {} // master AlterID
+try { db.exec('ALTER TABLE tally_customers ADD COLUMN balance REAL'); } catch {} // outstanding (closing balance)
+
 // Settings table
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
