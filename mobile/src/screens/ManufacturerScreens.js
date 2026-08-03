@@ -365,7 +365,9 @@ export function InsightsScreen() {
 
   if (!data) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
   const pending = data.byStatus.find(s => s.status === 'pending')?.n || 0;
-  const done = data.byStatus.filter(s => s.status !== 'pending').reduce((n, s) => n + s.n, 0);
+  // "completed" = fulfilled statuses only — NOT everything that isn't pending
+  // (that would count 'cancelled' as a completed order).
+  const done = data.byStatus.filter(s => s.status === 'confirmed' || s.status === 'dispatched').reduce((n, s) => n + s.n, 0);
 
   const Section = ({ title, children }) => (
     <View style={{ marginBottom: 18 }}>
@@ -430,6 +432,13 @@ export function InsightsScreen() {
             {data.lowStock.length === 0 ? <Text style={insight.okLine}>No collections running low</Text>
               : data.lowStock.map((c, i) => <Row key={i} left={c.name} right={`${c.qty} pcs`} />)}
           </Section>
+
+          {/* A4b — collections with no Tally link (stock can't be known) */}
+          {data.stockUnknown?.length > 0 && (
+            <Section title={`Stock unknown — not linked to Tally (${data.stockUnknown.length})`}>
+              {data.stockUnknown.map((c, i) => <Row key={i} left={c.name} right="—" danger />)}
+            </Section>
+          )}
 
           {/* B7 — top sellers */}
           <Section title="Top designs · last 90 days">

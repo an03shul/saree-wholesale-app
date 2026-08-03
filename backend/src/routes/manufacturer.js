@@ -68,14 +68,19 @@ router.get('/insights', (req, res) => {
   `;
 
   // A3/A4 — collection stock: linked collections with their live Tally qty
+  // LEFT JOIN so collections NOT matched to a Tally item still surface (as
+  // qty=null → "stock unknown") instead of silently vanishing — an empty
+  // out-of-stock list must mean "verified healthy", not "no data".
   const collections = db.prepare(`
     SELECT i.name, ts.qty FROM items i
-    JOIN tally_stock ts ON ts.tally_item_name = i.tally_item_name
+    LEFT JOIN tally_stock ts ON ts.tally_item_name = i.tally_item_name
     WHERE i.brand_id = ?
     ORDER BY ts.qty ASC
   `).all(B);
-  const outOfStock = collections.filter(c => c.qty <= 0);
-  const lowStock = collections.filter(c => c.qty > 0 && c.qty <= 5);
+  // NB: null qty must be excluded explicitly — `null <= 0` is true in JS.
+  const outOfStock = collections.filter(c => c.qty !== null && c.qty <= 0);
+  const lowStock = collections.filter(c => c.qty !== null && c.qty > 0 && c.qty <= 5);
+  const stockUnknown = collections.filter(c => c.qty === null);
 
   // B6 — orders this week / month (count + pieces)
   const period = (days) => db.prepare(`
@@ -120,7 +125,7 @@ router.get('/insights', (req, res) => {
     FROM designs d JOIN items i ON i.id = d.item_id WHERE i.brand_id = ?
   `).get(B);
 
-  res.json({ outOfStock, lowStock, week, month, topDesigns, byStatus, urgent, photos });
+  res.json({ outOfStock, lowStock, stockUnknown, week, month, topDesigns, byStatus, urgent, photos });
 });
 
 // GET /requests — production requests for this manufacturer's brand.
