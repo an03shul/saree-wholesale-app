@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Alert, Modal, ActivityIndicator, ScrollView,
+  StyleSheet, Alert, Modal, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi, tallyApi } from '../api/client';
+import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi, tallyApi, getThumbUrl } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
 
@@ -32,6 +32,7 @@ export default function AdminScreen({ user, onLogout }) {
   });
   const [attRows, setAttRows] = useState([]);
   const [tallySync, setTallySync] = useState(null); // /api/tally/status — null until loaded
+  const [subs, setSubs] = useState([]); // manufacturer design submissions awaiting review
   const [attEditUser, setAttEditUser] = useState(null);
 
   const loadAttendance = useCallback(async (month) => {
@@ -79,6 +80,24 @@ export default function AdminScreen({ user, onLogout }) {
     finally { setLoading(false); }
   }, []);
 
+  const loadSubs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await adminApi.getDesignSubmissions();
+      setSubs(data);
+    } catch { notify('Error', 'Could not load submissions'); }
+    finally { setLoading(false); }
+  }, []);
+
+  const reviewSub = async (s, approve) => {
+    try {
+      if (approve) await adminApi.approveDesignSubmission(s.id);
+      else await adminApi.rejectDesignSubmission(s.id);
+      notify(approve ? 'Approved' : 'Rejected', `${s.new_item_name || s.item_name} · ${s.design_number}`);
+      setSubs(prev => prev.filter(x => x.id !== s.id));
+    } catch (e) { notify('Error', e.response?.data?.error || 'Action failed'); }
+  };
+
   const loadTemplate = useCallback(async () => {
     try {
       const { data } = await settingsApi.getAll();
@@ -104,6 +123,7 @@ export default function AdminScreen({ user, onLogout }) {
     else if (t === 'staffwatch') loadStaffAct();
     else if (t === 'attendance') loadAttendance(attMonth);
     else if (t === 'users') loadUsers();
+    else if (t === 'submissions') loadSubs();
     else if (t === 'template') loadTemplate();
   };
 
@@ -260,7 +280,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['submissions','🧵 Submissions'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -422,6 +442,35 @@ export default function AdminScreen({ user, onLogout }) {
             <Text style={styles.fabText}>+</Text>
           </TouchableOpacity>
         </>
+      )}
+
+      {/* Manufacturer design submissions — review queue */}
+      {tab === 'submissions' && !loading && (
+        <FlatList
+          data={subs}
+          keyExtractor={s => String(s.id)}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          ListEmptyComponent={<Text style={styles.empty}>No designs awaiting review</Text>}
+          renderItem={({ item: s }) => (
+            <View style={styles.subCard}>
+              <Image source={{ uri: getThumbUrl(s.photo_path) }} style={styles.subThumb} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.subTitle} numberOfLines={1}>
+                  {s.new_item_name ? `${s.new_item_name} (new)` : s.item_name} · {s.design_number}
+                </Text>
+                <Text style={styles.subMeta}>{s.brand_name} · ₹{s.rate} · {s.pcs_per_set}/set · by {s.username}</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                  <TouchableOpacity style={styles.approveBtn} onPress={() => reviewSub(s, true)}>
+                    <Text style={styles.approveText}>✓ Approve</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.rejectBtn} onPress={() => confirmAction('Reject submission', `Delete ${s.design_number}?`, () => reviewSub(s, false))}>
+                    <Text style={styles.rejectText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+        />
       )}
 
       {/* WhatsApp Template */}
@@ -617,6 +666,14 @@ const styles = StyleSheet.create({
   tabText: { color: '#999', fontWeight: '600' },
   tabTextActive: { color: '#c0392b' },
   empty: { textAlign: 'center', marginTop: 60, color: '#aaa' },
+  subCard: { flexDirection: 'row', gap: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 10 },
+  subThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#eee' },
+  subTitle: { fontSize: 15, fontWeight: '800', color: '#2c1810' },
+  subMeta: { fontSize: 12, color: '#888', marginTop: 2 },
+  approveBtn: { backgroundColor: '#2E7D32', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  approveText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  rejectBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#c0392b', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  rejectText: { color: '#c0392b', fontWeight: '800', fontSize: 13 },
   logCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8 },
   logRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

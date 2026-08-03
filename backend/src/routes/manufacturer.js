@@ -164,4 +164,45 @@ router.post('/notes', (req, res) => {
   res.status(201).json(db.prepare('SELECT id, body, created_at FROM manufacturer_notes WHERE id = ?').get(r.lastInsertRowid));
 });
 
+// GET /design-submissions — this manufacturer's own pending submissions.
+router.get('/design-submissions', (req, res) => {
+  res.json(db.prepare(`
+    SELECT s.id, s.design_number, s.rate, s.pcs_per_set, s.photo_path, s.new_item_name,
+           s.created_at, i.name AS item_name
+    FROM design_submissions s LEFT JOIN items i ON i.id = s.item_id
+    WHERE s.brand_id = ? ORDER BY s.created_at DESC
+  `).all(req.user.brand_id));
+});
+
+// POST /design-submissions — propose a new design. Either item_id (existing
+// collection in the brand) or new_item_name (collection to create on approve).
+// Stays in staging until an admin approves; never touches the live catalog.
+router.post('/design-submissions', upload.single('photo'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'photo required' });
+  const design_number = (req.body.design_number || '').trim();
+  const rate = parseFloat(req.body.rate);
+  const pcs_per_set = parseInt(req.body.pcs_per_set);
+  if (!design_number) return res.status(400).json({ error: 'design_number required' });
+  if (!(rate >= 0)) return res.status(400).json({ error: 'valid rate required' });
+  if (!(pcs_per_set >= 1)) return res.status(400).json({ error: 'valid pcs_per_set required' });
+
+  let item_id = null, new_item_name = null;
+  if (req.body.item_id) {
+    item_id = Number(req.body.item_id);
+    const item = db.prepare('SELECT id FROM items WHERE id = ? AND brand_id = ?').get(item_id, req.user.brand_id);
+    if (!item) return res.status(404).json({ error: 'Collection not found in your brand' });
+  } else {
+    new_item_name = (req.body.new_item_name || '').trim();
+    if (!new_item_name) return res.status(400).json({ error: 'Pick a collection or name a new one' });
+  }
+
+  const filename = storage.generateKey(req.file.originalname || 'design.jpg');
+  await storage.putFile(filename, req.file.buffer);
+  const r = db.prepare(`
+    INSERT INTO design_submissions (brand_id, submitted_by, item_id, new_item_name, design_number, rate, pcs_per_set, photo_path)
+    VALUES (?,?,?,?,?,?,?,?)
+  `).run(req.user.brand_id, req.user.id, item_id, new_item_name, design_number, rate, pcs_per_set, filename);
+  res.status(201).json({ success: true, id: r.lastInsertRowid });
+});
+
 module.exports = router;

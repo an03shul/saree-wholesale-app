@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const db = require('../db/database');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { notifyUser } = require('../services/pushNotify');
+const storage = require('../services/storage');
 
 function hashPin(pin) {
   return crypto.createHash('sha256').update(String(pin)).digest('hex');
@@ -189,6 +190,58 @@ router.get('/staff-activity/:userId', (req, res) => {
     ORDER BY created_at DESC LIMIT 200
   `).all(req.params.userId, istDayStartUtc());
   res.json(rows);
+});
+
+// ---- Design submissions (manufacturer → admin review queue) ----
+
+// GET /api/admin/design-submissions — all pending, newest first.
+router.get('/design-submissions', (req, res) => {
+  res.json(db.prepare(`
+    SELECT s.id, s.design_number, s.rate, s.pcs_per_set, s.photo_path, s.new_item_name,
+           s.created_at, s.brand_id, b.name AS brand_name, i.name AS item_name, u.username
+    FROM design_submissions s
+    LEFT JOIN brands b ON b.id = s.brand_id
+    LEFT JOIN items i ON i.id = s.item_id
+    LEFT JOIN users u ON u.id = s.submitted_by
+    ORDER BY s.created_at DESC
+  `).all());
+});
+
+// POST /api/admin/design-submissions/:id/approve — materialize into the live
+// catalog: create the collection if it was new, then the design. Removes the row.
+router.post('/design-submissions/:id/approve', (req, res) => {
+  const s = db.prepare('SELECT * FROM design_submissions WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Submission not found' });
+
+  let item_id = s.item_id;
+  if (!item_id) {
+    item_id = db.prepare('INSERT INTO items (name, brand_id) VALUES (?, ?)')
+      .run(s.new_item_name, s.brand_id).lastInsertRowid;
+  }
+  const dup = db.prepare('SELECT 1 FROM designs WHERE item_id = ? AND design_number = ? LIMIT 1')
+    .get(item_id, s.design_number);
+  if (dup) return res.status(409).json({ error: `Design ${s.design_number} already exists in that collection` });
+
+  const design_id = db.prepare(
+    'INSERT INTO designs (item_id, design_number, photo_path, rate, pcs_per_set) VALUES (?,?,?,?,?)'
+  ).run(item_id, s.design_number, s.photo_path, s.rate, s.pcs_per_set).lastInsertRowid;
+  db.prepare('DELETE FROM design_submissions WHERE id = ?').run(s.id);
+  db.prepare('INSERT INTO activity_log (user_id, username, action, details) VALUES (?,?,?,?)')
+    .run(req.user.id, req.user.username, 'Approved design submission',
+      `${s.new_item_name || 'existing collection'} · ${s.design_number}`);
+  res.json({ success: true, item_id, design_id });
+});
+
+// DELETE /api/admin/design-submissions/:id — reject. Drops the row + its photo.
+router.delete('/design-submissions/:id', async (req, res) => {
+  const s = db.prepare('SELECT * FROM design_submissions WHERE id = ?').get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Submission not found' });
+  db.prepare('DELETE FROM design_submissions WHERE id = ?').run(s.id);
+  try { await storage.deleteFile(s.photo_path); } catch {}
+  db.prepare('INSERT INTO activity_log (user_id, username, action, details) VALUES (?,?,?,?)')
+    .run(req.user.id, req.user.username, 'Rejected design submission',
+      `${s.new_item_name || 'existing collection'} · ${s.design_number}`);
+  res.json({ success: true });
 });
 
 module.exports = router;

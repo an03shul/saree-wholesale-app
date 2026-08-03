@@ -102,6 +102,122 @@ export function DispatchScreen() {
   );
 }
 
+// Submit a brand-new design for admin review. The manufacturer picks an existing
+// collection or names a new one; it stays in a review queue (never in the live
+// catalog) until the shop approves it. See admin "Submissions" tab.
+export function SubmitDesignScreen() {
+  const [collections, setCollections] = useState([]); // {id, name} for this brand
+  const [mine, setMine] = useState([]);               // my pending submissions
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [itemId, setItemId] = useState(null);         // chosen existing collection
+  const [newMode, setNewMode] = useState(false);      // "＋ New collection" chosen
+  const [newName, setNewName] = useState('');
+  const [num, setNum] = useState('');
+  const [rate, setRate] = useState('');
+  const [pcs, setPcs] = useState('');
+  const [picked, setPicked] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [{ data: designs }, { data: subs }] = await Promise.all([
+        manufacturerApi.stock(), manufacturerApi.mySubmissions(),
+      ]);
+      const map = new Map();
+      for (const d of designs) if (!map.has(d.item_id)) map.set(d.item_id, { id: d.item_id, name: d.item_name });
+      setCollections([...map.values()]);
+      setMine(subs);
+    } catch { notify('Error', 'Could not load'); } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const reset = () => { setItemId(null); setNewMode(false); setNewName(''); setNum(''); setRate(''); setPcs(''); setPicked(null); };
+
+  const submit = async () => {
+    if (!newMode && !itemId) return notify('Required', 'Pick a collection or add a new one');
+    if (newMode && !newName.trim()) return notify('Required', 'Name the new collection');
+    if (!num.trim()) return notify('Required', 'Enter the design number');
+    if (!(parseFloat(rate) >= 0)) return notify('Required', 'Enter a valid rate');
+    if (!(parseInt(pcs) >= 1)) return notify('Required', 'Enter pieces per set');
+    if (!picked) return notify('Required', 'Pick a photo');
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      if (newMode) fd.append('new_item_name', newName.trim());
+      else fd.append('item_id', String(itemId));
+      fd.append('design_number', num.trim());
+      fd.append('rate', String(parseFloat(rate)));
+      fd.append('pcs_per_set', String(parseInt(pcs)));
+      fd.append('photo', picked.file);
+      await manufacturerApi.submitDesign(fd);
+      notify('Submitted', 'Sent to the shop for review');
+      reset(); load();
+    } catch (e) {
+      notify('Error', e.response?.data?.error || 'Submission failed');
+    } finally { setSaving(false); }
+  };
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />;
+
+  return (
+    <FlatList
+      style={styles.list}
+      data={mine}
+      keyExtractor={s => String(s.id)}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.primary} />}
+      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      ListHeaderComponent={
+        <View>
+          <Text style={styles.help}>Add a new design for the shop to review. Pick one of your collections or start a new one, then attach a photo. It goes live only after the shop approves it.</Text>
+
+          <Text style={styles.fieldLbl}>Collection</Text>
+          <View style={styles.chipRow}>
+            {collections.map(c => (
+              <TouchableOpacity key={c.id} style={[styles.chip, itemId === c.id && !newMode && styles.chipOn]}
+                onPress={() => { setItemId(c.id); setNewMode(false); }}>
+                <Text style={[styles.chipText, itemId === c.id && !newMode && styles.chipTextOn]}>{c.name}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={[styles.chip, newMode && styles.chipOn]} onPress={() => { setNewMode(true); setItemId(null); }}>
+              <Text style={[styles.chipText, newMode && styles.chipTextOn]}>＋ New collection</Text>
+            </TouchableOpacity>
+          </View>
+          {newMode && (
+            <TextInput style={styles.input} placeholder="New collection name" placeholderTextColor={colors.textSecondary} value={newName} onChangeText={setNewName} />
+          )}
+
+          <Text style={styles.fieldLbl}>Design number</Text>
+          <TextInput style={styles.input} placeholder="e.g. 1042" placeholderTextColor={colors.textSecondary} value={num} onChangeText={setNum} autoCapitalize="characters" />
+          <Text style={styles.fieldLbl}>Rate (₹)</Text>
+          <TextInput style={styles.input} placeholder="e.g. 550" placeholderTextColor={colors.textSecondary} value={rate} onChangeText={setRate} keyboardType="numeric" />
+          <Text style={styles.fieldLbl}>Pieces per set</Text>
+          <TextInput style={styles.input} placeholder="e.g. 8" placeholderTextColor={colors.textSecondary} value={pcs} onChangeText={setPcs} keyboardType="numeric" />
+
+          <TouchableOpacity style={styles.pickBtn} onPress={async () => { const p = await pickFile('image/*'); if (p) setPicked(p); }}>
+            <Text style={styles.pickBtnText}>{picked ? `📎 ${picked.name}` : '📷  Pick / take photo'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.submit, saving && { opacity: 0.6 }]} onPress={submit} disabled={saving}>
+            <Text style={styles.submitText}>{saving ? 'Submitting…' : 'Submit for review'}</Text>
+          </TouchableOpacity>
+
+          {mine.length > 0 && <Text style={[styles.fieldLbl, { marginTop: 26 }]}>Awaiting review ({mine.length})</Text>}
+        </View>
+      }
+      renderItem={({ item: s }) => (
+        <View style={styles.card}>
+          <Image source={{ uri: getThumbUrl(s.photo_path) }} style={styles.thumb} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} numberOfLines={1}>{s.new_item_name || s.item_name}</Text>
+            <Text style={styles.sub}>Design {s.design_number} · ₹{s.rate}</Text>
+          </View>
+          <Text style={{ color: '#B26A00', fontWeight: '700', fontSize: 12 }}>Pending</Text>
+        </View>
+      )}
+    />
+  );
+}
+
 // Read-only stock for the manufacturer's brand, grouped by collection (item)
 // with each collection's Tally total and a company-wide total.
 export function StockScreen() {
@@ -406,6 +522,12 @@ const styles = StyleSheet.create({
   sectionQty: { fontSize: 13, fontWeight: '800', color: '#2E7D32' },
   sectionQtyMuted: { color: colors.textSecondary, fontWeight: '600' },
   empty: { textAlign: 'center', marginTop: 60, color: colors.textSecondary },
+  fieldLbl: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card },
+  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  chipTextOn: { color: '#fff' },
   viewer: { flex: 1, backgroundColor: '#000' },
   viewerClose: { position: 'absolute', top: 40, right: 20, padding: 10 },
   viewerLabel: { position: 'absolute', bottom: 30, alignSelf: 'center', color: '#fff', fontSize: 14, maxWidth: '80%', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12, overflow: 'hidden' },

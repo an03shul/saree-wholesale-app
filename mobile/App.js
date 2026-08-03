@@ -23,7 +23,7 @@ import CreateFormScreen from './src/screens/CreateFormScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import RatesScreen from './src/screens/RatesScreen';
 import FilesScreen from './src/screens/FilesScreen';
-import { DispatchScreen, StockScreen, NotesScreen, InsightsScreen, RequestsScreen } from './src/screens/ManufacturerScreens';
+import { DispatchScreen, SubmitDesignScreen, StockScreen, NotesScreen, InsightsScreen, RequestsScreen } from './src/screens/ManufacturerScreens';
 import AdminChatModal from './src/screens/AdminChat';
 import ProductionScreen from './src/screens/ProductionScreen';
 import { authApi, setAuthToken, loadStoredToken, tasksApi, attendanceApi } from './src/api/client';
@@ -242,7 +242,7 @@ function ManufacturerApp({ user, onLogout }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [requestsOpen, setRequestsOpen] = useState(false);
-  const icons = { Dispatch: '📷', Invoices: '📄', Stock: '📦' };
+  const icons = { Dispatch: '📷', Submit: '➕', Invoices: '📄', Stock: '📦' };
   // Requests (📋), Insights (📊) and Notes (💬) live in the header, not the tabs.
   const headerRight = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -272,6 +272,7 @@ function ManufacturerApp({ user, onLogout }) {
           })}
         >
           <Tab.Screen name="Dispatch" component={DispatchScreen} options={{ ...baseOpts, title: 'Dispatch Photo' }} />
+          <Tab.Screen name="Submit" component={SubmitDesignScreen} options={{ ...baseOpts, title: 'New Design' }} />
           <Tab.Screen name="Invoices" options={{ ...baseOpts, title: 'Invoices' }}>
             {() => <FilesScreen types={['invoice', 'orderform']} canUpload uploadTypes={['invoice', 'orderform']} emptyText="Upload your invoices & order forms" />}
           </Tab.Screen>

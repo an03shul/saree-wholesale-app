@@ -211,6 +211,25 @@ db.exec(`
   );
 `);
 
+// Design submissions: a manufacturer proposes a new design (optionally under a
+// brand-new collection). Pending until an admin approves — kept OUT of the live
+// items/designs tables so nothing leaks into the shop catalog until approved.
+// Approve materializes real item/design rows; reject just deletes the row.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS design_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE,
+    submitted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,   -- existing collection, or
+    new_item_name TEXT,                                       -- new collection to create on approve
+    design_number TEXT NOT NULL,
+    rate REAL NOT NULL,
+    pcs_per_set INTEGER NOT NULL,
+    photo_path TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
 // Migrations for existing DBs
 try { db.exec('ALTER TABLE items ADD COLUMN brand_id INTEGER REFERENCES brands(id) ON DELETE CASCADE'); } catch {}
 // Item-level Tally match: one Tally stock item name per collection. All designs
