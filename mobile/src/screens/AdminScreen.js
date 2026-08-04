@@ -295,7 +295,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['submissions','🧵 Submissions'],['tally','🧮 Tally'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['tally','🧮 Tally'],['submissions','🧵 Submissions'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
