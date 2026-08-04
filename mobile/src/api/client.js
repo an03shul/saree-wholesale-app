@@ -43,6 +43,7 @@ export const adminApi = {
   createProductionRequest: (data) => api.post('/api/admin/production-requests', data),
   updateProductionRequest: (id, data) => api.patch(`/api/admin/production-requests/${id}`, data),
   deleteProductionRequest: (id) => api.delete(`/api/admin/production-requests/${id}`),
+  businessInsights: () => api.get('/api/admin/business-insights'),
   tallyReceivables: () => api.get('/api/admin/tally-receivables'),
   getDesignSubmissions: () => api.get('/api/admin/design-submissions'),
   approveDesignSubmission: (id) => api.post(`/api/admin/design-submissions/${id}/approve`),

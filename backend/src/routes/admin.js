@@ -244,6 +244,89 @@ router.delete('/design-submissions/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/admin/business-insights — shop-wide owner dashboard: revenue &
+// demand trend, order fulfilment, top designs/brands/customers, inventory value
+// and receivables. Revenue = order quantity × the linked design's rate (catalog
+// orders with no linked design contribute 0, so revenue is an estimate).
+router.get('/business-insights', (req, res) => {
+  const ordersFrom = `
+    FROM orders o
+    LEFT JOIN designs d ON d.id = o.design_id
+    LEFT JOIN items i ON i.id = d.item_id
+    LEFT JOIN brands b ON b.id = i.brand_id
+  `;
+  const sel = `SELECT COUNT(*) AS orders, COALESCE(SUM(o.quantity),0) AS pieces,
+               ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate,0)),0)) AS value`;
+  const period = (days) => db.prepare(`${sel} ${ordersFrom} WHERE o.created_at >= datetime('now', ?)`).get(`-${days} days`);
+  const between = (a, b) => db.prepare(`${sel} ${ordersFrom} WHERE o.created_at >= datetime('now', ?) AND o.created_at < datetime('now', ?)`).get(`-${a} days`, `-${b} days`);
+  const week = period(7), month = period(30), quarter = period(90), prevMonth = between(60, 30);
+
+  const trendRaw = db.prepare(`
+    SELECT CAST((julianday('now') - julianday(o.created_at)) / 7 AS INTEGER) AS w,
+           COALESCE(SUM(o.quantity),0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate,0)),0)) AS value
+    ${ordersFrom} WHERE o.created_at >= datetime('now','-56 days') GROUP BY w
+  `).all();
+  const tMap = new Map(trendRaw.map(r => [r.w, r]));
+  const trend = [];
+  for (let w = 7; w >= 0; w--) { const r = tMap.get(w) || { pieces: 0, value: 0 }; trend.push({ label: w === 0 ? 'now' : `${w}w`, pieces: r.pieces, value: r.value }); }
+
+  const byStatus = db.prepare(`SELECT o.status, COUNT(*) AS n FROM orders o GROUP BY o.status`).all();
+
+  const topDesigns = db.prepare(`
+    SELECT COALESCE(d.design_number, o.design_number) AS design_number,
+           COALESCE(i.name, o.item_name) AS item_name,
+           COALESCE(b.name, o.brand_name) AS brand_name,
+           COALESCE(SUM(o.quantity),0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate,0)),0)) AS value
+    ${ordersFrom} WHERE o.created_at >= datetime('now','-90 days')
+      AND COALESCE(d.design_number, o.design_number) IS NOT NULL
+    GROUP BY 1,2,3 ORDER BY pieces DESC LIMIT 6
+  `).all();
+
+  const topBrands = db.prepare(`
+    SELECT COALESCE(b.name, o.brand_name) AS name,
+           COALESCE(SUM(o.quantity),0) AS pieces,
+           ROUND(COALESCE(SUM(o.quantity * COALESCE(d.rate,0)),0)) AS value
+    ${ordersFrom} WHERE o.created_at >= datetime('now','-90 days')
+      AND COALESCE(b.name, o.brand_name) IS NOT NULL
+    GROUP BY 1 ORDER BY pieces DESC LIMIT 6
+  `).all();
+
+  const topCustomers = db.prepare(`
+    SELECT o.customer_name AS name, o.customer_phone AS phone,
+           COUNT(*) AS orders, COALESCE(SUM(o.quantity),0) AS pieces
+    FROM orders o
+    WHERE o.customer_name IS NOT NULL AND TRIM(o.customer_name) != ''
+      AND o.created_at >= datetime('now','-90 days')
+    GROUP BY o.customer_name ORDER BY pieces DESC LIMIT 6
+  `).all();
+
+  const inv = db.prepare(`
+    SELECT COUNT(*) AS items, ROUND(COALESCE(SUM(value),0)) AS total_value,
+           SUM(CASE WHEN qty IS NOT NULL AND qty <= 0 THEN 1 ELSE 0 END) AS out_of_stock,
+           SUM(CASE WHEN qty IS NOT NULL AND qty > 0 AND qty <= 5 THEN 1 ELSE 0 END) AS low_stock
+    FROM tally_stock
+  `).get();
+
+  const recv = db.prepare(`SELECT ROUND(COALESCE(SUM(CASE WHEN balance>0 THEN balance ELSE 0 END),0)) AS total, SUM(CASE WHEN balance>0 THEN 1 ELSE 0 END) AS n FROM tally_customers`).get();
+  const topDebtors = db.prepare(`SELECT name, balance FROM tally_customers WHERE balance > 0 ORDER BY balance DESC LIMIT 5`).all();
+
+  const totals = db.prepare(`SELECT
+    (SELECT COUNT(*) FROM brands) AS brands,
+    (SELECT COUNT(*) FROM items) AS items,
+    (SELECT COUNT(*) FROM designs) AS designs,
+    (SELECT COUNT(*) FROM contacts) AS contacts`).get();
+
+  res.json({
+    week, month, quarter, prevMonth, trend, byStatus,
+    topDesigns, topBrands, topCustomers,
+    inventory: inv,
+    receivables: { total: recv.total, count: recv.n, top: topDebtors },
+    totals,
+  });
+});
+
 // GET /api/admin/tally-receivables — outstanding balances of Sundry Debtors
 // synced from Tally (balance populated by the v2 agent). Admin-only (sensitive).
 router.get('/tally-receivables', (req, res) => {

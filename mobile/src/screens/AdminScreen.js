@@ -7,9 +7,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { adminApi, authApi, setAuthToken, settingsApi, brandsApi, attendanceApi, tallyApi, getThumbUrl } from '../api/client';
 import { confirmAction, notify } from '../utils/share';
 import { parseServerDate } from '../utils/date';
+import { BarChart, HBar } from '../components/InsightCharts';
+
+// ₹ with Indian grouping; compact for large numbers.
+const inr = (n) => {
+  n = Math.round(n || 0);
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n % 1e7 ? 1 : 0)}Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n % 1e5 ? 1 : 0)}L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+};
+const deltaPct = (cur, prev) => {
+  if (!prev) return cur > 0 ? { v: 100, up: true } : null;
+  const d = Math.round(((cur - prev) / prev) * 100);
+  return d === 0 ? null : { v: Math.abs(d), up: d > 0 };
+};
 
 export default function AdminScreen({ user, onLogout }) {
-  const [tab, setTab] = useState('staffwatch'); // 'staffwatch' | 'activity' | 'users' | 'template'
+  const [tab, setTab] = useState('business'); // business | staffwatch | tally | ...
+  const [biz, setBiz] = useState(null); // /api/admin/business-insights
   const [template, setTemplate] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -82,6 +97,13 @@ export default function AdminScreen({ user, onLogout }) {
     finally { setLoading(false); }
   }, []);
 
+  const loadBiz = useCallback(async () => {
+    setLoading(true);
+    try { const { data } = await adminApi.businessInsights(); setBiz(data); }
+    catch { notify('Error', 'Could not load business insights'); }
+    finally { setLoading(false); }
+  }, []);
+
   const loadTally = useCallback(async () => {
     setLoading(true);
     try {
@@ -133,7 +155,8 @@ export default function AdminScreen({ user, onLogout }) {
 
   const switchTab = (t) => {
     setTab(t);
-    if (t === 'activity') loadActivity();
+    if (t === 'business') loadBiz();
+    else if (t === 'activity') loadActivity();
     else if (t === 'staffwatch') loadStaffAct();
     else if (t === 'attendance') loadAttendance(attMonth);
     else if (t === 'users') loadUsers();
@@ -143,7 +166,7 @@ export default function AdminScreen({ user, onLogout }) {
   };
 
   React.useEffect(() => {
-    loadStaffAct();
+    loadBiz();
     brandsApi.getAll().then(({ data }) => setBrands(data)).catch(() => {});
     tallyApi.getStatus().then(({ data }) => setTallySync(data)).catch(() => setTallySync({ synced: false }));
   }, []);
@@ -295,7 +318,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['tally','🧮 Tally'],['submissions','🧵 Submissions'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
+        {[['business','📊 Business'],['staffwatch','🟢 Activity'],['tally','🧮 Tally'],['submissions','🧵 Submissions'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -322,6 +345,84 @@ export default function AdminScreen({ user, onLogout }) {
       })()}
 
       {loading && <ActivityIndicator color="#c0392b" style={{ marginTop: 30 }} size="large" />}
+
+      {/* Owner business dashboard — shop-wide revenue, demand, top performers */}
+      {tab === 'business' && !loading && biz && (() => {
+        const revChg = deltaPct(biz.month.value, biz.prevMonth?.value || 0);
+        const pending = biz.byStatus.find(s => s.status === 'pending')?.n || 0;
+        const done = biz.byStatus.filter(s => s.status === 'confirmed' || s.status === 'dispatched').reduce((n, s) => n + s.n, 0);
+        const brandMax = Math.max(1, ...(biz.topBrands || []).map(b => b.pieces));
+        return (
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+            {/* Revenue hero */}
+            <View style={styles.bizHero}>
+              <Text style={styles.bizHeroLbl}>REVENUE · LAST 30 DAYS <Text style={{ color: 'rgba(240,217,160,0.7)', fontWeight: '600' }}>(est.)</Text></Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+                <Text style={styles.bizHeroNum}>{inr(biz.month.value)}</Text>
+                {revChg && <Text style={[styles.bizDelta, { color: revChg.up ? '#7CFC9B' : '#FFB4A8' }]}>{revChg.up ? '▲' : '▼'} {revChg.v}%</Text>}
+              </View>
+              <Text style={styles.bizHeroSub}>{biz.month.pieces} pcs · {biz.month.orders} orders · vs {inr(biz.prevMonth?.value || 0)} prior 30d</Text>
+            </View>
+
+            {/* KPI tiles */}
+            <View style={styles.bizKpiRow}>
+              <View style={styles.bizKpi}><Text style={styles.bizKpiNum}>{biz.week.pieces}</Text><Text style={styles.bizKpiLbl}>pcs · 7d</Text></View>
+              <View style={styles.bizKpi}><Text style={[styles.bizKpiNum, pending > 0 && { color: '#B26A00' }]}>{pending}</Text><Text style={styles.bizKpiLbl}>pending</Text></View>
+              <View style={styles.bizKpi}><Text style={[styles.bizKpiNum, { color: '#2E7D32' }]}>{done}</Text><Text style={styles.bizKpiLbl}>fulfilled</Text></View>
+            </View>
+
+            {/* Demand trend */}
+            <Text style={styles.bizSec}>Weekly demand</Text>
+            <View style={styles.bizCard}><BarChart data={(biz.trend || []).map(t => ({ label: t.label, value: t.pieces }))} /></View>
+
+            {/* Top brands */}
+            {(biz.topBrands || []).length > 0 && <>
+              <Text style={styles.bizSec}>Top brands · 90 days</Text>
+              <View style={styles.bizCard}>{biz.topBrands.map((b, i) => <HBar key={i} label={b.name} value={b.pieces} max={brandMax} right={`${b.pieces} pcs`} />)}</View>
+            </>}
+
+            {/* Top designs */}
+            {(biz.topDesigns || []).length > 0 && <>
+              <Text style={styles.bizSec}>Top designs · 90 days</Text>
+              <View style={styles.bizCard}>{biz.topDesigns.map((d, i) => (
+                <View key={i} style={styles.bizRow}>
+                  <Text style={styles.bizRowL} numberOfLines={1}>{i + 1}. {d.brand_name ? d.brand_name + ' · ' : ''}{d.item_name || ''} {d.design_number}</Text>
+                  <Text style={styles.bizRowR}>{d.pieces} pcs</Text>
+                </View>
+              ))}</View>
+            </>}
+
+            {/* Top customers */}
+            {(biz.topCustomers || []).length > 0 && <>
+              <Text style={styles.bizSec}>Top customers · 90 days</Text>
+              <View style={styles.bizCard}>{biz.topCustomers.map((c, i) => (
+                <View key={i} style={styles.bizRow}>
+                  <Text style={styles.bizRowL} numberOfLines={1}>{i + 1}. {c.name}</Text>
+                  <Text style={styles.bizRowR}>{c.pieces} pcs<Text style={styles.bizRowSub}>  {c.orders} ord</Text></Text>
+                </View>
+              ))}</View>
+            </>}
+
+            {/* Inventory + receivables summary */}
+            <Text style={styles.bizSec}>Inventory & dues (from Tally)</Text>
+            <View style={styles.bizSplit}>
+              <View style={[styles.bizCard, { flex: 1 }]}>
+                <Text style={styles.bizMini}>{inr(biz.inventory?.total_value)}</Text>
+                <Text style={styles.bizMiniLbl}>stock value</Text>
+                <Text style={styles.bizMiniSub}>{biz.inventory?.out_of_stock || 0} out · {biz.inventory?.low_stock || 0} low</Text>
+              </View>
+              <View style={[styles.bizCard, { flex: 1 }]}>
+                <Text style={[styles.bizMini, { color: '#c0392b' }]}>{inr(biz.receivables?.total)}</Text>
+                <Text style={styles.bizMiniLbl}>receivables</Text>
+                <Text style={styles.bizMiniSub}>{biz.receivables?.count || 0} debtors</Text>
+              </View>
+            </View>
+
+            {/* Catalog totals */}
+            <Text style={styles.bizFoot}>{biz.totals?.brands || 0} brands · {biz.totals?.items || 0} collections · {biz.totals?.designs || 0} designs · {biz.totals?.contacts || 0} contacts</Text>
+          </ScrollView>
+        );
+      })()}
 
       {/* Staff Activity dashboard */}
       {tab === 'staffwatch' && !loading && (
@@ -746,6 +847,26 @@ const styles = StyleSheet.create({
   approveText: { color: '#fff', fontWeight: '800', fontSize: 13 },
   rejectBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#c0392b', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
   rejectText: { color: '#c0392b', fontWeight: '800', fontSize: 13 },
+  bizHero: { backgroundColor: '#8B1A2B', borderRadius: 16, padding: 18, marginBottom: 12 },
+  bizHeroLbl: { fontSize: 11, fontWeight: '800', color: '#F0D9A0', letterSpacing: 0.5, marginBottom: 4 },
+  bizHeroNum: { fontSize: 32, fontWeight: '900', color: '#fff' },
+  bizDelta: { fontSize: 14, fontWeight: '800', paddingBottom: 5 },
+  bizHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 6 },
+  bizKpiRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+  bizKpi: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14, alignItems: 'center' },
+  bizKpiNum: { fontSize: 22, fontWeight: '900', color: '#8B1A2B' },
+  bizKpiLbl: { fontSize: 11, fontWeight: '700', color: '#888', marginTop: 2 },
+  bizSec: { fontSize: 14, fontWeight: '800', color: '#2c1810', marginTop: 16, marginBottom: 8 },
+  bizCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14 },
+  bizRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#f0eae6', gap: 10 },
+  bizRowL: { flex: 1, fontSize: 13, color: '#2c1810', fontWeight: '600' },
+  bizRowR: { fontSize: 13, fontWeight: '800', color: '#2c1810' },
+  bizRowSub: { fontSize: 11, fontWeight: '600', color: '#999' },
+  bizSplit: { flexDirection: 'row', gap: 10 },
+  bizMini: { fontSize: 20, fontWeight: '900', color: '#2E7D32' },
+  bizMiniLbl: { fontSize: 12, fontWeight: '700', color: '#2c1810', marginTop: 2 },
+  bizMiniSub: { fontSize: 11, color: '#888', marginTop: 3 },
+  bizFoot: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 18 },
   tallyCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12 },
   tallyCardTitle: { fontSize: 15, fontWeight: '800', color: '#2c1810' },
   tallyBig: { fontSize: 30, fontWeight: '900', color: '#2E7D32', marginTop: 6 },
