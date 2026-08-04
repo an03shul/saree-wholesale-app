@@ -43,6 +43,7 @@ export const adminApi = {
   createProductionRequest: (data) => api.post('/api/admin/production-requests', data),
   updateProductionRequest: (id, data) => api.patch(`/api/admin/production-requests/${id}`, data),
   deleteProductionRequest: (id) => api.delete(`/api/admin/production-requests/${id}`),
+  tallyReceivables: () => api.get('/api/admin/tally-receivables'),
   getDesignSubmissions: () => api.get('/api/admin/design-submissions'),
   approveDesignSubmission: (id) => api.post(`/api/admin/design-submissions/${id}/approve`),
   rejectDesignSubmission: (id) => api.delete(`/api/admin/design-submissions/${id}`),
@@ -168,6 +169,7 @@ export const tallyApi = {
   getCustomers: () => api.get('/api/tally/customers'),
   getItems: () => api.get('/api/tally/items'),
   getStatus: () => api.get('/api/tally/status'),
+  valueSummary: () => api.get('/api/tally/value-summary'),
   // Returns an EventSource for real-time stock streaming
   stockStream: (itemId) => new EventSource(`${BASE_URL}/api/tally/stock-stream?item_id=${itemId}&token=${api.defaults.headers.common['Authorization']?.replace('Bearer ', '')}`),
 };

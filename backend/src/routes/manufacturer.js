@@ -72,7 +72,7 @@ router.get('/insights', (req, res) => {
   // qty=null → "stock unknown") instead of silently vanishing — an empty
   // out-of-stock list must mean "verified healthy", not "no data".
   const collections = db.prepare(`
-    SELECT i.name, ts.qty FROM items i
+    SELECT i.name, ts.qty, ts.value FROM items i
     LEFT JOIN tally_stock ts ON ts.tally_item_name = i.tally_item_name
     WHERE i.brand_id = ?
     ORDER BY ts.qty ASC
@@ -186,6 +186,7 @@ router.get('/insights', (req, res) => {
     designs: catalog.designs,
     collections: catalog.collections,
     stock: collections.reduce((s, c) => s + (c.qty || 0), 0),
+    stockValue: Math.round(collections.reduce((s, c) => s + (c.value || 0), 0)),
     orders: allTime.orders,
     pieces: allTime.pieces,
     value: allTime.value,

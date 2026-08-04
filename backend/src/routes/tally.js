@@ -41,6 +41,23 @@ router.get('/status', (req, res) => {
   });
 });
 
+// GET /api/tally/value-summary — inventory value from the synced Tally stock
+// (value/units populated by the v2 agent). Any logged-in user; not sensitive.
+router.get('/value-summary', (req, res) => {
+  const agg = db.prepare(`
+    SELECT COUNT(*) AS items,
+           SUM(CASE WHEN value IS NOT NULL THEN 1 ELSE 0 END) AS valued,
+           COALESCE(SUM(value), 0) AS total_value
+    FROM tally_stock
+  `).get();
+  const top = db.prepare(`
+    SELECT tally_item_name AS name, qty, value, units
+    FROM tally_stock WHERE value IS NOT NULL AND value > 0
+    ORDER BY value DESC LIMIT 10
+  `).all();
+  res.json({ items: agg.items, valued: agg.valued, total_value: agg.total_value, top });
+});
+
 // GET /api/tally/stock-stream?item_id=X — stream cached stock for each design of
 // an item. Reads from the tally_stock cache (kept fresh by the shop-PC agent),
 // so it works from the cloud and returns instantly.

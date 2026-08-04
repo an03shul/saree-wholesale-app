@@ -486,7 +486,7 @@ export function InsightsScreen() {
           )}
 
           {/* Stock health */}
-          <Section title="Stock health">
+          <Section title="Stock health" sub={data.totals?.stockValue ? `${money(data.totals.stockValue)} inventory value in linked collections` : undefined}>
             {data.outOfStock.length === 0 && data.lowStock.length === 0 && (!data.stockUnknown || data.stockUnknown.length === 0)
               ? <Text style={insight.okLine}>All linked collections have healthy stock 🎉</Text>
               : <>

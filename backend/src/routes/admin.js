@@ -244,4 +244,21 @@ router.delete('/design-submissions/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/admin/tally-receivables — outstanding balances of Sundry Debtors
+// synced from Tally (balance populated by the v2 agent). Admin-only (sensitive).
+router.get('/tally-receivables', (req, res) => {
+  const agg = db.prepare(`
+    SELECT COUNT(*) AS debtors,
+           SUM(CASE WHEN balance IS NOT NULL THEN 1 ELSE 0 END) AS with_balance,
+           COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) AS total_outstanding
+    FROM tally_customers
+  `).get();
+  const top = db.prepare(`
+    SELECT name, phone, balance FROM tally_customers
+    WHERE balance IS NOT NULL AND balance > 0
+    ORDER BY balance DESC LIMIT 15
+  `).all();
+  res.json({ debtors: agg.debtors, with_balance: agg.with_balance, total_outstanding: agg.total_outstanding, top });
+});
+
 module.exports = router;

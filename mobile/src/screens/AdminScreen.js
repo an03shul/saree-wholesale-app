@@ -33,6 +33,8 @@ export default function AdminScreen({ user, onLogout }) {
   const [attRows, setAttRows] = useState([]);
   const [tallySync, setTallySync] = useState(null); // /api/tally/status — null until loaded
   const [subs, setSubs] = useState([]); // manufacturer design submissions awaiting review
+  const [tallyVal, setTallyVal] = useState(null);   // /api/tally/value-summary
+  const [tallyRecv, setTallyRecv] = useState(null); // /api/admin/tally-receivables
   const [attEditUser, setAttEditUser] = useState(null);
 
   const loadAttendance = useCallback(async (month) => {
@@ -80,6 +82,18 @@ export default function AdminScreen({ user, onLogout }) {
     finally { setLoading(false); }
   }, []);
 
+  const loadTally = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [st, val, recv] = await Promise.all([
+        tallyApi.getStatus().catch(() => ({ data: { synced: false } })),
+        tallyApi.valueSummary().catch(() => ({ data: null })),
+        adminApi.tallyReceivables().catch(() => ({ data: null })),
+      ]);
+      setTallySync(st.data); setTallyVal(val.data); setTallyRecv(recv.data);
+    } finally { setLoading(false); }
+  }, []);
+
   const loadSubs = useCallback(async () => {
     setLoading(true);
     try {
@@ -124,6 +138,7 @@ export default function AdminScreen({ user, onLogout }) {
     else if (t === 'attendance') loadAttendance(attMonth);
     else if (t === 'users') loadUsers();
     else if (t === 'submissions') loadSubs();
+    else if (t === 'tally') loadTally();
     else if (t === 'template') loadTemplate();
   };
 
@@ -280,7 +295,7 @@ export default function AdminScreen({ user, onLogout }) {
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs}>
-        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['submissions','🧵 Submissions'],['template','💬 Template']].map(([t, label]) => (
+        {[['staffwatch','🟢 Activity'],['attendance','🗓️ Attendance'],['activity','📋 Logs'],['users','👤 Staff'],['submissions','🧵 Submissions'],['tally','🧮 Tally'],['template','💬 Template']].map(([t, label]) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => switchTab(t)}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
@@ -445,6 +460,61 @@ export default function AdminScreen({ user, onLogout }) {
           </TouchableOpacity>
         </>
       )}
+
+      {/* Tally insights — sync health + inventory value + receivables */}
+      {tab === 'tally' && !loading && (() => {
+        const money = (n) => '₹' + Math.round(n || 0).toLocaleString('en-IN');
+        const s = tallySync || {};
+        const mins = s.last_sync ? Math.floor((Date.now() - parseServerDate(s.last_sync).getTime()) / 60000) : null;
+        const healthColor = s.synced && !s.stale ? '#2E7D32' : s.synced ? '#B26A00' : '#c0392b';
+        return (
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+            {/* Sync health */}
+            <View style={styles.tallyCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <View style={[styles.statusDot, { backgroundColor: healthColor, marginRight: 8 }]} />
+                <Text style={styles.tallyCardTitle}>Sync health</Text>
+              </View>
+              {s.synced ? <>
+                <Text style={styles.tallyLine}>Last sync: {relTime(s.last_sync)}{s.stale ? '  ⚠️ stale (>30m)' : ''}</Text>
+                <Text style={styles.tallyLine}>Company: {s.company || '—'}   ·   Mode: {s.mode || '—'}</Text>
+                <Text style={styles.tallyLine}>Items cached: {s.item_count ?? '—'}   ·   Agent v{s.agent_version || '?'}</Text>
+                {s.last_cycle && <Text style={styles.tallySub}>Last cycle: {s.last_cycle.stock_synced ?? 0} stock, {s.last_cycle.stock_deleted ?? 0} removed, {s.last_cycle.customers_synced ?? 0} customers</Text>}
+                <Text style={styles.tallySub}>AlterID · master {s.last_alter_master ?? '—'} · voucher {s.last_alter_voucher ?? '—'}</Text>
+              </> : <Text style={styles.tallyLine}>Never synced — is the agent running on the shop PC?</Text>}
+            </View>
+
+            {/* Inventory value */}
+            <View style={styles.tallyCard}>
+              <Text style={styles.tallyCardTitle}>Inventory value</Text>
+              <Text style={styles.tallyBig}>{money(tallyVal?.total_value)}</Text>
+              <Text style={styles.tallySub}>{tallyVal?.valued || 0} of {tallyVal?.items || 0} items valued by Tally</Text>
+              {(tallyVal?.top || []).length > 0 && <Text style={[styles.tallyLine, { marginTop: 10, fontWeight: '800' }]}>Top by value</Text>}
+              {(tallyVal?.top || []).map((it, i) => (
+                <View key={i} style={styles.tallyRow}>
+                  <Text style={styles.tallyRowL} numberOfLines={1}>{it.name}</Text>
+                  <Text style={styles.tallyRowR}>{money(it.value)}<Text style={styles.tallyRowSub}>  {it.qty}{it.units ? ' ' + it.units : ''}</Text></Text>
+                </View>
+              ))}
+              {!tallyVal?.valued && <Text style={styles.tallySub}>No item values yet — the v2 sync agent populates these.</Text>}
+            </View>
+
+            {/* Outstanding receivables */}
+            <View style={styles.tallyCard}>
+              <Text style={styles.tallyCardTitle}>Outstanding receivables</Text>
+              <Text style={[styles.tallyBig, { color: '#c0392b' }]}>{money(tallyRecv?.total_outstanding)}</Text>
+              <Text style={styles.tallySub}>{tallyRecv?.with_balance || 0} of {tallyRecv?.debtors || 0} debtors with a balance</Text>
+              {(tallyRecv?.top || []).map((c, i) => (
+                <View key={i} style={styles.tallyRow}>
+                  <Text style={styles.tallyRowL} numberOfLines={1}>{c.name}</Text>
+                  <Text style={styles.tallyRowR}>{money(c.balance)}</Text>
+                </View>
+              ))}
+              {!tallyRecv?.with_balance && <Text style={styles.tallySub}>No balances yet — the v2 sync agent populates these.</Text>}
+            </View>
+          </ScrollView>
+        );
+      })()}
 
       {/* Manufacturer design submissions — review queue */}
       {tab === 'submissions' && !loading && (
@@ -676,6 +746,15 @@ const styles = StyleSheet.create({
   approveText: { color: '#fff', fontWeight: '800', fontSize: 13 },
   rejectBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#c0392b', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
   rejectText: { color: '#c0392b', fontWeight: '800', fontSize: 13 },
+  tallyCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12 },
+  tallyCardTitle: { fontSize: 15, fontWeight: '800', color: '#2c1810' },
+  tallyBig: { fontSize: 30, fontWeight: '900', color: '#2E7D32', marginTop: 6 },
+  tallyLine: { fontSize: 13, color: '#2c1810', marginTop: 3 },
+  tallySub: { fontSize: 12, color: '#888', marginTop: 4 },
+  tallyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#f0eae6', gap: 10 },
+  tallyRowL: { flex: 1, fontSize: 13, color: '#2c1810', fontWeight: '600' },
+  tallyRowR: { fontSize: 13, fontWeight: '800', color: '#2c1810' },
+  tallyRowSub: { fontSize: 11, fontWeight: '600', color: '#999' },
   logCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8 },
   logRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
